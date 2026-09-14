@@ -25,13 +25,18 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
-# macOS
+# OS
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.pem
 
-# local env files
-.env*.local
+# secrets / local env (카카오 키, API URL)
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +44,16 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# editor / agent tooling
+.idea/
+.vscode/
+.claude/
+AGENTS.md
+CLAUDE.md
+
+# 내부 인수인계 / 설계 자료 (깃허브에 올리지 않음)
+와이어프레임/
+frontend-handoff-request.md
+uploads/
+*.canvas.tsx

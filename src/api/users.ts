@@ -1,6 +1,6 @@
-import { mockMyPage } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { MyPage } from '@/src/types';
+﻿import { mockMyPage } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { MyPage } from '@/types';
 
 export const usersApi = {
   /** GET /api/users/me */

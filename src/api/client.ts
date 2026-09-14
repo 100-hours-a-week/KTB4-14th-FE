@@ -1,15 +1,15 @@
-import { storage } from '@/src/storage';
-import type { ApiEnvelope, AuthTokens } from '@/src/types';
+﻿import { storage } from '@/storage';
+import type { ApiEnvelope, AuthTokens } from '@/types';
 
 /**
  * AUDIGO API 연결 통로.
- * 실제 백엔드 연동 시 EXPO_PUBLIC_API_BASE_URL 과 EXPO_PUBLIC_USE_MOCK=false 를 사용한다.
+ * 실제 백엔드 연동 시 VITE_API_BASE_URL 과 VITE_USE_MOCK=false 를 사용한다.
  *
  * API 명세: https://docs.google.com/spreadsheets/d/1TzLjPrQyFacu3QHNvTs71D12u_Yt2-N8eZ9KSzThijs
  * ERD: https://www.erdcloud.com/d/SSauy2XBMtMhpHnNf
  */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
-export const USE_MOCK = (process.env.EXPO_PUBLIC_USE_MOCK ?? 'true') !== 'false';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false';
 
 export class ApiError extends Error {
   status: number;
@@ -41,7 +41,7 @@ function withQuery(path: string, query?: RequestOptions['query']) {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = await storage.getRefreshToken();
+  const refreshToken = storage.getRefreshToken();
   if (!refreshToken) return null;
 
   const response = await fetch(`${API_BASE_URL}/users/refresh`, {
@@ -52,8 +52,8 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!response.ok) return null;
 
   const json = (await response.json()) as ApiEnvelope<AuthTokens>;
-  await storage.setAccessToken(json.data.access_token);
-  await storage.setRefreshToken(json.data.refresh_token);
+  storage.setAccessToken(json.data.access_token);
+  storage.setRefreshToken(json.data.refresh_token);
   return json.data.access_token;
 }
 
@@ -63,7 +63,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   if (auth) {
-    const token = await storage.getAccessToken();
+    const token = storage.getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 

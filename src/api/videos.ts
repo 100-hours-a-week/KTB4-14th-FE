@@ -1,6 +1,6 @@
-import { mockVideo } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { TravelVideo } from '@/src/types';
+﻿import { mockVideo } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { TravelVideo } from '@/types';
 
 let localVideo: TravelVideo = { ...mockVideo };
 

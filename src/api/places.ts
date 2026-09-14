@@ -1,6 +1,6 @@
-import { mockPlaces } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { PlaceCandidate } from '@/src/types';
+﻿import { mockPlaces } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { PlaceCandidate } from '@/types';
 
 export const placesApi = {
   /**

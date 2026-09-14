@@ -1,5 +1,5 @@
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { ChatRoom } from '@/src/types';
+﻿import { apiRequest, USE_MOCK } from '@/api/client';
+import type { ChatRoom } from '@/types';
 
 /**
  * 채팅 도메인은 현재 서비스 준비중 화면만 노출한다.

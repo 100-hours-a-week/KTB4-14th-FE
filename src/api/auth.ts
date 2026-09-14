@@ -1,6 +1,6 @@
-import { mockUser } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { AuthTokens, AuthUser } from '@/src/types';
+﻿import { mockUser } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { AuthTokens, AuthUser } from '@/types';
 
 export type LoginResult = AuthTokens & { user: AuthUser };
 

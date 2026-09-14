@@ -1,5 +1,5 @@
-import { getJson, setJson, storage } from '@/src/storage';
-import type { PlaceCandidate, TravelDraft } from '@/src/types';
+import { getJson, setJson, storage } from '@/storage';
+import type { PlaceCandidate, TravelDraft } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 const emptyDraft: TravelDraft = {
@@ -26,25 +26,19 @@ export function TravelDraftProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<TravelDraft>(emptyDraft);
 
   useEffect(() => {
-    (async () => {
-      const saved = await getJson<TravelDraft>(storage.keys.travelDraft);
-      if (saved) setDraft({ ...emptyDraft, ...saved, preference: { ...emptyDraft.preference, ...saved.preference } });
-    })();
+    const saved = getJson<TravelDraft>(storage.keys.travelDraft);
+    if (saved) setDraft({ ...emptyDraft, ...saved, preference: { ...emptyDraft.preference, ...saved.preference } });
   }, []);
 
   const persist = useCallback((next: TravelDraft) => {
     setDraft(next);
-    void setJson(storage.keys.travelDraft, next);
+    setJson(storage.keys.travelDraft, next);
   }, []);
 
-  const update = useCallback(
-    (patch: Partial<TravelDraft>) => persist({ ...draft, ...patch }),
-    [draft, persist],
-  );
+  const update = useCallback((patch: Partial<TravelDraft>) => persist({ ...draft, ...patch }), [draft, persist]);
 
   const updatePreference = useCallback(
-    (patch: Partial<TravelDraft['preference']>) =>
-      persist({ ...draft, preference: { ...draft.preference, ...patch } }),
+    (patch: Partial<TravelDraft['preference']>) => persist({ ...draft, preference: { ...draft.preference, ...patch } }),
     [draft, persist],
   );
 

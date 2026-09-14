@@ -1,6 +1,6 @@
-import { authApi } from '@/src/api';
-import { getJson, setJson, storage } from '@/src/storage';
-import type { AuthUser } from '@/src/types';
+import { authApi } from '@/api';
+import { getJson, setJson, storage } from '@/storage';
+import type { AuthUser } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 type AuthContextValue = {
@@ -18,25 +18,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const saved = await getJson<AuthUser>(storage.keys.user);
-      const token = await storage.getAccessToken();
-      if (saved && token) setUser(saved);
-      setReady(true);
-    })();
+    const saved = getJson<AuthUser>(storage.keys.user);
+    const token = storage.getAccessToken();
+    if (saved && token) setUser(saved);
+    setReady(true);
   }, []);
 
   const loginWithKakaoCode = useCallback(async (code: string) => {
     const result = await authApi.loginWithKakao(code);
-    await storage.setAccessToken(result.access_token);
-    await storage.setRefreshToken(result.refresh_token);
-    await setJson(storage.keys.user, result.user);
+    storage.setAccessToken(result.access_token);
+    storage.setRefreshToken(result.refresh_token);
+    setJson(storage.keys.user, result.user);
     setUser(result.user);
     return result.user;
   }, []);
 
   const logout = useCallback(async () => {
-    const refresh = await storage.getRefreshToken();
+    const refresh = storage.getRefreshToken();
     if (refresh) {
       try {
         await authApi.logout(refresh);
@@ -44,14 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 토큰 폐기 실패해도 로컬 세션은 종료한다.
       }
     }
-    await storage.clearSession();
+    storage.clearSession();
     setUser(null);
   }, []);
 
   const updateNickname = useCallback(async (nickname: string) => {
     setUser((prev) => (prev ? { ...prev, nickname } : prev));
-    const saved = await getJson<AuthUser>(storage.keys.user);
-    if (saved) await setJson(storage.keys.user, { ...saved, nickname });
+    const saved = getJson<AuthUser>(storage.keys.user);
+    if (saved) setJson(storage.keys.user, { ...saved, nickname });
   }, []);
 
   const value = useMemo(

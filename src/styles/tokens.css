@@ -1,0 +1,30 @@
+:root {
+  --primary: #e85d4c;
+  --primary-dark: #c94a3b;
+  --primary-soft: #ffe8e3;
+  --teal: #2a9d8f;
+  --teal-dark: #1f7a70;
+  --teal-soft: #d8f3ef;
+  --navy: #1c2430;
+  --ink: #243042;
+  --muted: #7a756f;
+  --line: #e8e1d8;
+  --cream: #f6f1ea;
+  --sand: #efe6da;
+  --paper: #fffbf7;
+  --white: #ffffff;
+  --danger: #d64545;
+  --kakao: #fee500;
+  --kakao-ink: #191600;
+  --overlay: rgba(28, 36, 48, 0.46);
+  --map: #d7e6df;
+  --page-bg: #d9cfc3;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --phone-width: 430px;
+  --shadow-card: 0 8px 24px rgba(28, 36, 48, 0.08);
+  --font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}

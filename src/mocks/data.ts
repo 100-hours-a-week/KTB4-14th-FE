@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AppNotification,
   Checklist,
   MatchingSettings,
@@ -9,7 +9,7 @@ import type {
   TravelDetail,
   TravelSummary,
   TravelVideo,
-} from '@/src/types';
+} from '@/types';
 
 export const mockUser = {
   user_id: 1,

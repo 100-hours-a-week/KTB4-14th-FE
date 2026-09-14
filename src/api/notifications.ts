@@ -1,6 +1,6 @@
-import { mockMatchingSettings, mockNotifications, mockNotificationSettings } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { AppNotification, MatchingSettings, NotificationSettings } from '@/src/types';
+﻿import { mockMatchingSettings, mockNotifications, mockNotificationSettings } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { AppNotification, MatchingSettings, NotificationSettings } from '@/types';
 
 let localNotifications = mockNotifications.map((item) => ({ ...item }));
 let localNotiSettings = { ...mockNotificationSettings };

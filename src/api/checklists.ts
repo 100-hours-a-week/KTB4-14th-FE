@@ -1,6 +1,6 @@
-import { mockChecklist } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { Checklist, ChecklistItem } from '@/src/types';
+﻿import { mockChecklist } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { Checklist, ChecklistItem } from '@/types';
 
 let localChecklist: Checklist = {
   ...mockChecklist,

@@ -1,5 +1,5 @@
-import { mockBusanDetail, mockMyTrips, mockRecent, mockTravelDetail, mockUpcoming } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
+﻿import { mockBusanDetail, mockMyTrips, mockRecent, mockTravelDetail, mockUpcoming } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
 import type {
   CreateTravelPlanRequest,
   GenerationStep,
@@ -7,7 +7,7 @@ import type {
   TravelGenerationStatus,
   TravelPlanStatus,
   TravelSummary,
-} from '@/src/types';
+} from '@/types';
 
 const generationStore = new Map<number, { createdAt: number; failed?: boolean }>();
 let nextPlanId = 200;

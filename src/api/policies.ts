@@ -1,6 +1,6 @@
-import { mockPolicies } from '@/src/mocks/data';
-import { apiRequest, USE_MOCK } from '@/src/api/client';
-import type { Policy, PolicyType } from '@/src/types';
+﻿import { mockPolicies } from '@/mocks/data';
+import { apiRequest, USE_MOCK } from '@/api/client';
+import type { Policy, PolicyType } from '@/types';
 
 export const policiesApi = {
   /** GET /api/policies/latest?policy_type= */

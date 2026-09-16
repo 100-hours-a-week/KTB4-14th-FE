@@ -3,14 +3,6 @@ export type ApiEnvelope<T> = {
   data: T;
 };
 
-export type AuthTokens = {
-  access_token: string;
-  refresh_token: string;
-  token_type: 'Bearer';
-  access_token_expires_in: number;
-  refresh_token_expires_in: number;
-};
-
 export type AuthUser = {
   user_id: number;
   nickname: string;
@@ -19,9 +11,11 @@ export type AuthUser = {
 };
 
 export type MyPage = {
+  user_id: number;
   nickname: string;
-  profile_image: string | null;
+  profile_image_url: string | null;
   provider: 'KAKAO';
+  status: 'ACTIVE' | 'INACTIVE' | 'DELETED';
   completed_travel_count: number;
   upcoming_travel_count: number;
 };

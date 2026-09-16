@@ -4,29 +4,81 @@ import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import type { MyPage } from '@/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const NICKNAME_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
+const DEFAULT_NICKNAME = '사용자';
+
+function normalizeNickname(value: string) {
+  return value.replace(/\s+/g, '').slice(0, 5);
+}
+
+function getNicknameError(value: string) {
+  if (value.length < 2) return '닉네임은 최소 2자 이상 입력해주세요.';
+  if (!NICKNAME_PATTERN.test(value)) return '닉네임은 한글, 영문, 숫자만 사용할 수 있어요.';
+  return '';
+}
 
 export function MyPage() {
   const navigate = useNavigate();
   const { user, updateNickname, logout } = useAuth();
   const toast = useToast();
   const [me, setMe] = useState<MyPage | null>(null);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [nickname, setNickname] = useState(user?.nickname ?? '');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    usersApi.getMe().then(setMe);
-  }, []);
+    let alive = true;
+    setLoading(true);
+    usersApi.getMe()
+      .then((data) => {
+        if (alive) setMe(data);
+      })
+      .catch(() => {
+        if (alive) toast.show('사용자 정보를 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [toast]);
+
+  const displayNickname = me?.nickname ?? user?.nickname ?? DEFAULT_NICKNAME;
+  const profileImageUrl = me?.profile_image_url ?? user?.profile_image_url ?? null;
+  const nicknameError = useMemo(() => (nickname ? getNicknameError(nickname) : ''), [nickname]);
+
+  const openNicknameModal = () => {
+    setNickname(displayNickname);
+    setOpen(true);
+  };
 
   const saveNickname = async () => {
-    // TODO(backend-guard): 닉네임 길이/중복/금칙어 검증 후 저장. 현재는 화면 이동을 막지 않는다.
-    const next = nickname.trim();
-    const saved = await usersApi.updateNickname(next || me?.nickname || '여행자');
-    await updateNickname(saved.nickname);
-    setMe((prev) => (prev ? { ...prev, nickname: saved.nickname } : prev));
-    setOpen(false);
-    toast.show('닉네임이 변경되었습니다.');
+    const next = normalizeNickname(nickname);
+    setNickname(next);
+
+    if (getNicknameError(next)) return;
+    if (next === displayNickname) {
+      setOpen(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const saved = await usersApi.updateNickname(next);
+      await updateNickname(saved.nickname);
+      setMe((prev) => (prev ? { ...prev, nickname: saved.nickname } : prev));
+      setOpen(false);
+      toast.show('닉네임이 변경되었습니다.');
+    } catch {
+      toast.show('닉네임을 변경하지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -34,11 +86,13 @@ export function MyPage() {
       <Header title="마이페이지" showBell />
       <div className="scroll">
         <div className="profile">
-          <div className="avatar">{(me?.nickname ?? user?.nickname ?? 'A').slice(0, 1)}</div>
-          <button type="button" className="name-btn" onClick={() => setOpen(true)}>
-            {me?.nickname ?? user?.nickname} ✎
+          <div className="avatar">
+            {profileImageUrl ? <img src={profileImageUrl} alt="" /> : displayNickname.slice(0, 1)}
+          </div>
+          <button type="button" className="name-btn" onClick={openNicknameModal}>
+            {loading ? '불러오는 중...' : displayNickname} ✎
           </button>
-          <p className="hello">카카오 계정으로 로그인됨</p>
+          <p className="hello">{me?.provider ?? 'KAKAO'} 계정으로 로그인됨</p>
         </div>
         <div className="stats">
           <div className="stat">
@@ -78,8 +132,22 @@ export function MyPage() {
           로그아웃
         </button>
       </div>
-      <Modal open={open} title="닉네임 변경" confirmLabel="변경하기" onClose={() => setOpen(false)} onConfirm={saveNickname}>
-        <input className="input" style={{ marginTop: 16 }} value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="새로운 닉네임을 입력하세요" />
+      <Modal
+        open={open}
+        title="닉네임 변경"
+        confirmLabel="변경하기"
+        confirmDisabled={Boolean(nicknameError) || nickname.length === 0}
+        confirmBusy={saving}
+        onClose={() => setOpen(false)}
+        onConfirm={saveNickname}>
+        <input
+          className="input nickname-input"
+          value={nickname}
+          onChange={(e) => setNickname(normalizeNickname(e.target.value))}
+          placeholder="새로운 닉네임을 입력하세요."
+          maxLength={5}
+        />
+        <p className={`field-help${nicknameError ? ' error' : ''}`}>{nicknameError}</p>
       </Modal>
     </section>
   );

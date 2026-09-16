@@ -19,28 +19,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = getJson<AuthUser>(storage.keys.user);
-    const token = storage.getAccessToken();
-    if (saved && token) setUser(saved);
+    if (saved) setUser(saved);
     setReady(true);
   }, []);
 
   const loginWithKakaoCode = useCallback(async (code: string) => {
     const result = await authApi.loginWithKakao(code);
-    storage.setAccessToken(result.access_token);
-    storage.setRefreshToken(result.refresh_token);
-    setJson(storage.keys.user, result.user);
-    setUser(result.user);
-    return result.user;
+    setJson(storage.keys.user, result);
+    setUser(result);
+    return result;
   }, []);
 
   const logout = useCallback(async () => {
-    const refresh = storage.getRefreshToken();
-    if (refresh) {
-      try {
-        await authApi.logout(refresh);
-      } catch {
-        // 토큰 폐기 실패해도 로컬 세션은 종료한다.
-      }
+    try {
+      await authApi.logout();
+    } catch {
+      // 토큰 폐기 실패해도 로컬 세션은 종료한다.
     }
     storage.clearSession();
     setUser(null);

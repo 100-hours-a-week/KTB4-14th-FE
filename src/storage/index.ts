@@ -1,6 +1,4 @@
 const KEYS = {
-  accessToken: 'audigo.access_token',
-  refreshToken: 'audigo.refresh_token',
   user: 'audigo.user',
   travelDraft: 'audigo.travel_draft',
 } as const;
@@ -30,22 +28,9 @@ export function setJson(key: string, value: unknown) {
 
 export const storage = {
   keys: KEYS,
-  getAccessToken() {
-    return read(KEYS.accessToken);
-  },
-  setAccessToken(token: string | null) {
-    write(KEYS.accessToken, token);
-  },
-  getRefreshToken() {
-    return read(KEYS.refreshToken);
-  },
-  setRefreshToken(token: string | null) {
-    // TODO(auth): Refresh Token은 HttpOnly Secure Cookie 관리가 확정되면 이 저장소를 제거한다.
-    write(KEYS.refreshToken, token);
-  },
   clearSession() {
-    write(KEYS.accessToken, null);
-    write(KEYS.refreshToken, null);
     write(KEYS.user, null);
+    write('audigo.access_token', null);
+    write('audigo.refresh_token', null);
   },
 };

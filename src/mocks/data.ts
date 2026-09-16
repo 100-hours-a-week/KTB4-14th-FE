@@ -19,9 +19,11 @@ export const mockUser = {
 };
 
 export const mockMyPage: MyPage = {
+  user_id: 1,
   nickname: '송월',
-  profile_image: null,
+  profile_image_url: null,
   provider: 'KAKAO',
+  status: 'ACTIVE',
   completed_travel_count: 8,
   upcoming_travel_count: 3,
 };

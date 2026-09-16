@@ -150,6 +150,13 @@
   margin: 0 auto 12px;
   font-size: 32px;
   font-weight: 900;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .name-btn {

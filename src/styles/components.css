@@ -117,7 +117,9 @@
 .modal-actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .modal-actions .btn {
@@ -135,6 +137,24 @@
   color: var(--navy);
   font-size: 15px;
   font-weight: 700;
+}
+
+.nickname-input {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 17px;
+}
+
+.field-help {
+  min-height: 18px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field-help.error {
+  color: var(--danger);
 }
 
 .textarea {

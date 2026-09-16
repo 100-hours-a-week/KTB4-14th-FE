@@ -6,6 +6,8 @@ export function Modal({
   message,
   confirmLabel = '확인',
   cancelLabel = '취소',
+  confirmDisabled = false,
+  confirmBusy = false,
   onConfirm,
   onClose,
   children,
@@ -15,7 +17,9 @@ export function Modal({
   message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  onConfirm?: () => void;
+  confirmDisabled?: boolean;
+  confirmBusy?: boolean;
+  onConfirm?: () => void | Promise<void>;
   onClose: () => void;
   children?: ReactNode;
 }) {
@@ -30,8 +34,8 @@ export function Modal({
           <button type="button" className="btn btn-ghost" onClick={onClose}>
             {cancelLabel}
           </button>
-          <button type="button" className="btn btn-dark" onClick={onConfirm ?? onClose}>
-            {confirmLabel}
+          <button type="button" className="btn btn-dark" onClick={onConfirm ?? onClose} disabled={confirmDisabled || confirmBusy}>
+            {confirmBusy ? '변경 중...' : confirmLabel}
           </button>
         </div>
       </div>

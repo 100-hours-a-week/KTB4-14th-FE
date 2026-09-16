@@ -1,5 +1,6 @@
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
+import { USE_MOCK } from '@/api/client';
 import { useNavigate } from 'react-router-dom';
 
 export function LoginPage() {
@@ -10,8 +11,12 @@ export function LoginPage() {
     const restKey = import.meta.env.VITE_KAKAO_REST_KEY;
     const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI ?? `${window.location.origin}/auth/kakao`;
 
-    // TODO(auth): 카카오 REST KEY가 없으면 목 로그인. 백엔드/카카오 앱 연동 후 실제 authorize URL로 교체.
     if (!restKey) {
+      if (!USE_MOCK) {
+        alert('VITE_KAKAO_REST_KEY가 비어 있습니다. AUDIGO-FE/.env에 카카오 REST API 키를 넣고 프론트 서버를 재시작해주세요.');
+        return;
+      }
+
       await loginWithKakaoCode('mock-authorization-code');
       navigate('/home', { replace: true });
       return;

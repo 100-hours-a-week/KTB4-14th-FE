@@ -1,5 +1,4 @@
-﻿import { storage } from '@/storage';
-import type { ApiEnvelope, AuthTokens } from '@/types';
+import type { ApiEnvelope } from '@/types';
 
 /**
  * AUDIGO API 연결 통로.
@@ -40,21 +39,16 @@ function withQuery(path: string, query?: RequestOptions['query']) {
   return qs ? `${path}?${qs}` : path;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = storage.getRefreshToken();
-  if (!refreshToken) return null;
-
+async function refreshAccessToken(): Promise<boolean> {
   const response = await fetch(`${API_BASE_URL}/users/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    credentials: 'include',
   });
-  if (!response.ok) return null;
+  if (!response.ok) return false;
 
-  const json = (await response.json()) as ApiEnvelope<AuthTokens>;
-  storage.setAccessToken(json.data.access_token);
-  storage.setRefreshToken(json.data.refresh_token);
-  return json.data.access_token;
+  await response.json().catch(() => null);
+  return true;
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -62,20 +56,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-  if (auth) {
-    const token = storage.getAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${API_BASE_URL}${withQuery(path, query)}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
+    credentials: 'include',
   });
 
   if (response.status === 401 && auth && !skipRefresh) {
-    const next = await refreshAccessToken();
-    if (next) {
+    if (await refreshAccessToken()) {
       return apiRequest<T>(path, { ...options, skipRefresh: true });
     }
   }

@@ -5,6 +5,7 @@ import type {
   GenerationStep,
   TravelDetail,
   TravelGenerationStatus,
+  TravelPlanCreatedResponse,
   TravelPlanStatus,
   TravelSummary,
 } from '@/types';
@@ -13,9 +14,9 @@ const generationStore = new Map<number, { createdAt: number; failed?: boolean }>
 let nextPlanId = 200;
 
 const STEP_DEFS: { key: GenerationStep['key']; label: string }[] = [
-  { key: 'PLACE_RECOMMEND', label: '장소 대상 추천' },
-  { key: 'STAY_RECOMMEND', label: '숙소 위치 추천' },
-  { key: 'ROUTE_OPTIMIZE', label: '경로 최적 구성' },
+  { key: 'PLACE_RECOMMEND', label: '장소·식당 추천' },
+  { key: 'STAY_RECOMMEND', label: '숙소 위치 계산' },
+  { key: 'ROUTE_OPTIMIZE', label: '이동 경로 연결' },
   { key: 'MUSIC_RECOMMEND', label: '여행 음악 추천' },
 ];
 
@@ -30,6 +31,7 @@ function mockStatus(planId: number): TravelGenerationStatus {
       : 'GENERATING';
   return {
     travel_plan_id: planId,
+    generation_job_id: planId,
     status,
     error_message: entry.failed ? '일정 생성에 실패했습니다.' : null,
     steps: STEP_DEFS.map((step, index) => ({
@@ -69,9 +71,9 @@ export const travelsApi = {
     if (USE_MOCK) {
       const travel_plan_id = nextPlanId++;
       generationStore.set(travel_plan_id, { createdAt: Date.now() });
-      return { travel_plan_id, status: 'GENERATING' as const };
+      return { travel_plan_id, generation_job_id: travel_plan_id, status: 'GENERATING' as const };
     }
-    return apiRequest<{ travel_plan_id: number; status: TravelPlanStatus }>('/api/travel-plans', {
+    return apiRequest<TravelPlanCreatedResponse>('/api/travel-plans', {
       method: 'POST',
       body,
     });
@@ -81,6 +83,12 @@ export const travelsApi = {
   async getStatus(travelPlanId: number): Promise<TravelGenerationStatus> {
     if (USE_MOCK) return mockStatus(travelPlanId);
     return apiRequest<TravelGenerationStatus>(`/api/travel-plans/${travelPlanId}/status`);
+  },
+
+  /** GET /api/ai-generation-jobs/:id — 생성 작업 단위 기준 상태 조회 */
+  async getGenerationStatus(generationJobId: number): Promise<TravelGenerationStatus> {
+    if (USE_MOCK) return mockStatus(generationJobId);
+    return apiRequest<TravelGenerationStatus>(`/api/ai-generation-jobs/${generationJobId}`);
   },
 
   /** GET /api/travel-plans/:id */
@@ -96,9 +104,9 @@ export const travelsApi = {
   async regenerate(travelPlanId: number) {
     if (USE_MOCK) {
       generationStore.set(travelPlanId, { createdAt: Date.now() });
-      return { travel_plan_id: travelPlanId, status: 'GENERATING' as const };
+      return { travel_plan_id: travelPlanId, generation_job_id: travelPlanId, status: 'GENERATING' as const };
     }
-    return apiRequest<{ travel_plan_id: number; status: TravelPlanStatus }>(
+    return apiRequest<TravelPlanCreatedResponse>(
       `/api/travel-plans/${travelPlanId}/regenerate`,
       { method: 'POST' },
     );

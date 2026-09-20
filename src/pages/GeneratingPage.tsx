@@ -3,12 +3,15 @@ import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
 import type { TravelGenerationStatus } from '@/types';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 export function GeneratingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const planId = Number(id);
+  const jobIdParam = searchParams.get('job_id');
+  const generationJobId = jobIdParam ? Number(jobIdParam) : NaN;
   const [status, setStatus] = useState<TravelGenerationStatus | null>(null);
   const [failOpen, setFailOpen] = useState(false);
   const [runKey, setRunKey] = useState(0);
@@ -16,26 +19,46 @@ export function GeneratingPage() {
   useEffect(() => {
     let cancelled = false;
     let timer: number | undefined;
+    let requestInFlight = false;
     const tick = async () => {
-      const next = await travelsApi.getStatus(planId);
-      if (cancelled) return;
-      setStatus(next);
-      if (next.status === 'COMPLETED') {
+      if (requestInFlight) return;
+      requestInFlight = true;
+      try {
+        const next = Number.isFinite(generationJobId) && generationJobId > 0
+          ? await travelsApi.getGenerationStatus(generationJobId)
+          : await travelsApi.getStatus(planId);
+        if (cancelled) return;
+        setStatus(next);
+        if (next.status === 'COMPLETED') {
+          window.clearInterval(timer);
+          navigate(`/itinerary/${planId}`, { replace: true });
+        }
+        if (next.status === 'FAILED') {
+          window.clearInterval(timer);
+          setFailOpen(true);
+        }
+      } catch {
+        if (cancelled) return;
         window.clearInterval(timer);
-        navigate(`/itinerary/${planId}`, { replace: true });
-      }
-      if (next.status === 'FAILED') {
-        window.clearInterval(timer);
+        setStatus((current) => current ?? {
+          travel_plan_id: planId,
+          generation_job_id: Number.isFinite(generationJobId) ? generationJobId : planId,
+          status: 'FAILED',
+          steps: [],
+          error_message: '여행 생성 상태를 확인하지 못했습니다.',
+        });
         setFailOpen(true);
+      } finally {
+        requestInFlight = false;
       }
     };
     void tick();
-    timer = window.setInterval(tick, 800);
+    timer = window.setInterval(tick, 1000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [navigate, planId, runKey]);
+  }, [generationJobId, navigate, planId, runKey]);
 
   const failed = status?.status === 'FAILED';
 
@@ -65,8 +88,15 @@ export function GeneratingPage() {
             style={{ color: 'var(--primary)' }}
             onClick={async () => {
               setFailOpen(false);
-              await travelsApi.regenerate(planId);
-              setRunKey((value) => value + 1);
+              try {
+                const created = await travelsApi.regenerate(planId);
+                const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
+                setStatus(null);
+                navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });
+                setRunKey((value) => value + 1);
+              } catch {
+                setFailOpen(true);
+              }
             }}>
             다시 생성하기
           </button>

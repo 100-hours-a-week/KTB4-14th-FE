@@ -94,7 +94,8 @@ export function PlacesPage() {
         })),
       });
       reset();
-      navigate(`/generating/${created.travel_plan_id}`, { replace: true });
+      const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
+      navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });
     } catch (error) {
       toast.show(generationErrorMessage(error));
     } finally {

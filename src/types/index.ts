@@ -111,6 +111,12 @@ export type CreateTravelPlanRequest = {
   }>;
 };
 
+export type TravelPlanCreatedResponse = {
+  travel_plan_id: number;
+  generation_job_id: number;
+  status: TravelPlanStatus;
+};
+
 export type TravelSummary = {
   travel_plan_id: number;
   title: string;
@@ -130,6 +136,7 @@ export type GenerationStep = {
 
 export type TravelGenerationStatus = {
   travel_plan_id: number;
+  generation_job_id: number;
   status: TravelPlanStatus;
   steps: GenerationStep[];
   error_message?: string | null;

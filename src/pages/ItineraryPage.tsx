@@ -101,7 +101,8 @@ export function ItineraryPage() {
         onConfirm={async () => {
           setRecreate(false);
           const created = await travelsApi.regenerate(planId);
-          navigate(`/generating/${created.travel_plan_id}`, { replace: true });
+          const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
+          navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });
         }}
       />
     </section>

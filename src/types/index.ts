@@ -33,9 +33,12 @@ export type Policy = {
 
 export type CompanionType = 'SOLO' | 'FRIEND' | 'COUPLE' | 'FAMILY';
 export type TransportType = 'PUBLIC' | 'CAR' | 'WALK' | 'ETC';
-export type TripStyle = 'RELAXED' | 'BALANCED' | 'PACKED';
+export type TravelPaceType = 'RELAXED' | 'BALANCED' | 'PACKED';
+export type TravelTransportType = 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
+export type TravelTheme = 'NATURE' | 'FOOD' | 'CULTURE' | 'REST' | 'SNS' | 'ACTIVITY';
+export type TripStyle = TravelPaceType;
 export type RegionPreference = 'HOTPLACE' | 'NATURE' | 'LOCAL';
-export type FoodPreference = 'KOREAN' | 'JAPANESE' | 'CHINESE' | 'WESTERN' | 'ANY';
+export type FoodPreference = 'KOREAN' | 'JAPANESE' | 'CHINESE' | 'WESTERN';
 export type TripPace = 'QUIET' | 'NORMAL' | 'FUN' | 'FULL';
 export type TravelPlanStatus = 'GENERATING' | 'COMPLETED' | 'FAILED';
 export type GenerationStepKey =
@@ -52,20 +55,33 @@ export type PlaceCandidate = {
   address: string;
   latitude: number;
   longitude: number;
-  category?: string;
+  place_type?: 'RESTAURANT' | 'ACCOMMODATION' | 'TOURISM';
+};
+
+export type RegionSummary = {
+  region_id: number;
+  name: string;
+  full_name: string;
 };
 
 export type TravelPreference = {
-  style?: TripStyle;
-  region_preference?: RegionPreference;
-  food_preferences: FoodPreference[];
-  activity_level: number;
-  pace?: TripPace;
+  pace_type?: TravelPaceType;
+  transport_type?: TravelTransportType;
+  budget_min: number;
+  budget_max: number;
+  budget_type: 'KRW';
+  distance_preference: number;
+  themes: TravelTheme[];
+  foods: FoodPreference[];
   extra_request: string;
 };
 
 export type TravelDraft = {
+  region_id?: number;
   destination?: string;
+  destination_province?: string;
+  destination_district?: string;
+  headcount?: number;
   companion?: CompanionType;
   start_date?: string;
   start_time?: string;
@@ -77,13 +93,22 @@ export type TravelDraft = {
 };
 
 export type CreateTravelPlanRequest = {
-  destination: string;
-  companion: CompanionType;
-  start_datetime: string;
-  end_datetime: string;
-  transport: TransportType;
+  region_id: number;
+  headcount: number;
+  companion_type: CompanionType;
+  arrival_datetime: string;
+  departure_datetime: string;
   preference: TravelPreference;
-  required_places: PlaceCandidate[];
+  required_places: Array<{
+    provider: 'KAKAO';
+    provider_place_id: string;
+    place_name: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    place_type?: 'RESTAURANT' | 'ACCOMMODATION' | 'TOURISM';
+    order: number;
+  }>;
 };
 
 export type TravelSummary = {

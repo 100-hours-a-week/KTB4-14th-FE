@@ -1,5 +1,6 @@
 import { placesApi } from '@/api';
 import { Header } from '@/components/Header';
+import { KakaoMap } from '@/components/KakaoMap';
 import { PlaceRow } from '@/components/PlaceRow';
 import { useToast } from '@/context/ToastContext';
 import { useTravelDraft } from '@/context/TravelDraftContext';
@@ -10,28 +11,63 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 export function MapSearchPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { addPlace } = useTravelDraft();
+  const { draft, addPlace } = useTravelDraft();
   const [params] = useSearchParams();
   const replaceItemId = params.get('replaceItemId');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PlaceCandidate[]>([]);
   const [selected, setSelected] = useState<PlaceCandidate | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
-    placesApi.search('제주').then(setResults);
-  }, []);
+    let cancelled = false;
+    void placesApi.search('제주', draft.region_id ?? 1)
+      .then((found) => {
+        if (cancelled) return;
+        setResults(found);
+        setSelected(found[0] ?? null);
+        setSearchError(null);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setSearchError(toSearchErrorMessage(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.region_id]);
 
   const search = async () => {
-    const found = await placesApi.search(query);
-    setResults(found);
-    setSelected(found[0] ?? null);
+    if (!query.trim()) {
+      setSearchError('검색어를 입력해 주세요.');
+      return;
+    }
+
+    setSearchError(null);
+    try {
+      const found = await placesApi.search(query, draft.region_id ?? 1);
+      setResults(found);
+      setSelected(found[0] ?? null);
+    } catch (error: unknown) {
+      setResults([]);
+      setSelected(null);
+      setSearchError(toSearchErrorMessage(error));
+    }
   };
 
   const add = async (place: PlaceCandidate) => {
+    if (!place.address.trim()) {
+      toast.show('주소 정보가 없는 장소는 필수 장소로 추가할 수 없어요.');
+      return;
+    }
     if (replaceItemId) {
       await placesApi.changePlace(Number(replaceItemId), place);
       toast.show('장소가 변경되었습니다.');
       navigate(-1);
+      return;
+    }
+    if (draft.required_places.some((item) => item.provider_place_id === place.provider_place_id)) {
+      toast.show('이미 필수 장소에 추가된 장소예요.');
       return;
     }
     addPlace(place);
@@ -47,20 +83,13 @@ export function MapSearchPage() {
           🔍
         </button>
       </div>
+      {searchError ? <p className="field-help error" role="alert">{searchError}</p> : null}
       <div className="map-box">
-        {results.map((place, index) => (
-          <button
-            key={place.provider_place_id}
-            type="button"
-            className={`map-pin${selected?.provider_place_id === place.provider_place_id ? ' on' : ''}`}
-            style={{ left: `${18 + ((index * 23) % 62)}%`, top: `${22 + ((index * 17) % 48)}%` }}
-            onClick={() => setSelected(place)}>
-            {index + 1}
-          </button>
-        ))}
-        <p className="hint" style={{ position: 'absolute', bottom: 10, width: '100%' }}>
-          카카오맵 SDK 연동 전 미리보기 지도
-        </p>
+        <KakaoMap
+          places={results}
+          selectedPlaceId={selected?.provider_place_id}
+          onSelect={setSelected}
+        />
       </div>
       <div className="scroll" style={{ paddingTop: 4 }}>
         {selected ? (
@@ -77,4 +106,28 @@ export function MapSearchPage() {
       </div>
     </section>
   );
+}
+
+function toSearchErrorMessage(error: unknown) {
+  const candidate = error && typeof error === 'object'
+    ? error as { status?: number; message?: string; payload?: { message?: string } }
+    : {};
+  const code = candidate.payload?.message ?? candidate.message;
+
+  if (code === 'region_not_found' || candidate.status === 404) {
+    return '선택한 지역 정보를 찾을 수 없습니다. 지역 목록을 다시 확인해 주세요.';
+  }
+  if (code === 'external_api_error' || candidate.status === 502) {
+    return '카카오 장소 검색을 사용할 수 없습니다. 백엔드의 카카오 REST 키와 로컬 API 설정을 확인해 주세요.';
+  }
+  if (code === 'service_unavailable' || candidate.status === 503) {
+    return '장소 검색 설정이 아직 준비되지 않았습니다. 백엔드의 카카오 REST 키를 확인해 주세요.';
+  }
+  if (candidate.status === 401 || candidate.status === 403) {
+    return '로그인 인증이 만료되었습니다. 다시 로그인해 주세요.';
+  }
+  if (code === 'validation_failed' || candidate.status === 422) {
+    return '검색어 또는 검색 조건을 확인해 주세요.';
+  }
+  return '장소 검색에 실패했습니다. 잠시 후 다시 시도해 주세요.';
 }

@@ -57,7 +57,7 @@ export const mockPlaces: PlaceCandidate[] = [
     address: '제주특별자치도 서귀포시 성산읍 일출로 284-12',
     latitude: 33.458,
     longitude: 126.942,
-    category: '관광명소',
+    place_type: 'TOURISM',
   },
   {
     provider: 'KAKAO',
@@ -66,7 +66,7 @@ export const mockPlaces: PlaceCandidate[] = [
     address: '제주특별자치도 서귀포시 성산읍 섭지코지로 107',
     latitude: 33.424,
     longitude: 126.93,
-    category: '관광명소',
+    place_type: 'TOURISM',
   },
   {
     provider: 'KAKAO',
@@ -75,7 +75,7 @@ export const mockPlaces: PlaceCandidate[] = [
     address: '제주특별자치도 제주시 조천읍 함덕리',
     latitude: 33.543,
     longitude: 126.669,
-    category: '해수욕장',
+    place_type: 'TOURISM',
   },
   {
     provider: 'KAKAO',
@@ -84,7 +84,7 @@ export const mockPlaces: PlaceCandidate[] = [
     address: '제주특별자치도 제주시 1100로',
     latitude: 33.361,
     longitude: 126.529,
-    category: '자연',
+    place_type: 'TOURISM',
   },
   {
     provider: 'KAKAO',
@@ -93,7 +93,7 @@ export const mockPlaces: PlaceCandidate[] = [
     address: '제주특별자치도 제주시 연동',
     latitude: 33.489,
     longitude: 126.498,
-    category: '음식점',
+    place_type: 'RESTAURANT',
   },
 ];
 

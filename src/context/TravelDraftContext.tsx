@@ -2,17 +2,25 @@ import { getJson, setJson, storage } from '@/storage';
 import type { PlaceCandidate, TravelDraft } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-const emptyDraft: TravelDraft = {
-  preference: {
-    food_preferences: [],
-    activity_level: 45,
-    extra_request: '',
-  },
-  required_places: [],
-};
+function createEmptyDraft(): TravelDraft {
+  return {
+    headcount: 2,
+    preference: {
+      budget_min: 100000,
+      budget_max: 1000000,
+      budget_type: 'KRW',
+      distance_preference: 50,
+      themes: [],
+      foods: [],
+      extra_request: '',
+    },
+    required_places: [],
+  };
+}
 
 type DraftContextValue = {
   draft: TravelDraft;
+  hydrated: boolean;
   update: (patch: Partial<TravelDraft>) => void;
   updatePreference: (patch: Partial<TravelDraft['preference']>) => void;
   addPlace: (place: PlaceCandidate) => void;
@@ -23,48 +31,49 @@ type DraftContextValue = {
 const TravelDraftContext = createContext<DraftContextValue | null>(null);
 
 export function TravelDraftProvider({ children }: { children: ReactNode }) {
-  const [draft, setDraft] = useState<TravelDraft>(emptyDraft);
+  const [draft, setDraft] = useState<TravelDraft>(() => createEmptyDraft());
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const saved = getJson<TravelDraft>(storage.keys.travelDraft);
-    if (saved) setDraft({ ...emptyDraft, ...saved, preference: { ...emptyDraft.preference, ...saved.preference } });
+    if (saved) {
+      const defaults = createEmptyDraft();
+      setDraft({ ...defaults, ...saved, preference: { ...defaults.preference, ...saved.preference } });
+    }
+    setHydrated(true);
   }, []);
 
-  const persist = useCallback((next: TravelDraft) => {
-    setDraft(next);
-    setJson(storage.keys.travelDraft, next);
+  useEffect(() => {
+    if (hydrated) setJson(storage.keys.travelDraft, draft);
+  }, [draft, hydrated]);
+
+  const update = useCallback((patch: Partial<TravelDraft>) => {
+    setDraft((current) => ({ ...current, ...patch }));
   }, []);
 
-  const update = useCallback((patch: Partial<TravelDraft>) => persist({ ...draft, ...patch }), [draft, persist]);
+  const updatePreference = useCallback((patch: Partial<TravelDraft['preference']>) => {
+    setDraft((current) => ({ ...current, preference: { ...current.preference, ...patch } }));
+  }, []);
 
-  const updatePreference = useCallback(
-    (patch: Partial<TravelDraft['preference']>) => persist({ ...draft, preference: { ...draft.preference, ...patch } }),
-    [draft, persist],
-  );
+  const addPlace = useCallback((place: PlaceCandidate) => {
+    setDraft((current) => {
+      if (current.required_places.some((item) => item.provider_place_id === place.provider_place_id)) return current;
+      return { ...current, required_places: [...current.required_places, place] };
+    });
+  }, []);
 
-  const addPlace = useCallback(
-    (place: PlaceCandidate) => {
-      if (draft.required_places.some((item) => item.provider_place_id === place.provider_place_id)) return;
-      persist({ ...draft, required_places: [...draft.required_places, place] });
-    },
-    [draft, persist],
-  );
+  const removePlace = useCallback((providerPlaceId: string) => {
+    setDraft((current) => ({
+      ...current,
+      required_places: current.required_places.filter((item) => item.provider_place_id !== providerPlaceId),
+    }));
+  }, []);
 
-  const removePlace = useCallback(
-    (providerPlaceId: string) => {
-      persist({
-        ...draft,
-        required_places: draft.required_places.filter((item) => item.provider_place_id !== providerPlaceId),
-      });
-    },
-    [draft, persist],
-  );
-
-  const reset = useCallback(() => persist(emptyDraft), [persist]);
+  const reset = useCallback(() => setDraft(createEmptyDraft()), []);
 
   const value = useMemo(
-    () => ({ draft, update, updatePreference, addPlace, removePlace, reset }),
-    [draft, update, updatePreference, addPlace, removePlace, reset],
+    () => ({ draft, hydrated, update, updatePreference, addPlace, removePlace, reset }),
+    [draft, hydrated, update, updatePreference, addPlace, removePlace, reset],
   );
 
   return <TravelDraftContext.Provider value={value}>{children}</TravelDraftContext.Provider>;

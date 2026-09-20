@@ -7,20 +7,24 @@ export function Header({
   right,
   showBell,
   unread = 0,
+  className,
 }: {
   title: string;
   onBack?: () => void;
   right?: ReactNode;
   showBell?: boolean;
   unread?: number;
+  className?: string;
 }) {
   const navigate = useNavigate();
   return (
-    <header className="header">
+    <header className={`header${className ? ` ${className}` : ''}`}>
       <div className="header-side">
         {onBack ? (
           <button type="button" className="icon-btn" onClick={onBack} aria-label="뒤로">
-            ‹
+            <span className="header-back-mark" aria-hidden="true">
+              ‹
+            </span>
           </button>
         ) : null}
       </div>

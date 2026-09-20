@@ -39,6 +39,34 @@ export const paceOptions = [
   { value: 'FULL', label: '알차' },
 ] as const;
 
+export const travelPaceOptions = [
+  { value: 'RELAXED', label: '여유롭게' },
+  { value: 'BALANCED', label: '균형있게' },
+  { value: 'PACKED', label: '알차게' },
+] as const;
+
+export const travelTransportOptions = [
+  { value: 'WALK', label: '도보' },
+  { value: 'CAR', label: '자동차' },
+  { value: 'PUBLIC_TRANSPORT', label: '대중교통' },
+] as const;
+
+export const travelThemeOptions = [
+  { value: 'NATURE', label: '자연' },
+  { value: 'FOOD', label: '미식' },
+  { value: 'CULTURE', label: '문화' },
+  { value: 'REST', label: '휴식' },
+  { value: 'SNS', label: 'SNS' },
+  { value: 'ACTIVITY', label: '액티비티' },
+] as const;
+
+export const travelFoodOptions = [
+  { value: 'KOREAN', label: '한식' },
+  { value: 'JAPANESE', label: '일식' },
+  { value: 'CHINESE', label: '중식' },
+  { value: 'WESTERN', label: '양식' },
+] as const;
+
 export function toDatetime(date?: string, time?: string) {
   if (!date) return '';
   return `${date}T${time || '10:00'}:00`;

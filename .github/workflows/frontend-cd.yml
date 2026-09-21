@@ -2,6 +2,10 @@ name: Frontend CD
 
 # 실행할 때 deploy 체크를 켜야 실제 S3 업로드와 CloudFront 캐시 삭제가 수행됩니다. 기본값은 false라서 처음에는 안전하게 빌드와 AWS 인증만 확인합니다.
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
     inputs:
       deploy:
@@ -59,7 +63,7 @@ jobs:
 
       # GitHub OIDC 토큰을 AWS에 전달해 audigo-frontend-cd-role의 임시 자격 증명을 받습니다.
       - name: Configure AWS credentials with OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -70,7 +74,7 @@ jobs:
 
       # 사용자가 실행 화면에서 deploy = true를 선택했을 때만 아래 단계를 실행합니다. 따라서 기본 실행에서는 S3 파일과 서비스가 바뀌지 않습니다.
       - name: Deploy application shell to S3
-        if: ${{ inputs.deploy }}
+        if: ${{ github.event_name == 'push' || inputs.deploy }}
         run: |
           aws s3 sync dist/ "s3://${S3_BUCKET}/" \
             --delete \
@@ -78,14 +82,14 @@ jobs:
             --cache-control "no-cache"
 
       - name: Deploy immutable assets to S3
-        if: ${{ inputs.deploy }}
+        if: ${{ github.event_name == 'push' || inputs.deploy }}
         run: |
           aws s3 sync dist/assets/ "s3://${S3_BUCKET}/assets/" \
             --delete \
             --cache-control "public,max-age=31536000,immutable"
 
       - name: Invalidate CloudFront cache
-        if: ${{ inputs.deploy }}
+        if: ${{ github.event_name == 'push' || inputs.deploy }}
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \

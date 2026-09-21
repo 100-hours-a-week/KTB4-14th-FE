@@ -1,0 +1,92 @@
+name: Frontend CD
+
+# 실행할 때 deploy 체크를 켜야 실제 S3 업로드와 CloudFront 캐시 삭제가 수행됩니다. 기본값은 false라서 처음에는 안전하게 빌드와 AWS 인증만 확인합니다.
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "실제 S3 업로드 및 CloudFront 캐시 무효화를 실행합니다."
+        required: true
+        type: boolean
+        default: false
+
+
+permissions:
+  contents: read # GitHub Actions가 저장소 코드를 내려받는 권한
+  id-token: write # GitHub가 OIDC 토큰을 발급하는 권한
+
+
+# 프론트 배포가 동시에 두개 실행되는 것을 막는다. 이전 배포가 끝날 때까지 다음 배포는 대기한다.
+concurrency:
+  group: frontend-production
+  cancel-in-progress: false
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # 환경 변수 설정
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+
+    steps:
+      # 실행한 Main의 소스 코드를 러너에 내려 받는다.    
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # Vite 7을 실행할 수 있는 Node.js 22 환경을 설치하고, npm 캐시를 사용하도록 설정한다.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # package-lock.json 기준으로 의존성을 정확히 설치합니다.
+      - name: Install dependencies
+        run: npm ci
+
+      # Vite 빌드를 실행합니다. 결과물이 dist/에 생성됩니다.
+      - name: Build frontend
+        run: npm run build
+
+      # 빌드가 끝난 뒤 CloudFront가 제공해야 할 시작 파일 dist/index.html이 실제로 만들어졌는지 확인합니다.
+      - name: Verify build output
+        run: test -f dist/index.html
+
+      # GitHub OIDC 토큰을 AWS에 전달해 audigo-frontend-cd-role의 임시 자격 증명을 받습니다.
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 현재 Action이 실제로 어떤 AWS 계정·Role로 인증됐는지 로그에 출력합니다. 첫 실행에서 OIDC 구성이 맞는지 확인하는 핵심 단계입니다.
+      - name: Verify assumed AWS identity
+        run: aws sts get-caller-identity
+
+      # 사용자가 실행 화면에서 deploy = true를 선택했을 때만 아래 단계를 실행합니다. 따라서 기본 실행에서는 S3 파일과 서비스가 바뀌지 않습니다.
+      - name: Deploy application shell to S3
+        if: ${{ inputs.deploy }}
+        run: |
+          aws s3 sync dist/ "s3://${S3_BUCKET}/" \
+            --delete \
+            --exclude "assets/*" \
+            --cache-control "no-cache"
+
+      - name: Deploy immutable assets to S3
+        if: ${{ inputs.deploy }}
+        run: |
+          aws s3 sync dist/assets/ "s3://${S3_BUCKET}/assets/" \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable"
+
+      - name: Invalidate CloudFront cache
+        if: ${{ inputs.deploy }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"

@@ -37,6 +37,12 @@ jobs:
       S3_BUCKET: ${{ vars.S3_BUCKET }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
 
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_USE_MOCK: ${{ vars.VITE_USE_MOCK }}
+      VITE_KAKAO_REST_KEY: ${{ vars.VITE_KAKAO_REST_KEY }}
+      VITE_KAKAO_REDIRECT_URI: ${{ vars.VITE_KAKAO_REDIRECT_URI }}
+      VITE_KAKAO_JS_KEY: ${{ vars.VITE_KAKAO_JS_KEY }}   
+
     steps:
       # 실행한 Main의 소스 코드를 러너에 내려 받는다.    
       - name: Checkout source

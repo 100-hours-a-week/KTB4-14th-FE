@@ -20,6 +20,24 @@ type KakaoMapApi = {
     Marker: new (options: { map: KakaoMapInstance; position: KakaoLatLng; title?: string }) => {
       setMap: (map: KakaoMapInstance | null) => void;
     };
+    Polyline: new (options: {
+      map: KakaoMapInstance;
+      path: KakaoLatLng[];
+      strokeWeight: number;
+      strokeColor: string;
+      strokeOpacity: number;
+      strokeStyle: string;
+    }) => {
+      setMap: (map: KakaoMapInstance | null) => void;
+    };
+    CustomOverlayMap: new (options: {
+      map: KakaoMapInstance;
+      position: KakaoLatLng;
+      content: string;
+      yAnchor?: number;
+    }) => {
+      setMap: (map: KakaoMapInstance | null) => void;
+    };
     event: {
       addListener: (target: unknown, eventName: string, callback: () => void) => void;
     };

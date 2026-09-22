@@ -956,10 +956,32 @@
 
 .place-item {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 10px 0;
   border-top: 1px solid var(--line);
+}
+
+.place-item.completed strong {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.completion-check {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--white);
+  font-weight: 900;
+}
+
+.completion-check.checked {
+  border-color: var(--navy);
+  background: var(--navy);
 }
 
 .route-item {
@@ -967,6 +989,71 @@
   font-size: 12px;
   font-weight: 700;
   padding: 8px 0;
+}
+
+.route-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.route-summary span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.route-detail {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.route-realtime {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--primary-dark);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.route-index-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.route-index-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.route-index-row .map-pin {
+  position: static;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+
+.route-map-number {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+  box-shadow: 0 2px 5px rgba(28, 36, 48, 0.25);
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .music {

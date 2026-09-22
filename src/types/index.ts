@@ -148,21 +148,42 @@ export type ItineraryPlaceItem = {
   itinerary_item_id: number;
   type: 'PLACE';
   place_id?: number;
+  travel_plan_place_id?: number;
+  provider?: 'KAKAO';
+  provider_place_id?: string;
   name: string;
   address?: string;
   start_time?: string;
+  end_time?: string;
   stay_minutes?: number;
   latitude?: number;
   longitude?: number;
   memo?: string;
+  place_type?: 'RESTAURANT' | 'ACCOMMODATION' | 'TOURISM';
+  is_completed?: boolean;
+  completed_at?: string | null;
 };
 
 export type ItineraryRouteItem = {
   itinerary_item_id: number;
   type: 'ROUTE';
-  duration_minutes: number;
-  distance_km: number;
-  transport: TransportType;
+  route_segment_id?: number;
+  from_itinerary_item_id?: number;
+  to_itinerary_item_id?: number;
+  duration_minutes?: number;
+  distance_meter?: number;
+  distance_km?: number;
+  cost?: number;
+  order?: number;
+  transport?: TransportType;
+  transport_type?: 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
+  line_name?: string | null;
+  vehicle_number?: string | null;
+  next_arrival_minutes?: number | null;
+  estimated_departure_at?: string | null;
+  estimated_arrival_at?: string | null;
+  realtime?: boolean;
+  last_refreshed_at?: string | null;
 };
 
 export type ItineraryItem = ItineraryPlaceItem | ItineraryRouteItem;
@@ -172,6 +193,7 @@ export type ItineraryDay = {
   day_number: number;
   date: string;
   items: ItineraryItem[];
+  routes?: ItineraryRouteItem[];
 };
 
 export type RecommendedTrack = {
@@ -185,7 +207,7 @@ export type TravelDetail = TravelSummary & {
   days: number;
   preference?: TravelPreference;
   itinerary_days: ItineraryDay[];
-  recommended_music: RecommendedTrack[];
+  recommended_music?: RecommendedTrack[];
 };
 
 export type ChecklistItem = {

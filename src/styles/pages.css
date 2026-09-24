@@ -278,6 +278,20 @@
   color: var(--white);
 }
 
+.route-map-number {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  background: var(--navy);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+}
+
 .search-row {
   display: flex;
   gap: 8px;

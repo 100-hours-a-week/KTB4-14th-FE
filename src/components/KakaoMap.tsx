@@ -30,7 +30,7 @@ type KakaoMapApi = {
     }) => {
       setMap: (map: KakaoMapInstance | null) => void;
     };
-    CustomOverlayMap: new (options: {
+    CustomOverlay: new (options: {
       map: KakaoMapInstance;
       position: KakaoLatLng;
       content: string;

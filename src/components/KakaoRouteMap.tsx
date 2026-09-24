@@ -7,6 +7,7 @@ type KakaoLatLng = { getLat: () => number; getLng: () => number };
 type KakaoMapInstance = { setCenter: (position: KakaoLatLng) => void; setBounds: (bounds: unknown) => void };
 type KakaoMarker = { setMap: (map: KakaoMapInstance | null) => void };
 type KakaoPolyline = { setMap: (map: KakaoMapInstance | null) => void };
+type KakaoOverlay = { setMap: (map: KakaoMapInstance | null) => void };
 
 const SCRIPT_SELECTOR = 'script[data-audigo-kakao-map]';
 const SCRIPT_URL = 'https://dapi.kakao.com/v2/maps/sdk.js';
@@ -65,7 +66,7 @@ export function KakaoRouteMap({ points }: { points: RoutePoint[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMapInstance | null>(null);
   const markersRef = useRef<KakaoMarker[]>([]);
-  const overlaysRef = useRef<Array<{ setMap: (map: KakaoMapInstance | null) => void }>>([]);
+  const overlaysRef = useRef<KakaoOverlay[]>([]);
   const polylineRef = useRef<KakaoPolyline | null>(null);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -112,7 +113,7 @@ export function KakaoRouteMap({ points }: { points: RoutePoint[] }) {
       bounds.extend(position);
       const marker = new window.kakao!.maps.Marker({ map, position, title: `${index + 1}. ${valid[index].name}` });
       markersRef.current.push(marker);
-      const overlay = new window.kakao!.maps.CustomOverlayMap({
+      const overlay = new window.kakao!.maps.CustomOverlay({
         map,
         position,
         content: `<span class="route-map-number">${index + 1}</span>`,

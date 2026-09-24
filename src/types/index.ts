@@ -234,26 +234,34 @@ export type TravelVideo = {
 };
 
 export type NotificationType =
-  | 'TRAVEL_READY'
-  | 'NEW_CHAT'
-  | 'TRAVEL_D1'
+  | 'MATCH_SUCCESS'
+  | 'NEW_MESSAGE'
+  | 'TRAVEL_BEFORE'
+  | 'TRAVEL_COMPLETE'
   | 'TRAVEL_FAILED';
+
+export type NotificationTargetType = 'MATCH_CONNECTION' | 'CHAT_ROOM' | 'TRAVEL_PLAN';
 
 export type AppNotification = {
   notification_id: number;
   type: NotificationType;
   title: string;
+  content?: string;
   body: string;
+  target_type?: NotificationTargetType;
+  target_id?: number;
   is_read: boolean;
   created_at: string;
+  read_at?: string | null;
   travel_plan_id?: number;
 };
 
 export type NotificationSettings = {
-  travel_ready: boolean;
-  new_chat: boolean;
-  travel_d1: boolean;
-  travel_failed: boolean;
+  match_success_enabled: boolean;
+  chat_enabled: boolean;
+  travel_before_enabled: boolean;
+  travel_complete_enabled: boolean;
+  notification_enabled: boolean;
 };
 
 export type MatchingSettings = {

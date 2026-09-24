@@ -1,4 +1,4 @@
-import { notificationsApi, travelsApi } from '@/api';
+import { travelsApi } from '@/api';
 import { Header } from '@/components/Header';
 import { TripHeroCard, TripListCard } from '@/components/TripCards';
 import { useAuth } from '@/context/AuthContext';
@@ -11,18 +11,19 @@ export function HomePage() {
   const { user } = useAuth();
   const [upcoming, setUpcoming] = useState<TravelSummary | null>(null);
   const [recent, setRecent] = useState<TravelSummary[]>([]);
-  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([travelsApi.getUpcoming(), travelsApi.getRecent(), notificationsApi.unreadCount()]).then(
-      ([next, rec, count]) => {
-        if (!alive) return;
-        setUpcoming(next);
-        setRecent(rec);
-        setUnread(count.count);
-      },
-    );
+    travelsApi.getUpcoming().then((next) => {
+      if (alive) setUpcoming(next);
+    }).catch(() => {
+      if (alive) setUpcoming(null);
+    });
+    travelsApi.getRecent().then((rec) => {
+      if (alive) setRecent(rec);
+    }).catch(() => {
+      if (alive) setRecent([]);
+    });
     return () => {
       alive = false;
     };
@@ -30,7 +31,7 @@ export function HomePage() {
 
   return (
     <section className="screen">
-      <Header title="내 여행" showBell unread={unread} />
+      <Header title="내 여행" showBell />
       <div className="scroll">
         <div className="kicker">내 여행</div>
         <p className="hello">안녕하세요, {user?.nickname ?? '여행자'}님</p>

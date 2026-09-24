@@ -1,3 +1,4 @@
+import { useNotifications } from '@/context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
@@ -17,6 +18,8 @@ export function Header({
   className?: string;
 }) {
   const navigate = useNavigate();
+  const notifications = useNotifications();
+  const badgeCount = unread || notifications.unread;
   return (
     <header className={`header${className ? ` ${className}` : ''}`}>
       <div className="header-side">
@@ -33,7 +36,7 @@ export function Header({
         {showBell ? (
           <button type="button" className="icon-btn" onClick={() => navigate('/notifications')} aria-label="알림">
             🔔
-            {unread > 0 ? <span className="badge-dot" /> : null}
+            {badgeCount > 0 ? <span className="badge-dot" /> : null}
           </button>
         ) : (
           right

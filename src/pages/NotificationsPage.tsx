@@ -1,13 +1,15 @@
 import { notificationsApi } from '@/api';
 import { Header } from '@/components/Header';
+import { useNotifications } from '@/context/NotificationContext';
 import type { AppNotification, NotificationType } from '@/types';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ICONS: Record<NotificationType, string> = {
-  TRAVEL_READY: '✦',
-  NEW_CHAT: '💬',
-  TRAVEL_D1: '📅',
+  MATCH_SUCCESS: '✓',
+  NEW_MESSAGE: '💬',
+  TRAVEL_BEFORE: '📅',
+  TRAVEL_COMPLETE: '✦',
   TRAVEL_FAILED: '!',
 };
 
@@ -18,8 +20,12 @@ function timeLabel(value: string) {
 
 export function NotificationsPage() {
   const navigate = useNavigate();
+  const notifications = useNotifications();
   const [items, setItems] = useState<AppNotification[]>([]);
-  const load = async () => setItems(await notificationsApi.list());
+  const load = async () => {
+    setItems(await notificationsApi.list());
+    await notifications.refreshUnread();
+  };
 
   useEffect(() => {
     void load();
@@ -37,6 +43,7 @@ export function NotificationsPage() {
             style={{ padding: 0 }}
             onClick={async () => {
               await notificationsApi.markAllRead();
+              notifications.markAllReadLocally();
               await load();
             }}>
             모두 읽음
@@ -53,7 +60,9 @@ export function NotificationsPage() {
               type="button"
               className={`noti-row${item.is_read ? '' : ' unread'}`}
               onClick={async () => {
+                const wasUnread = !item.is_read;
                 await notificationsApi.markRead(item.notification_id);
+                if (wasUnread) notifications.markOneReadLocally();
                 await load();
                 if (item.travel_plan_id) navigate(`/itinerary/${item.travel_plan_id}`);
               }}>

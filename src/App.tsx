@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { TravelDraftProvider } from '@/context/TravelDraftContext';
 import { TabLayout } from '@/components/Layout';
@@ -42,31 +43,33 @@ export default function App() {
           <div className="app-shell">
             <div className="phone">
               <ToastProvider>
-                <Routes>
-                  <Route path="/" element={<Gate />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/auth/kakao" element={<KakaoCallbackPage />} />
-                  <Route element={<TabLayout />}>
-                    <Route path="/home" element={<HomePage />} />
-                    <Route path="/matching" element={<MatchingPage />} />
-                    <Route path="/chat" element={<ChatPage />} />
-                    <Route path="/my" element={<MyPage />} />
-                  </Route>
-                  <Route path="/notifications" element={<NotificationsPage />} />
-                  <Route path="/create-travel" element={<CreateTravelPage />} />
-                  <Route path="/create-travel/preference" element={<PreferencePage />} />
-                  <Route path="/create-travel/places" element={<PlacesPage />} />
-                  <Route path="/create-travel/map-search" element={<MapSearchPage />} />
-                  <Route path="/generating/:id" element={<GeneratingPage />} />
-                  <Route path="/itinerary/:id" element={<ItineraryPage />} />
-                  <Route path="/checklist/:id" element={<ChecklistPage />} />
-                  <Route path="/video/:id" element={<VideoPage />} />
-                  <Route path="/my-trips" element={<MyTripsPage />} />
-                  <Route path="/matching-settings" element={<MatchingSettingsPage />} />
-                  <Route path="/notification-settings" element={<NotificationSettingsPage />} />
-                  <Route path="/policies" element={<PoliciesPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                <NotificationProvider>
+                  <Routes>
+                    <Route path="/" element={<Gate />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/auth/kakao" element={<KakaoCallbackPage />} />
+                    <Route element={<TabLayout />}>
+                      <Route path="/home" element={<HomePage />} />
+                      <Route path="/matching" element={<MatchingPage />} />
+                      <Route path="/chat" element={<ChatPage />} />
+                      <Route path="/my" element={<MyPage />} />
+                    </Route>
+                    <Route path="/notifications" element={<NotificationsPage />} />
+                    <Route path="/create-travel" element={<CreateTravelPage />} />
+                    <Route path="/create-travel/preference" element={<PreferencePage />} />
+                    <Route path="/create-travel/places" element={<PlacesPage />} />
+                    <Route path="/create-travel/map-search" element={<MapSearchPage />} />
+                    <Route path="/generating/:id" element={<GeneratingPage />} />
+                    <Route path="/itinerary/:id" element={<ItineraryPage />} />
+                    <Route path="/checklist/:id" element={<ChecklistPage />} />
+                    <Route path="/video/:id" element={<VideoPage />} />
+                    <Route path="/my-trips" element={<MyTripsPage />} />
+                    <Route path="/matching-settings" element={<MatchingSettingsPage />} />
+                    <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+                    <Route path="/policies" element={<PoliciesPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </NotificationProvider>
               </ToastProvider>
             </div>
           </div>

@@ -42,7 +42,7 @@ export function ItineraryPage() {
   if (loading && !detail) {
     return (
       <section className="screen">
-        <Header title="추천 경로" onBack={() => navigate(-1)} showBell />
+        <Header title="추천 경로" onBack={() => navigate('/home', { replace: true })} showBell />
         <div className="empty-box">여행 일정을 불러오는 중이에요.</div>
       </section>
     );
@@ -51,7 +51,7 @@ export function ItineraryPage() {
   if (!detail) {
     return (
       <section className="screen">
-        <Header title="추천 경로" onBack={() => navigate(-1)} showBell />
+        <Header title="추천 경로" onBack={() => navigate('/home', { replace: true })} showBell />
         <div className="empty-box">{error ?? '여행 일정을 찾을 수 없어요.'}</div>
       </section>
     );
@@ -59,7 +59,7 @@ export function ItineraryPage() {
 
   return (
     <section className="screen">
-      <Header title="추천 경로" onBack={() => navigate(-1)} showBell />
+      <Header title="추천 경로" onBack={() => navigate('/home', { replace: true })} showBell />
       <div className="scroll">
         <div className="row" style={{ alignItems: 'flex-start', marginBottom: 16 }}>
           <div style={{ flex: 1 }}>

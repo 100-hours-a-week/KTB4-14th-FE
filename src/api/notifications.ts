@@ -1,5 +1,5 @@
 ﻿import { mockMatchingSettings, mockNotifications, mockNotificationSettings } from '@/mocks/data';
-import { apiRequest, USE_MOCK } from '@/api/client';
+import { API_BASE_URL, apiRequest, USE_MOCK } from '@/api/client';
 import type { AppNotification, MatchingSettings, NotificationSettings } from '@/types';
 
 let localNotifications = mockNotifications.map((item) => ({ ...item }));
@@ -55,6 +55,21 @@ export const notificationsApi = {
       method: 'PATCH',
       body: settings,
     });
+  },
+
+  subscribe(onNotification: (notification: AppNotification) => void) {
+    if (USE_MOCK) return null;
+    const eventSource = new EventSource(`${API_BASE_URL}/api/notifications/subscribe`, {
+      withCredentials: true,
+    });
+    eventSource.addEventListener('notification', (event) => {
+      try {
+        onNotification(JSON.parse(event.data) as AppNotification);
+      } catch {
+        // 잘못된 SSE payload는 화면 흐름을 막지 않는다.
+      }
+    });
+    return eventSource;
   },
 };
 

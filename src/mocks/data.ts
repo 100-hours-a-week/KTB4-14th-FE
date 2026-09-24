@@ -349,26 +349,31 @@ export const mockVideo: TravelVideo = {
 export const mockNotifications: AppNotification[] = [
   {
     notification_id: 1,
-    type: 'TRAVEL_READY',
+    type: 'TRAVEL_COMPLETE',
     title: '여행 추천 완료',
     body: '제주 2박 3일 일정이 완성됐어요.',
+    target_type: 'TRAVEL_PLAN',
+    target_id: 101,
     is_read: false,
     created_at: '2026-09-14T09:12:00',
     travel_plan_id: 101,
   },
   {
     notification_id: 2,
-    type: 'NEW_CHAT',
+    type: 'NEW_MESSAGE',
     title: '새 채팅',
     body: '한지승이 메시지를 보냈어요.',
+    target_type: 'CHAT_ROOM',
     is_read: false,
     created_at: '2026-09-13T18:40:00',
   },
   {
     notification_id: 3,
-    type: 'TRAVEL_D1',
+    type: 'TRAVEL_BEFORE',
     title: '여행 D-1',
     body: '내일 제주 여행이 시작됩니다.',
+    target_type: 'TRAVEL_PLAN',
+    target_id: 101,
     is_read: true,
     created_at: '2026-09-17T08:00:00',
     travel_plan_id: 101,
@@ -378,16 +383,18 @@ export const mockNotifications: AppNotification[] = [
     type: 'TRAVEL_FAILED',
     title: '여행 일정 생성 실패',
     body: '제주 2박 3일 일정 생성이 실패했어요.',
+    target_type: 'TRAVEL_PLAN',
     is_read: true,
     created_at: '2026-09-10T21:20:00',
   },
 ];
 
 export const mockNotificationSettings: NotificationSettings = {
-  travel_ready: true,
-  new_chat: true,
-  travel_d1: true,
-  travel_failed: true,
+  match_success_enabled: true,
+  chat_enabled: true,
+  travel_before_enabled: true,
+  travel_complete_enabled: true,
+  notification_enabled: true,
 };
 
 export const mockMatchingSettings: MatchingSettings = {

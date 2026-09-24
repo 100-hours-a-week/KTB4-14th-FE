@@ -16,10 +16,12 @@ export function MyTripsPage() {
   return (
     <section className="screen">
       <Header title="여행 기록 보기" onBack={() => navigate(-1)} showBell />
-      <div className="scroll" style={{ display: 'grid', gap: 10 }}>
-        {trips.map((trip) => (
-          <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/itinerary/${trip.travel_plan_id}`)} />
-        ))}
+      <div className="scroll my-trips-scroll">
+        <div className="my-trips-list">
+          {trips.map((trip) => (
+            <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/itinerary/${trip.travel_plan_id}`)} />
+          ))}
+        </div>
       </div>
     </section>
   );

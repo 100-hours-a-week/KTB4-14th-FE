@@ -316,7 +316,8 @@
   background: var(--white);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  min-height: 70px;
+  padding: 14px 16px;
   width: 100%;
   text-align: left;
 }

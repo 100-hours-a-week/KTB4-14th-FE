@@ -302,7 +302,7 @@ export const mockBusanDetail: TravelDetail = {
           alighting_stop_name: '국제시장 정류장',
           next_arrival_minutes: 10,
           estimated_arrival_at: '2026-08-04T14:08:00+09:00',
-          cost: 1500,
+          total_fare_amount: 1500,
           realtime: true,
         },
         {

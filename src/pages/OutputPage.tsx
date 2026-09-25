@@ -250,6 +250,7 @@ function PlacesOutput({
               {day.items.map((item) => {
                 if (item.type === 'ROUTE') return null;
                 const currentNumber = firstPlaceNumber + dayPlaces.indexOf(item);
+                const isLastPlace = dayPlaces[dayPlaces.length - 1]?.itinerary_item_id === item.itinerary_item_id;
                 const routeEntry = dayRoutes.find((entry) => entry.from?.itinerary_item_id === item.itinerary_item_id);
                 return (
                   <OutputPlaceRow
@@ -258,6 +259,7 @@ function PlacesOutput({
                     number={currentNumber}
                     route={routeEntry?.route}
                     boardingPlace={routeEntry?.from ?? item}
+                    showCompletion={!isLastPlace}
                     routeExpanded={routeEntry?.route.itinerary_item_id === expandedRouteId}
                     updating={updatingItemId === item.itinerary_item_id}
                     onToggle={() => void onToggleCompletion(item)}
@@ -283,6 +285,7 @@ function OutputPlaceRow({
   number,
   route,
   boardingPlace,
+  showCompletion,
   routeExpanded,
   updating,
   onToggle,
@@ -293,6 +296,7 @@ function OutputPlaceRow({
   number: number;
   route?: ItineraryRouteItem;
   boardingPlace?: ItineraryPlaceItem;
+  showCompletion: boolean;
   routeExpanded: boolean;
   updating: boolean;
   onToggle: () => void;
@@ -323,7 +327,7 @@ function OutputPlaceRow({
             onToggle={onToggleRoute}
             onToggleCompletion={onToggle}
           />
-        ) : (
+        ) : showCompletion ? (
           <button
             type="button"
             className={`completion-check output-completion${place.is_completed ? ' checked' : ''}`}
@@ -332,7 +336,7 @@ function OutputPlaceRow({
             onClick={onToggle}>
             {place.is_completed ? '✓' : ''}
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -399,7 +403,7 @@ function RouteInfoPanel({
   const secondaryInfo = [
     route.estimated_arrival_at ? `${formatDateTime(route.estimated_arrival_at)} 도착` : null,
     route.duration_minutes != null ? `${route.duration_minutes}분` : null,
-    route.cost != null ? `${route.cost.toLocaleString()}원` : route.transport === 'WALK' ? '무료' : null,
+    route.total_fare_amount != null ? `${route.total_fare_amount.toLocaleString()}원` : route.transport === 'WALK' ? '무료' : null,
   ].filter(Boolean).join(' · ');
 
   return (
@@ -558,7 +562,7 @@ function findNextPlace(items: ItineraryItem[], index: number) {
 
 function placeMeta(place: ItineraryPlaceItem) {
   const time = place.start_time
-    ? `${place.start_time}${place.end_time ? ` - ${place.end_time}` : ''}`
+    ? `${formatTimeToMinute(place.start_time)}${place.end_time ? ` - ${formatTimeToMinute(place.end_time)}` : ''}`
     : '';
   const stay = place.stay_minutes ? `${place.stay_minutes}분 체류` : '';
   const type = place.place_type === 'RESTAURANT'
@@ -569,6 +573,11 @@ function placeMeta(place: ItineraryPlaceItem) {
   return [time, type, stay].filter(Boolean).join(' · ');
 }
 
+function formatTimeToMinute(value: string) {
+  const match = value.match(/(?:^|T)(\d{1,2}):(\d{2})/);
+  return match ? `${match[1].padStart(2, '0')}:${match[2]}` : value;
+}
+
 function routeSummary(route: ItineraryRouteItem) {
   const transport = transportLabel(route);
   const duration = route.duration_minutes != null ? `${route.duration_minutes}분` : '';
@@ -577,8 +586,8 @@ function routeSummary(route: ItineraryRouteItem) {
     : route.distance_km != null
       ? `${route.distance_km}km`
       : '';
-  const cost = route.cost != null ? `${route.cost.toLocaleString()}원` : transport === '도보' ? '무료' : '';
-  return [transport, duration, distance, cost].filter(Boolean).join(' · ');
+  const fare = route.total_fare_amount != null ? `${route.total_fare_amount.toLocaleString()}원` : transport === '도보' ? '무료' : '';
+  return [transport, duration, distance, fare].filter(Boolean).join(' · ');
 }
 
 function transportLabel(route: ItineraryRouteItem) {
@@ -611,7 +620,10 @@ function transitLineLabel(route: ItineraryRouteItem) {
   const lineName = route.line_name?.trim();
   const vehicleNumber = route.vehicle_number?.trim();
   const formattedLineName = lineName && /^\d+$/.test(lineName) ? `${lineName}번` : lineName;
-  return [formattedLineName, vehicleNumber].filter(Boolean).join(' · ') || '노선 정보 확인 중';
+  const sameLine = formattedLineName?.replace(/번$/, '') === vehicleNumber?.replace(/번$/, '');
+  return (sameLine ? [formattedLineName] : [formattedLineName, vehicleNumber])
+    .filter(Boolean)
+    .join(' · ') || '노선 정보 확인 중';
 }
 
 function nextTransitArrivalLabel(route: ItineraryRouteItem) {

@@ -186,7 +186,7 @@ type BackendRoute = {
   transport_type: 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
   duration_minutes?: number | null;
   distance_meter?: number | null;
-  cost?: number | null;
+  total_fare_amount?: number | null;
   order: number;
   line_name?: string | null;
   vehicle_number?: string | null;
@@ -229,7 +229,7 @@ function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {
       duration_minutes: route.duration_minutes ?? undefined,
       distance_meter: route.distance_meter ?? undefined,
       distance_km: route.distance_meter == null ? undefined : route.distance_meter / 1000,
-      cost: route.cost ?? undefined,
+      total_fare_amount: route.total_fare_amount ?? undefined,
       order: route.order,
       line_name: route.line_name,
       vehicle_number: route.vehicle_number,

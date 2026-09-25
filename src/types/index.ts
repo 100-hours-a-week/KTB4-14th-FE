@@ -173,7 +173,7 @@ export type ItineraryRouteItem = {
   duration_minutes?: number;
   distance_meter?: number;
   distance_km?: number;
-  cost?: number;
+  total_fare_amount?: number;
   order?: number;
   transport?: TransportType;
   transport_type?: 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';

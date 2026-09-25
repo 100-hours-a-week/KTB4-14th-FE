@@ -8,7 +8,7 @@ import { ChecklistPage } from '@/pages/ChecklistPage';
 import { CreateTravelPage } from '@/pages/CreateTravelPage';
 import { GeneratingPage } from '@/pages/GeneratingPage';
 import { HomePage } from '@/pages/HomePage';
-import { ItineraryPage } from '@/pages/ItineraryPage';
+import { ItineraryPage, OutputPlacesPage, OutputRoutesPage } from '@/pages/OutputPage';
 import { KakaoCallbackPage } from '@/pages/KakaoCallbackPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { MapSearchPage } from '@/pages/MapSearchPage';
@@ -60,6 +60,9 @@ export default function App() {
                     <Route path="/create-travel/places" element={<PlacesPage />} />
                     <Route path="/create-travel/map-search" element={<MapSearchPage />} />
                     <Route path="/generating/:id" element={<GeneratingPage />} />
+                    <Route path="/output/:id/places" element={<OutputPlacesPage />} />
+                    <Route path="/output/:id/routes" element={<OutputRoutesPage />} />
+                    <Route path="/output/:id" element={<Navigate to="places" replace />} />
                     <Route path="/itinerary/:id" element={<ItineraryPage />} />
                     <Route path="/checklist/:id" element={<ChecklistPage />} />
                     <Route path="/video/:id" element={<VideoPage />} />

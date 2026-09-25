@@ -37,7 +37,7 @@ export function HomePage() {
         <p className="hello">안녕하세요, {user?.nickname ?? '여행자'}님</p>
         <h2 className="page-title">다음 여행을 이어서 준비해요</h2>
         {upcoming ? (
-          <TripHeroCard trip={upcoming} onClick={() => navigate(`/itinerary/${upcoming.travel_plan_id}`)} />
+          <TripHeroCard trip={upcoming} onClick={() => navigate(`/output/${upcoming.travel_plan_id}/places`)} />
         ) : (
           <div className="empty-box">여행을 만들어볼까요?</div>
         )}
@@ -64,7 +64,7 @@ export function HomePage() {
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
             {recent.map((trip) => (
-              <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/itinerary/${trip.travel_plan_id}`)} />
+              <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/output/${trip.travel_plan_id}/places`)} />
             ))}
           </div>
         )}

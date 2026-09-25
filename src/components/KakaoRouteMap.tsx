@@ -133,10 +133,10 @@ export function KakaoRouteMap({ points }: { points: RoutePoint[] }) {
   }, [points, ready]);
 
   if (!appKey) {
-    return <div className="kakao-map-fallback">카카오 지도 키가 없어 번호로 경로를 표시할 수 있어요.</div>;
+    return <FallbackRouteMap points={points} message="카카오 지도 키가 없어 경로 미리보기를 표시해요." />;
   }
   if (loadError) {
-    return <div className="kakao-map-fallback">카카오 지도를 불러오지 못했어요.</div>;
+    return <FallbackRouteMap points={points} message="카카오 지도를 불러오지 못해 경로 미리보기로 표시해요." />;
   }
   if (!ready) {
     return <div className="kakao-map-fallback">카카오 지도를 불러오는 중이에요.</div>;
@@ -145,4 +145,44 @@ export function KakaoRouteMap({ points }: { points: RoutePoint[] }) {
     return <div className="kakao-map-fallback">장소 좌표가 없어 지도 경로를 표시할 수 없어요.</div>;
   }
   return <div ref={containerRef} className="kakao-map-layer" aria-label="카카오 이동 경로 지도" />;
+}
+
+function FallbackRouteMap({
+  points,
+  message,
+}: {
+  points: RoutePoint[];
+  message: string;
+}) {
+  const validPoints = points.filter((point) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude));
+  const positions = validPoints.map((_, index) => fallbackPosition(index, validPoints.length));
+  const polyline = positions.map(([x, y]) => `${x},${y}`).join(' ');
+
+  return (
+    <div className="kakao-fallback-route" aria-label="이동 경로 미리보기">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points={polyline} />
+      </svg>
+      {validPoints.map((point, index) => {
+        const [left, top] = positions[index];
+        return (
+          <span
+            key={point.itinerary_item_id}
+            className="kakao-fallback-pin"
+            style={{ left: `${left}%`, top: `${top}%` }}
+            title={`${index + 1}. ${point.name}`}>
+            {index + 1}
+          </span>
+        );
+      })}
+      <span className="kakao-fallback-caption">{message}</span>
+    </div>
+  );
+}
+
+function fallbackPosition(index: number, total: number): [number, number] {
+  if (total <= 1) return [50, 48];
+  const progress = index / (total - 1);
+  const wave = Math.sin(progress * Math.PI * 2) * 20;
+  return [16 + progress * 68, Math.max(20, Math.min(76, 54 - wave))];
 }

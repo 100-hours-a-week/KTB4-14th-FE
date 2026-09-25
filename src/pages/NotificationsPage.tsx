@@ -64,7 +64,7 @@ export function NotificationsPage() {
                 await notificationsApi.markRead(item.notification_id);
                 if (wasUnread) notifications.markOneReadLocally();
                 await load();
-                if (item.travel_plan_id) navigate(`/itinerary/${item.travel_plan_id}`);
+                if (item.travel_plan_id) navigate(`/output/${item.travel_plan_id}/places`);
               }}>
               <span className="menu-icon" style={{ background: 'var(--sand)' }}>
                 {ICONS[item.type]}

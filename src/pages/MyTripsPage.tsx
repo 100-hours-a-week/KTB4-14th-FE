@@ -19,7 +19,7 @@ export function MyTripsPage() {
       <div className="scroll my-trips-scroll">
         <div className="my-trips-list">
           {trips.map((trip) => (
-            <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/itinerary/${trip.travel_plan_id}`)} />
+            <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/output/${trip.travel_plan_id}/places`)} />
           ))}
         </div>
       </div>

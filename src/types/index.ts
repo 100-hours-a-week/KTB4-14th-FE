@@ -179,6 +179,8 @@ export type ItineraryRouteItem = {
   transport_type?: 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
   line_name?: string | null;
   vehicle_number?: string | null;
+  boarding_stop_name?: string | null;
+  alighting_stop_name?: string | null;
   next_arrival_minutes?: number | null;
   estimated_departure_at?: string | null;
   estimated_arrival_at?: string | null;

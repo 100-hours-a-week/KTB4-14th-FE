@@ -31,7 +31,7 @@ export function GeneratingPage() {
         setStatus(next);
         if (next.status === 'COMPLETED') {
           window.clearInterval(timer);
-          navigate(`/itinerary/${planId}`, { replace: true });
+          navigate(`/output/${planId}/places`, { replace: true });
         }
         if (next.status === 'FAILED') {
           window.clearInterval(timer);

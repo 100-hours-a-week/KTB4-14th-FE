@@ -190,6 +190,8 @@ type BackendRoute = {
   order: number;
   line_name?: string | null;
   vehicle_number?: string | null;
+  boarding_stop_name?: string | null;
+  alighting_stop_name?: string | null;
   next_arrival_minutes?: number | null;
   estimated_departure_at?: string | null;
   estimated_arrival_at?: string | null;
@@ -231,6 +233,8 @@ function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {
       order: route.order,
       line_name: route.line_name,
       vehicle_number: route.vehicle_number,
+      boarding_stop_name: route.boarding_stop_name,
+      alighting_stop_name: route.alighting_stop_name,
       next_arrival_minutes: route.next_arrival_minutes,
       estimated_departure_at: route.estimated_departure_at,
       estimated_arrival_at: route.estimated_arrival_at,

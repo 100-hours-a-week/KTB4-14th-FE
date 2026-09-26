@@ -21,7 +21,22 @@ export function MapSearchPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void placesApi.search('제주', draft.region_id ?? 1)
+
+    const initialKeyword = draft.destination_district && draft.destination_district !== '전체'
+      ? draft.destination_district
+      : draft.destination_province ?? draft.destination ?? '';
+
+    if (!draft.region_id || !initialKeyword.trim()) {
+      setResults([]);
+      setSelected(null);
+      setSearchError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setQuery(initialKeyword);
+    void placesApi.search(initialKeyword, draft.region_id)
       .then((found) => {
         if (cancelled) return;
         setResults(found);
@@ -35,7 +50,7 @@ export function MapSearchPage() {
     return () => {
       cancelled = true;
     };
-  }, [draft.region_id]);
+  }, [draft.destination, draft.destination_district, draft.destination_province, draft.region_id]);
 
   const search = async () => {
     if (!query.trim()) {

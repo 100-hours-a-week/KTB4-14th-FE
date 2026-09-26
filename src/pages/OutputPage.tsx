@@ -49,8 +49,14 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
-  const [routeDetailEntry, setRouteDetailEntry] = useState<RouteEntry | null>(null);
+  const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
+  const routeDetailEntry = useMemo(
+    () => detail?.itinerary_days
+      .flatMap((day) => getRouteEntries(day))
+      .find((entry) => getRouteId(entry.route) === routeDetailId) ?? null,
+    [detail, routeDetailId],
+  );
 
   const load = async (isActive: () => boolean = () => true): Promise<TravelDetail | null> => {
     setLoading(true);
@@ -98,12 +104,9 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         const recalculated = await travelsApi.recalculateRoutes(planId);
         if (request.cancelled || !recalculated) return;
 
-        // BE가 realtime=false로 반환한 경로는 재계산에 실패해 기존 값을 유지한
-        // 경우일 수 있으므로, 성공적으로 갱신된 경로만 기존 일정에 병합한다.
-        const refreshedRoutes = recalculated.routes.filter((route) => route.realtime === true);
-        if (refreshedRoutes.length === 0) return;
+        if (recalculated.routes.length === 0) return;
 
-        setDetail((current) => current ? mergeRecalculatedRoutes(current, refreshedRoutes) : current);
+        setDetail((current) => current ? mergeRecalculatedRoutes(current, recalculated.routes) : current);
       } catch {
         // 재계산 실패 시 이미 표시한 AI 계산값을 그대로 유지한다.
       }
@@ -169,15 +172,19 @@ function OutputPage({ tab }: { tab: OutputTab }) {
             updatingItemId={updatingItemId}
             onToggleCompletion={updateCompletion}
             onChangePlace={(itemId) => navigate(`/create-travel/map-search?replaceItemId=${itemId}`)}
-            onOpenRouteDetail={setRouteDetailEntry}
+            onOpenRouteDetail={(entry) => setRouteDetailId(getRouteId(entry.route))}
           />
         ) : (
-          <RoutesOutput detail={detail} places={places} onOpenRouteDetail={setRouteDetailEntry} />
+          <RoutesOutput
+            detail={detail}
+            places={places}
+            onOpenRouteDetail={(entry) => setRouteDetailId(getRouteId(entry.route))}
+          />
         )}
 
         <RecommendedMusic detail={detail} />
       </div>
-      <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailEntry(null)} />
+      <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailId(null)} />
       <div className="bottom-actions">
         <button type="button" onClick={() => navigate(`/checklist/${planId}`)}>
           체크리스트
@@ -755,6 +762,10 @@ function getRouteEntries(day: ItineraryDay): RouteEntry[] {
   return entries;
 }
 
+function getRouteId(route: ItineraryRouteItem) {
+  return route.route_segment_id ?? route.itinerary_item_id;
+}
+
 function findPreviousPlace(items: ItineraryItem[], index: number) {
   for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
     const candidate = items[cursor];
@@ -938,12 +949,38 @@ function updatePlaceCompletion(
 
 function mergeRecalculatedRoutes(detail: TravelDetail, refreshedRoutes: ItineraryRouteItem[]): TravelDetail {
   const routeById = new Map(
-    refreshedRoutes.map((route) => [route.route_segment_id ?? route.itinerary_item_id, route]),
+    refreshedRoutes.map((route) => [getRouteId(route), route]),
   );
 
   const mergeRoute = (route: ItineraryRouteItem): ItineraryRouteItem => {
-    const refreshed = routeById.get(route.route_segment_id ?? route.itinerary_item_id);
-    return refreshed ? { ...route, ...refreshed } : route;
+    const refreshed = routeById.get(getRouteId(route));
+    if (!refreshed) return route;
+
+    const hasFreshRealtime = refreshed.realtime === true;
+    return {
+      ...route,
+      ...refreshed,
+      // legs와 경로 기본 정보는 realtime 여부와 관계없이 갱신한다.
+      legs: refreshed.legs?.length ? refreshed.legs : route.legs,
+      duration_minutes: refreshed.duration_minutes ?? route.duration_minutes,
+      distance_meter: refreshed.distance_meter ?? route.distance_meter,
+      distance_km: refreshed.distance_km ?? route.distance_km,
+      total_fare_amount: refreshed.total_fare_amount ?? route.total_fare_amount,
+      line_name: refreshed.line_name ?? route.line_name,
+      vehicle_number: refreshed.vehicle_number ?? route.vehicle_number,
+      // realtime=false는 BE fallback일 수 있으므로 기존 예상시간을 유지한다.
+      next_arrival_minutes: hasFreshRealtime
+        ? refreshed.next_arrival_minutes
+        : route.next_arrival_minutes,
+      estimated_departure_at: hasFreshRealtime
+        ? refreshed.estimated_departure_at
+        : route.estimated_departure_at,
+      estimated_arrival_at: hasFreshRealtime
+        ? refreshed.estimated_arrival_at
+        : route.estimated_arrival_at,
+      realtime: hasFreshRealtime ? refreshed.realtime : route.realtime,
+      last_refreshed_at: hasFreshRealtime ? refreshed.last_refreshed_at : route.last_refreshed_at,
+    };
   };
 
   return {

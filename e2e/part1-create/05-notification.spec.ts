@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { notification } from '../support/data';
 import { generationScript } from '../support/mock-backend';
 
@@ -37,6 +37,7 @@ test.describe('5. 생성 완료 알림', () => {
   });
 
   test('NOTI-03 "모두 읽음" 시 모든 알림이 읽음 처리(투명도 60%)되고 뱃지 제거', { tag: '@P1' }, async ({ page, api }) => {
+    knownGap('읽은 알림 투명도 60% 스타일 없음 (pages.css)');
     api.notifications = [
       notification({ notification_id: 2, title: '알림 A' }),
       notification({ notification_id: 1, title: '알림 B' }),

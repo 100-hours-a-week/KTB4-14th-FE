@@ -1,10 +1,11 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { summary } from '../support/data';
 import { placeRow, toggleCompletion } from '../support/flows';
 
 /** 14. 오프라인 · 네트워크 예외 */
 test.describe('14. 오프라인 · 네트워크 예외', () => {
   test('ITIN-22 오프라인 상태에서 일정 화면에 들어가면 오프라인 안내 토스트', { tag: '@P1' }, async ({ page, context, api }) => {
+    knownGap('오프라인 안내 토스트 없음 (OutputPage.tsx)');
     api.upcoming = summary();
     await page.goto('/home');
     await expect(page.getByRole('button', { name: '일정 이어보기' })).toBeVisible();

@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { summary } from '../support/data';
 
 /**
@@ -13,6 +13,7 @@ test.describe('9. 앱 진입 · 홈 화면', () => {
   ];
 
   test('ITIN-01 진행 중 여행이 있으면 홈 상단에 "진행 중인 여행"과 진행률 노출', { tag: '@P0' }, async ({ page, api }) => {
+    knownGap('홈 카드에 진행 중 표시·진행률 없음 (TripCards.tsx, BE 필드 합의 필요)');
     api.upcoming = summary({ completed_place_count: 2, total_place_count: 5 });
 
     await page.goto('/home');

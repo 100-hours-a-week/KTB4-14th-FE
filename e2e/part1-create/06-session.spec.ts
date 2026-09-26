@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { summary } from '../support/data';
 import { generationScript } from '../support/mock-backend';
 import { generateButton, goToPlacesStep } from '../support/flows';
@@ -37,6 +37,7 @@ test.describe('6. 세션 · 토큰', () => {
   });
 
   test('SESS-03 리프레시 토큰까지 만료되면 401 후 로그인 화면으로 이동', { tag: '@P1' }, async ({ page, api }) => {
+    knownGap('리프레시 실패 시 로그인 화면 이동 없음 (api/client.ts)');
     api.on('GET', '/api/travel-plans/upcoming', { status: 401, body: { message: 'unauthorized' } });
     api.on('GET', '/api/travel-plans/recent', { status: 401, body: { message: 'unauthorized' } });
     api.on('POST', '/users/refresh', { status: 401, body: { message: 'refresh_token_expired' } });

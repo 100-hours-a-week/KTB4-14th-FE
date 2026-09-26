@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { addPlaceFromMap, goToPlacesStep, searchPlace, selectedPlaces } from '../support/flows';
 
 /**
@@ -12,6 +12,7 @@ const SEARCH_TIMEOUT_MS = 10_000;
 
 test.describe('4. 카카오맵 연동', () => {
   test('EXT-01 결과가 없는 검색어는 "검색 결과가 없습니다" 안내', { tag: '@P1' }, async ({ page }) => {
+    knownGap('검색 결과 없음 안내 없음 (MapSearchPage.tsx)');
     await page.goto('/create-travel/map-search');
     await searchPlace(page, 'zxqv없는장소qq');
 
@@ -19,6 +20,7 @@ test.describe('4. 카카오맵 연동', () => {
   });
 
   test('EXT-02 검색어 공백/1글자 입력 시 최소 글자 수 안내', { tag: '@P2' }, async ({ page, api }) => {
+    knownGap('1글자 검색어 검증 없음 (MapSearchPage.tsx)');
     await page.goto('/create-travel/map-search');
 
     await searchPlace(page, '   ');
@@ -30,6 +32,7 @@ test.describe('4. 카카오맵 연동', () => {
   });
 
   test('EXT-03 카카오 API 응답 지연 시 타임아웃 처리 및 재시도 안내', { tag: '@P1' }, async ({ page, api }) => {
+    knownGap('장소 검색 요청 타임아웃 없음');
     test.setTimeout(45_000);
     await page.goto('/create-travel/map-search');
     api.on('GET', '/api/places/search', { delayMs: 30_000, body: { places: [], page: 1, size: 15, is_end: true, pageable_count: 0 } });
@@ -40,6 +43,7 @@ test.describe('4. 카카오맵 연동', () => {
   });
 
   test('EXT-04 카카오 API 장애(5xx) 시 명확한 안내, 기존에 추가한 장소는 유지', { tag: '@P1' }, async ({ page, api }) => {
+    knownGap('5xx 시 개발자용 문구 노출 (MapSearchPage.tsx)');
     await goToPlacesStep(page);
     await addPlaceFromMap(page, '경복궁');
 

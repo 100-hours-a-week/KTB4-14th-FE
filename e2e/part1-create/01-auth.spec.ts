@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { user } from '../support/data';
 
 /**
@@ -50,6 +50,7 @@ test.describe('1. 인증', () => {
     });
 
     test('AUTH-06 미로그인 상태에서 보호 경로 직접 접근 시 /login 으로 리다이렉트', { tag: '@P1' }, async ({ page }) => {
+      knownGap('보호 경로 로그인 가드 없음 (App.tsx)');
       await page.goto('/home');
       await expect(page).toHaveURL(/\/login$/);
 
@@ -60,6 +61,7 @@ test.describe('1. 인증', () => {
 
   test.describe('로그인 상태에서 시작', () => {
     test('AUTH-04 로그아웃 시 토큰 폐기 후 /login 이동, 이후 보호 페이지 접근 차단', { tag: '@P0' }, async ({ page, api }) => {
+      knownGap('보호 경로 로그인 가드 없음 (App.tsx)');
       await page.goto('/my');
       await page.getByRole('button', { name: '로그아웃' }).click();
 

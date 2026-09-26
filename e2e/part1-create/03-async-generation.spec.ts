@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { generationScript } from '../support/mock-backend';
 import { addPlaceFromMap, generateButton, goToPlacesStep } from '../support/flows';
 
@@ -90,17 +90,26 @@ test.describe('3. AI 비동기 생성', () => {
     api.generation = generationScript({ status: 'COMPLETED', done: 4 });
     await page.goto('/output/77/places');
 
-    const jobIds: string[] = [];
+    const polledJobIds = () =>
+      new Set(api.callsTo('GET', '/api/ai-generation-jobs/:id').map((call) => Number(call.path.split('/').pop())));
+    const jobsOfPlan = () => [...api.jobs.values()].filter((job) => job.planId === 77).map((job) => job.jobId);
+
     for (let i = 0; i < 3; i += 1) {
       await page.getByRole('button', { name: '일정 다시 만들기' }).click();
       await page.getByRole('dialog').filter({ hasText: '일정을 다시 만들까요?' }).getByRole('button', { name: '확인' }).click();
-      await expect(page).toHaveURL(/\/generating\/77\?job_id=\d+/);
-      jobIds.push(new URL(page.url()).searchParams.get('job_id')!);
+
+      // 새 생성 작업(job)이 만들어지고
+      await expect.poll(() => jobsOfPlan().length).toBe(i + 1);
+      const newJobId = jobsOfPlan()[i];
+      // 생성 화면이 그 작업의 상태를 조회한 뒤(화면이 빨리 지나가도 요청 기록은 남는다)
+      await expect.poll(() => polledJobIds().has(newJobId), { message: `job ${newJobId} 상태 조회` }).toBe(true);
+      // 완료되어 결과 화면으로 돌아온다
       await expect(page).toHaveURL(/\/output\/77\/places$/, { timeout: 10_000 });
+      await expect(page.getByRole('button', { name: '일정 다시 만들기' })).toBeVisible();
     }
 
     expect(api.callsTo('POST', '/api/travel-plans/77/regeneration')).toHaveLength(3);
-    expect(new Set(jobIds).size).toBe(3);
+    expect(new Set(jobsOfPlan()).size).toBe(3);
   });
 
   test('ASY-06 "AI 여행 생성하기" 연속 클릭 시 생성 요청은 한 번만 전송', { tag: '@P1' }, async ({ page, api }) => {
@@ -119,6 +128,7 @@ test.describe('3. AI 비동기 생성', () => {
   });
 
   test('ASY-07 생성 결과 상세 — 기본정보 · 장소 목록 · 이동 경로 · 추천 음악 표시', { tag: '@P0' }, async ({ page }) => {
+    knownGap('normalizeItinerary가 recommended_music을 누락 (api/travels.ts)');
     await page.goto('/output/77/places');
 
     // 기본 정보

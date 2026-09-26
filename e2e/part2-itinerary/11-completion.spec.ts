@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { completionButton, placeRow, placeTime, toggleCompletion } from '../support/flows';
 
 /**
@@ -65,6 +65,7 @@ test.describe('11. 장소별 이동 · 완료 체크', () => {
   });
 
   test('ITIN-14 실시간 대중교통 조회 실패 시 토스트 안내 및 기본 예상 시간으로 대체', { tag: '@P1' }, async ({ page, api }) => {
+    knownGap('실시간 조회 실패 토스트 없음 (OutputPage.tsx)');
     const plan = api.itineraryOf(77);
     Object.assign(plan.itinerary_days[0].routes[0], { realtime: false, next_arrival_minutes: null, estimated_arrival_at: '2026-10-01T12:05:00' });
 

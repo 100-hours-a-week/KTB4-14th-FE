@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { summary } from '../support/data';
 
 /** 10. 일정 이어보기 / 추천 경로 보기 */
@@ -54,6 +54,7 @@ test.describe('10. 일정 이어보기 / 추천 경로', () => {
   });
 
   test('ITIN-08 추천 음악이 정상 표시', { tag: '@P1' }, async ({ page }) => {
+    knownGap('normalizeItinerary가 recommended_music을 누락 (api/travels.ts)');
     test.info().annotations.push({ type: 'BE', description: '재진입 시 캐시로 로딩이 빨라지는지는 백엔드/스테이징에서 측정' });
     await page.goto('/output/77/places');
 

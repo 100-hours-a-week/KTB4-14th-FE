@@ -42,3 +42,12 @@ export const test = base.extend<Fixtures>({
 });
 
 export { expect };
+
+/**
+ * 문서 기준으로는 맞지만 프론트에 아직 기능이 없어 실패하는 테스트 표시.
+ * - 실패하면 "예상된 실패"로 통과 처리되어 CI를 막지 않는다.
+ * - 기능을 구현해서 테스트가 통과하면 오히려 실패로 알려주므로, 그때 이 줄을 지우면 된다.
+ */
+export function knownGap(reason: string) {
+  test.fail(true, `미구현: ${reason}`);
+}

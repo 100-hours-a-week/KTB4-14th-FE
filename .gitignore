@@ -42,3 +42,9 @@ expo-env.d.ts
 frontend-handoff-request.md
 uploads/
 *.canvas.tsx
+
+# Playwright E2E
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

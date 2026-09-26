@@ -12,7 +12,7 @@ import type {
   ItineraryRouteStop,
   TravelDetail,
 } from '@/types';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 type OutputTab = 'places' | 'routes';
@@ -50,16 +50,24 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [error, setError] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [routeDetailEntry, setRouteDetailEntry] = useState<RouteEntry | null>(null);
+  const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
 
-  const load = async () => {
+  const load = async (isActive: () => boolean = () => true): Promise<TravelDetail | null> => {
     setLoading(true);
     try {
-      setDetail(await travelsApi.getDetail(planId));
-      setError(null);
+      const nextDetail = await travelsApi.getDetail(planId);
+      if (isActive()) {
+        setDetail(nextDetail);
+        setError(null);
+      }
+      return nextDetail;
     } catch {
-      setError('여행 일정을 불러오지 못했어요. 생성이 완료된 뒤 다시 시도해 주세요.');
+      if (isActive()) {
+        setError('여행 일정을 불러오지 못했어요. 생성이 완료된 뒤 다시 시도해 주세요.');
+      }
+      return null;
     } finally {
-      setLoading(false);
+      if (isActive()) setLoading(false);
     }
   };
 
@@ -69,7 +77,42 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       setError('여행 일정 번호가 올바르지 않아요.');
       return;
     }
-    void load();
+
+    const existingRequest = entryRequestRef.current;
+    if (existingRequest?.planId === planId) {
+      // React StrictMode의 effect 재실행에서는 기존 요청을 이어서 사용한다.
+      existingRequest.cancelled = false;
+      return () => {
+        existingRequest.cancelled = true;
+      };
+    }
+
+    const request = { planId, cancelled: false };
+    entryRequestRef.current = request;
+
+    const loadAndRecalculate = async () => {
+      const initialDetail = await load(() => !request.cancelled);
+      if (!initialDetail || request.cancelled) return;
+
+      try {
+        const recalculated = await travelsApi.recalculateRoutes(planId);
+        if (request.cancelled || !recalculated) return;
+
+        // BE가 realtime=false로 반환한 경로는 재계산에 실패해 기존 값을 유지한
+        // 경우일 수 있으므로, 성공적으로 갱신된 경로만 기존 일정에 병합한다.
+        const refreshedRoutes = recalculated.routes.filter((route) => route.realtime === true);
+        if (refreshedRoutes.length === 0) return;
+
+        setDetail((current) => current ? mergeRecalculatedRoutes(current, refreshedRoutes) : current);
+      } catch {
+        // 재계산 실패 시 이미 표시한 AI 계산값을 그대로 유지한다.
+      }
+    };
+
+    void loadAndRecalculate();
+    return () => {
+      request.cancelled = true;
+    };
   }, [planId]);
 
   const places = useMemo(
@@ -419,7 +462,7 @@ function RouteInfoPanel({
     ? boardingLocationLabel(route, boardingPlace)
     : route.line_name ?? transportLabel(route);
   const secondaryInfo = [
-    route.estimated_arrival_at ? `${formatDateTime(route.estimated_arrival_at)} 도착` : null,
+    route.estimated_arrival_at ? `예상 도착 ${formatDateTime(route.estimated_arrival_at)}` : null,
     route.duration_minutes != null ? `${route.duration_minutes}분` : null,
   ].filter(Boolean).join(' · ');
 
@@ -852,17 +895,18 @@ function routeLegTransitLabel(leg: ItineraryRouteLeg, showAllBusNumbers = false)
 }
 
 function nextTransitArrivalLabel(route: ItineraryRouteItem) {
-  if (route.next_arrival_minutes != null) return `${route.next_arrival_minutes}분 후 도착`;
-  if (route.estimated_arrival_at) return `${formatDateTime(route.estimated_arrival_at)} 도착 예정`;
+  const currentBasis = route.realtime ? '현재 기준 ' : '';
+  if (route.next_arrival_minutes != null) return `${currentBasis}${route.next_arrival_minutes}분 후 도착`;
+  if (route.estimated_arrival_at) return `${currentBasis}예상 도착 ${formatDateTime(route.estimated_arrival_at)}`;
   return '도착 정보 확인 중';
 }
 
 function routeTimeRangeLabel(route: ItineraryRouteItem) {
   const departure = route.estimated_departure_at ? formatDateTime(route.estimated_departure_at) : null;
   const arrival = route.estimated_arrival_at ? formatDateTime(route.estimated_arrival_at) : null;
-  if (departure && arrival) return `${departure} - ${arrival}`;
+  if (departure && arrival) return `${departure} - 예상 도착 ${arrival}`;
   if (departure) return `${departure} 출발`;
-  if (arrival) return `${arrival} 도착`;
+  if (arrival) return `예상 도착 ${arrival}`;
   return '';
 }
 
@@ -888,6 +932,26 @@ function updatePlaceCompletion(
       items: day.items.map((item) => item.type === 'PLACE' && item.itinerary_item_id === result.itinerary_item_id
         ? { ...item, is_completed: result.is_completed, completed_at: result.completed_at }
         : item),
+    })),
+  };
+}
+
+function mergeRecalculatedRoutes(detail: TravelDetail, refreshedRoutes: ItineraryRouteItem[]): TravelDetail {
+  const routeById = new Map(
+    refreshedRoutes.map((route) => [route.route_segment_id ?? route.itinerary_item_id, route]),
+  );
+
+  const mergeRoute = (route: ItineraryRouteItem): ItineraryRouteItem => {
+    const refreshed = routeById.get(route.route_segment_id ?? route.itinerary_item_id);
+    return refreshed ? { ...route, ...refreshed } : route;
+  };
+
+  return {
+    ...detail,
+    itinerary_days: detail.itinerary_days.map((day) => ({
+      ...day,
+      items: day.items.map((item) => item.type === 'ROUTE' ? mergeRoute(item) : item),
+      routes: day.routes?.map(mergeRoute),
     })),
   };
 }

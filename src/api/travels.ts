@@ -113,9 +113,16 @@ export const travelsApi = {
   },
 
   /** POST /api/travel-plans/:id/routes/recalculate */
-  async recalculateRoutes(travelPlanId: number) {
+  async recalculateRoutes(travelPlanId: number): Promise<RouteRecalculationResponse | undefined> {
     if (USE_MOCK) return;
-    return apiRequest(`/api/travel-plans/${travelPlanId}/routes/recalculate`, { method: 'POST' });
+    const response = await apiRequest<BackendRouteRecalculationResponse>(
+      `/api/travel-plans/${travelPlanId}/routes/recalculate`,
+      { method: 'POST' },
+    );
+    return {
+      travel_plan_id: response.travel_plan_id,
+      routes: (response.routes ?? []).map(normalizeRoute),
+    };
   },
 
   /** POST /api/travel-plans/:id/regeneration */
@@ -214,6 +221,50 @@ type BackendRoute = {
   last_refreshed_at?: string | null;
 };
 
+type BackendRouteRecalculationResponse = {
+  travel_plan_id: number;
+  routes?: BackendRoute[] | null;
+};
+
+export type RouteRecalculationResponse = {
+  travel_plan_id: number;
+  routes: ItineraryRouteItem[];
+};
+
+function normalizeRoute(route: BackendRoute): ItineraryRouteItem {
+  return {
+    itinerary_item_id: route.route_segment_id,
+    type: 'ROUTE',
+    route_segment_id: route.route_segment_id,
+    from_itinerary_item_id: route.from_itinerary_item_id,
+    to_itinerary_item_id: route.to_itinerary_item_id,
+    transport_type: route.transport_type,
+    transport: route.transport_type === 'PUBLIC_TRANSPORT' ? 'PUBLIC' : route.transport_type,
+    duration_minutes: route.duration_minutes ?? undefined,
+    distance_meter: route.distance_meter ?? undefined,
+    distance_km: route.distance_meter == null ? undefined : route.distance_meter / 1000,
+    total_fare_amount: route.total_fare_amount ?? undefined,
+    order: route.order,
+    legs: (route.legs ?? []).map((leg) => ({
+      sequence: leg.sequence,
+      mode: leg.mode,
+      boarding_stop: leg.boarding_stop ?? null,
+      alighting_stop: leg.alighting_stop ?? null,
+      duration_minute: leg.duration_minute ?? null,
+      distance_meter: leg.distance_meter ?? null,
+      bus_number: leg.bus_number ?? [],
+      subway_line: leg.subway_line ?? [],
+    })),
+    line_name: route.line_name,
+    vehicle_number: route.vehicle_number,
+    next_arrival_minutes: route.next_arrival_minutes,
+    estimated_departure_at: route.estimated_departure_at,
+    estimated_arrival_at: route.estimated_arrival_at,
+    realtime: route.realtime,
+    last_refreshed_at: route.last_refreshed_at,
+  };
+}
+
 function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {
   const days: ItineraryDay[] = (response.itinerary_days ?? response.days ?? []).map((day) => {
     const places: ItineraryItem[] = day.items.map((item) => ({
@@ -233,37 +284,7 @@ function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {
       is_completed: item.is_completed ?? false,
       completed_at: item.completed_at,
     }));
-    const routes: ItineraryRouteItem[] = (day.routes ?? []).map((route) => ({
-      itinerary_item_id: route.route_segment_id,
-      type: 'ROUTE',
-      route_segment_id: route.route_segment_id,
-      from_itinerary_item_id: route.from_itinerary_item_id,
-      to_itinerary_item_id: route.to_itinerary_item_id,
-      transport_type: route.transport_type,
-      transport: route.transport_type === 'PUBLIC_TRANSPORT' ? 'PUBLIC' : route.transport_type,
-      duration_minutes: route.duration_minutes ?? undefined,
-      distance_meter: route.distance_meter ?? undefined,
-      distance_km: route.distance_meter == null ? undefined : route.distance_meter / 1000,
-      total_fare_amount: route.total_fare_amount ?? undefined,
-      order: route.order,
-      legs: (route.legs ?? []).map((leg) => ({
-        sequence: leg.sequence,
-        mode: leg.mode,
-        boarding_stop: leg.boarding_stop ?? null,
-        alighting_stop: leg.alighting_stop ?? null,
-        duration_minute: leg.duration_minute ?? null,
-        distance_meter: leg.distance_meter ?? null,
-        bus_number: leg.bus_number ?? [],
-        subway_line: leg.subway_line ?? [],
-      })),
-      line_name: route.line_name,
-      vehicle_number: route.vehicle_number,
-      next_arrival_minutes: route.next_arrival_minutes,
-      estimated_departure_at: route.estimated_departure_at,
-      estimated_arrival_at: route.estimated_arrival_at,
-      realtime: route.realtime,
-      last_refreshed_at: route.last_refreshed_at,
-    }));
+    const routes: ItineraryRouteItem[] = (day.routes ?? []).map(normalizeRoute);
 
     const combined: ItineraryItem[] = [];
     places.forEach((place) => {

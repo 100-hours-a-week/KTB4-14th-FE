@@ -5,8 +5,10 @@ import { PlaceRow } from '@/components/PlaceRow';
 import { useToast } from '@/context/ToastContext';
 import { useTravelDraft } from '@/context/TravelDraftContext';
 import type { PlaceCandidate } from '@/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
+type SearchStatus = 'idle' | 'loading' | 'results' | 'empty' | 'invalid' | 'error';
 
 export function MapSearchPage() {
   const navigate = useNavigate();
@@ -18,6 +20,8 @@ export function MapSearchPage() {
   const [results, setResults] = useState<PlaceCandidate[]>([]);
   const [selected, setSelected] = useState<PlaceCandidate | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
+  const searchRequestRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,21 +34,44 @@ export function MapSearchPage() {
       setResults([]);
       setSelected(null);
       setSearchError(null);
+      setSearchStatus('idle');
       return () => {
         cancelled = true;
       };
     }
 
     setQuery(initialKeyword);
-    void placesApi.search(initialKeyword, draft.region_id)
+    const keyword = initialKeyword.trim();
+    if (keyword.length < 2) {
+      setResults([]);
+      setSelected(null);
+      setSearchStatus('invalid');
+      setSearchError('검색어를 2글자 이상 입력해 주세요.');
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const requestId = ++searchRequestRef.current;
+    setResults([]);
+    setSelected(null);
+    setSearchError(null);
+    setSearchStatus('loading');
+
+    void placesApi.search(keyword, draft.region_id)
       .then((found) => {
-        if (cancelled) return;
+        if (cancelled || requestId !== searchRequestRef.current) return;
         setResults(found);
         setSelected(found[0] ?? null);
         setSearchError(null);
+        setSearchStatus(found.length > 0 ? 'results' : 'empty');
       })
       .catch((error: unknown) => {
-        if (!cancelled) setSearchError(toSearchErrorMessage(error));
+        if (cancelled || requestId !== searchRequestRef.current) return;
+        setResults([]);
+        setSelected(null);
+        setSearchStatus('error');
+        setSearchError(toSearchErrorMessage(error));
       });
 
     return () => {
@@ -53,19 +80,32 @@ export function MapSearchPage() {
   }, [draft.destination, draft.destination_district, draft.destination_province, draft.region_id]);
 
   const search = async () => {
-    if (!query.trim()) {
-      setSearchError('검색어를 입력해 주세요.');
+    const keyword = query.trim();
+    const requestId = ++searchRequestRef.current;
+
+    if (keyword.length < 2) {
+      setResults([]);
+      setSelected(null);
+      setSearchStatus('invalid');
+      setSearchError('검색어를 2글자 이상 입력해 주세요.');
       return;
     }
 
+    setResults([]);
+    setSelected(null);
     setSearchError(null);
+    setSearchStatus('loading');
     try {
-      const found = await placesApi.search(query, draft.region_id ?? 1);
+      const found = await placesApi.search(keyword, draft.region_id ?? 1);
+      if (requestId !== searchRequestRef.current) return;
       setResults(found);
       setSelected(found[0] ?? null);
+      setSearchStatus(found.length > 0 ? 'results' : 'empty');
     } catch (error: unknown) {
+      if (requestId !== searchRequestRef.current) return;
       setResults([]);
       setSelected(null);
+      setSearchStatus('error');
       setSearchError(toSearchErrorMessage(error));
     }
   };
@@ -93,32 +133,52 @@ export function MapSearchPage() {
     <section className="screen">
       <Header title="여행 생성하기" onBack={() => navigate(-1)} showBell />
       <div className="search-row">
-        <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="장소를 검색해 주세요" onKeyDown={(e) => e.key === 'Enter' && search()} />
-        <button type="button" className="search-btn" onClick={search}>
+        <input
+          className="input"
+          value={query}
+          onChange={(e) => {
+            searchRequestRef.current += 1;
+            setQuery(e.target.value);
+          }}
+          placeholder="장소를 검색해 주세요"
+          onKeyDown={(e) => e.key === 'Enter' && search()}
+        />
+        <button type="button" className="search-btn" onClick={search} aria-label="장소 검색">
           🔍
         </button>
       </div>
       {searchError ? <p className="field-help error" role="alert">{searchError}</p> : null}
-      <div className="map-box">
-        <KakaoMap
-          places={results}
-          selectedPlaceId={selected?.provider_place_id}
-          onSelect={setSelected}
-        />
-      </div>
-      <div className="scroll" style={{ paddingTop: 4 }}>
-        {selected ? (
-          <div style={{ marginBottom: 10 }}>
-            <PlaceRow place={selected} onAdd={() => add(selected)} />
-          </div>
-        ) : null}
-        <strong>검색 결과</strong>
-        <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-          {results.map((place) => (
-            <PlaceRow key={place.provider_place_id} place={place} onAdd={() => add(place)} />
-          ))}
+      {searchStatus === 'empty' ? (
+        <div className="empty-box search-empty-state" role="status">
+          <strong>검색 결과가 없어요.</strong>
+          <p>다른 검색어로 다시 검색해 주세요.</p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="map-box">
+            <KakaoMap
+              places={results}
+              selectedPlaceId={selected?.provider_place_id}
+              onSelect={setSelected}
+            />
+          </div>
+          <div className="scroll" style={{ paddingTop: 4 }}>
+            {selected ? (
+              <div style={{ marginBottom: 10 }}>
+                <PlaceRow place={selected} onAdd={() => add(selected)} />
+              </div>
+            ) : null}
+            <strong>검색 결과</strong>
+            {searchStatus === 'loading' ? <p className="search-status">검색 중이에요.</p> : null}
+            {searchStatus === 'idle' ? <p className="search-status">검색어를 입력하고 검색해 주세요.</p> : null}
+            <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+              {results.map((place) => (
+                <PlaceRow key={place.provider_place_id} place={place} onAdd={() => add(place)} />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -133,10 +193,10 @@ function toSearchErrorMessage(error: unknown) {
     return '선택한 지역 정보를 찾을 수 없습니다. 지역 목록을 다시 확인해 주세요.';
   }
   if (code === 'external_api_error' || candidate.status === 502) {
-    return '카카오 장소 검색을 사용할 수 없습니다. 백엔드의 카카오 REST 키와 로컬 API 설정을 확인해 주세요.';
+    return '카카오 장소 검색을 사용할 수 없습니다.';
   }
   if (code === 'service_unavailable' || candidate.status === 503) {
-    return '장소 검색 설정이 아직 준비되지 않았습니다. 백엔드의 카카오 REST 키를 확인해 주세요.';
+    return '장소 검색 설정이 아직 준비되지 않았습니다.';
   }
   if (candidate.status === 401 || candidate.status === 403) {
     return '로그인 인증이 만료되었습니다. 다시 로그인해 주세요.';

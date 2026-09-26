@@ -392,6 +392,29 @@
   color: var(--white);
 }
 
+.search-empty-state {
+  min-height: 260px;
+  margin: 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.search-empty-state strong {
+  color: var(--navy);
+  font-size: 17px;
+}
+
+.search-empty-state p,
+.search-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .orb-status {
   width: 92px;
   height: 92px;

@@ -7,7 +7,9 @@ import type {
   ItineraryDay,
   ItineraryItem,
   ItineraryPlaceItem,
+  ItineraryRouteLeg,
   ItineraryRouteItem,
+  ItineraryRouteStop,
   TravelDetail,
 } from '@/types';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -47,6 +49,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
+  const [routeDetailEntry, setRouteDetailEntry] = useState<RouteEntry | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -123,13 +126,15 @@ function OutputPage({ tab }: { tab: OutputTab }) {
             updatingItemId={updatingItemId}
             onToggleCompletion={updateCompletion}
             onChangePlace={(itemId) => navigate(`/create-travel/map-search?replaceItemId=${itemId}`)}
+            onOpenRouteDetail={setRouteDetailEntry}
           />
         ) : (
-          <RoutesOutput detail={detail} places={places} />
+          <RoutesOutput detail={detail} places={places} onOpenRouteDetail={setRouteDetailEntry} />
         )}
 
         <RecommendedMusic detail={detail} />
       </div>
+      <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailEntry(null)} />
       <div className="bottom-actions">
         <button type="button" onClick={() => navigate(`/checklist/${planId}`)}>
           체크리스트
@@ -224,11 +229,13 @@ function PlacesOutput({
   updatingItemId,
   onToggleCompletion,
   onChangePlace,
+  onOpenRouteDetail,
 }: {
   detail: TravelDetail;
   updatingItemId: number | null;
   onToggleCompletion: (place: ItineraryPlaceItem) => Promise<void>;
   onChangePlace: (itemId: number) => void;
+  onOpenRouteDetail: (entry: RouteEntry) => void;
 }) {
   let placeNumber = 0;
   const [expandedRouteId, setExpandedRouteId] = useState<number | null>(null);
@@ -268,6 +275,9 @@ function PlacesOutput({
                       if (routeId == null) return;
                       setExpandedRouteId((current) => current === routeId ? null : routeId);
                     }}
+                    onOpenRouteDetail={() => {
+                      if (routeEntry) onOpenRouteDetail(routeEntry);
+                    }}
                     onChange={() => onChangePlace(item.itinerary_item_id)}
                   />
                 );
@@ -290,6 +300,7 @@ function OutputPlaceRow({
   updating,
   onToggle,
   onToggleRoute,
+  onOpenRouteDetail,
   onChange,
 }: {
   place: ItineraryPlaceItem;
@@ -301,6 +312,7 @@ function OutputPlaceRow({
   updating: boolean;
   onToggle: () => void;
   onToggleRoute: () => void;
+  onOpenRouteDetail: () => void;
   onChange: () => void;
 }) {
   return (
@@ -325,6 +337,7 @@ function OutputPlaceRow({
             completed={Boolean(place.is_completed)}
             updating={updating}
             onToggle={onToggleRoute}
+            onOpenDetail={onOpenRouteDetail}
             onToggleCompletion={onToggle}
           />
         ) : showCompletion ? (
@@ -349,6 +362,7 @@ function RouteInfoDisclosure({
   completed,
   updating,
   onToggle,
+  onOpenDetail,
   onToggleCompletion,
 }: {
   route: ItineraryRouteItem;
@@ -357,6 +371,7 @@ function RouteInfoDisclosure({
   completed: boolean;
   updating: boolean;
   onToggle: () => void;
+  onOpenDetail: () => void;
   onToggleCompletion: () => void;
 }) {
   return (
@@ -376,6 +391,7 @@ function RouteInfoDisclosure({
           boardingPlace={boardingPlace}
           completed={completed}
           updating={updating}
+          onOpenDetail={onOpenDetail}
           onToggleCompletion={onToggleCompletion}
         />
       ) : null}
@@ -388,12 +404,14 @@ function RouteInfoPanel({
   boardingPlace,
   completed,
   updating,
+  onOpenDetail,
   onToggleCompletion,
 }: {
   route: ItineraryRouteItem;
   boardingPlace?: ItineraryPlaceItem;
   completed: boolean;
   updating: boolean;
+  onOpenDetail: () => void;
   onToggleCompletion: () => void;
 }) {
   const publicTransport = isPublicTransport(route);
@@ -403,7 +421,6 @@ function RouteInfoPanel({
   const secondaryInfo = [
     route.estimated_arrival_at ? `${formatDateTime(route.estimated_arrival_at)} 도착` : null,
     route.duration_minutes != null ? `${route.duration_minutes}분` : null,
-    route.total_fare_amount != null ? `${route.total_fare_amount.toLocaleString()}원` : route.transport === 'WALK' ? '무료' : null,
   ].filter(Boolean).join(' · ');
 
   return (
@@ -428,6 +445,10 @@ function RouteInfoPanel({
           </div>
         </>
       ) : null}
+      <RouteLegList route={route} />
+      <button type="button" className="route-detail-open" onClick={onOpenDetail}>
+        상세 경로 보기
+      </button>
       <button
         type="button"
         className={`completion-check route-info-completion${completed ? ' checked' : ''}`}
@@ -440,7 +461,15 @@ function RouteInfoPanel({
   );
 }
 
-function RoutesOutput({ detail, places }: { detail: TravelDetail; places: ItineraryPlaceItem[] }) {
+function RoutesOutput({
+  detail,
+  places,
+  onOpenRouteDetail,
+}: {
+  detail: TravelDetail;
+  places: ItineraryPlaceItem[];
+  onOpenRouteDetail: (entry: RouteEntry) => void;
+}) {
   const routeEntries = useMemo(
     () => detail.itinerary_days.flatMap((day) => getRouteEntries(day)),
     [detail],
@@ -476,6 +505,7 @@ function RoutesOutput({ detail, places }: { detail: TravelDetail; places: Itiner
                   key={entry.route.itinerary_item_id}
                   entry={entry}
                   expanded={expandedRouteId === entry.route.itinerary_item_id}
+                  onOpenDetail={() => onOpenRouteDetail(entry)}
                   onToggle={() => setExpandedRouteId((current) => current === entry.route.itinerary_item_id ? null : entry.route.itinerary_item_id)}
                 />
               ))}
@@ -491,10 +521,12 @@ function RoutesOutput({ detail, places }: { detail: TravelDetail; places: Itiner
 function RouteDetailCard({
   entry,
   expanded,
+  onOpenDetail,
   onToggle,
 }: {
   entry: RouteEntry;
   expanded: boolean;
+  onOpenDetail: () => void;
   onToggle: () => void;
 }) {
   const { route, from, to } = entry;
@@ -509,8 +541,144 @@ function RouteDetailCard({
         <div className="output-route-detail">
           <div><span>탑승 위치</span><strong>{boardingLocationLabel(route, from)}</strong></div>
           <div><span>하차 위치</span><strong>{alightingLocationLabel(route, to)}</strong></div>
+          <RouteLegList route={route} compact />
+          <button type="button" className="route-detail-open" onClick={onOpenDetail}>
+            상세 경로 보기
+          </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function RouteDetailSheet({ entry, onClose }: { entry: RouteEntry | null; onClose: () => void }) {
+  if (!entry) return null;
+
+  const { route } = entry;
+  const duration = route.duration_minutes != null ? `${route.duration_minutes}분` : '이동 경로';
+  const meta = [routeTimeRangeLabel(route), route.total_fare_amount != null ? `${route.total_fare_amount.toLocaleString()}원` : null]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <div className="route-detail-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="route-detail-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="route-detail-title"
+        onClick={(event) => event.stopPropagation()}>
+        <div className="route-detail-handle" aria-hidden="true" />
+        <header className="route-detail-header">
+          <div>
+            <strong id="route-detail-title">{duration}</strong>
+            <p>{meta || '상세 이동 정보를 준비 중이에요.'}</p>
+          </div>
+          <button type="button" className="route-detail-close" aria-label="상세 경로 닫기" onClick={onClose}>
+            ×
+          </button>
+        </header>
+        <div className="route-detail-body">
+          <RouteDetailTimeline entry={entry} />
+          {isPublicTransport(route) && route.next_arrival_minutes != null ? (
+            <p className="route-detail-live">다음 버스·열차 · {nextTransitArrivalLabel(route)}</p>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function RouteDetailTimeline({ entry }: { entry: RouteEntry }) {
+  const { route, from, to } = entry;
+  const legs = [...(route.legs ?? [])].sort((a, b) => a.sequence - b.sequence);
+
+  if (legs.length === 0) {
+    return (
+      <div className="route-detail-fallback">
+        <strong>{from?.name ?? '출발 장소'}</strong>
+        <span aria-hidden="true">→</span>
+        <strong>{to?.name ?? '도착 장소'}</strong>
+        <p>{routeSummary(route)}</p>
+      </div>
+    );
+  }
+
+  const start = routeStopLabel(legs[0].boarding_stop) || from?.address || from?.name || '출발 장소';
+
+  return (
+    <div className="route-detail-timeline">
+      <div className="route-timeline-point">
+        <span className="route-timeline-marker route-timeline-marker-start" aria-hidden="true">●</span>
+        <strong>{start}</strong>
+      </div>
+      {legs.map((leg) => {
+        const transit = routeLegTransitLabel(leg, true);
+        const duration = leg.duration_minute != null ? `${leg.duration_minute}분` : '';
+        const distance = leg.distance_meter != null ? `${(leg.distance_meter / 1000).toFixed(1)}km` : '';
+        const boarding = routeStopLabel(leg.boarding_stop) || '승차 위치 확인 중';
+        const alighting = routeStopLabel(leg.alighting_stop) || '하차 위치 확인 중';
+        const meta = [duration, distance].filter(Boolean).join(' · ');
+        const modeClass = routeLegModeClass(leg);
+
+        return (
+          <div className={`route-timeline-group mode-${modeClass}`} key={`${leg.sequence}-${leg.mode}`}>
+            <div className="route-timeline-leg">
+              <span className="route-timeline-marker route-timeline-mode-marker" aria-hidden="true">
+                {routeLegIcon(leg)}
+              </span>
+              <div className="route-timeline-leg-copy">
+                <div className="route-timeline-leg-title">
+                  <strong>{routeLegModeLabel(leg)}</strong>
+                  {transit ? <span>{transit}</span> : null}
+                </div>
+                <div className="route-timeline-leg-stops">
+                  <span>{boarding}</span>
+                  <span aria-hidden="true">→</span>
+                  <span>{alighting}</span>
+                </div>
+                {meta ? <small>{meta}</small> : null}
+              </div>
+            </div>
+            <div className="route-timeline-point">
+              <span className="route-timeline-marker route-timeline-marker-end" aria-hidden="true">○</span>
+              <strong>{alighting}</strong>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RouteLegList({ route, compact = false }: { route: ItineraryRouteItem; compact?: boolean }) {
+  const legs = [...(route.legs ?? [])].sort((a, b) => a.sequence - b.sequence);
+  if (legs.length === 0) return null;
+
+  return (
+    <div className={`route-leg-list${compact ? ' compact' : ''}`}>
+      {!compact ? <span className="route-leg-title">세부 이동</span> : null}
+      {legs.map((leg) => {
+        const duration = leg.duration_minute != null ? `${leg.duration_minute}분` : '';
+        const distance = leg.distance_meter != null ? `${(leg.distance_meter / 1000).toFixed(1)}km` : '';
+        const meta = [duration, distance].filter(Boolean).join(' · ');
+        const transit = routeLegTransitLabel(leg);
+
+        return (
+          <div className="route-leg" key={`${leg.sequence}-${leg.mode}`}>
+            <div className="route-leg-head">
+              <span>{leg.sequence}. {routeLegModeLabel(leg)}</span>
+              {transit ? <strong>{transit}</strong> : null}
+            </div>
+            <div className="route-leg-stops">
+              <span>{routeStopLabel(leg.boarding_stop) || '승차 위치 확인 중'}</span>
+              <span aria-hidden="true">→</span>
+              <span>{routeStopLabel(leg.alighting_stop) || '하차 위치 확인 중'}</span>
+            </div>
+            {meta ? <small className="route-leg-meta">{meta}</small> : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -600,14 +768,14 @@ function transportLabel(route: ItineraryRouteItem) {
 
 function boardingLocationLabel(route: ItineraryRouteItem, place?: ItineraryPlaceItem) {
   if (isPublicTransport(route)) {
-    return route.boarding_stop_name?.trim() || place?.address || '승차 정류장 정보 확인 중';
+    return routeStopLabel(route.legs?.[0]?.boarding_stop) || place?.address || '승차 정류장 정보 확인 중';
   }
   return place?.address ?? '출발 장소';
 }
 
 function alightingLocationLabel(route: ItineraryRouteItem, place?: ItineraryPlaceItem) {
   if (isPublicTransport(route)) {
-    return route.alighting_stop_name?.trim() || place?.address || '하차 정류장 정보 확인 중';
+    return routeStopLabel(route.legs?.at(-1)?.alighting_stop) || place?.address || '하차 정류장 정보 확인 중';
   }
   return place?.address ?? '도착 장소';
 }
@@ -617,6 +785,14 @@ function isPublicTransport(route: ItineraryRouteItem) {
 }
 
 function transitLineLabel(route: ItineraryRouteItem) {
+  const legLabels = (route.legs ?? [])
+    .map((leg) => {
+      const transit = routeLegTransitLabel(leg);
+      return transit ? `${routeLegModeLabel(leg)} ${transit}` : '';
+    })
+    .filter(Boolean);
+  if (legLabels.length > 0) return legLabels.join(' · ');
+
   const lineName = route.line_name?.trim();
   const vehicleNumber = route.vehicle_number?.trim();
   const formattedLineName = lineName && /^\d+$/.test(lineName) ? `${lineName}번` : lineName;
@@ -626,10 +802,68 @@ function transitLineLabel(route: ItineraryRouteItem) {
     .join(' · ') || '노선 정보 확인 중';
 }
 
+function routeStopLabel(stop?: ItineraryRouteStop | null) {
+  if (!stop) return '';
+  const name = stop.name?.trim();
+  const stationNumber = stop.station_number?.trim();
+  return [name, stationNumber ? `(${stationNumber})` : null].filter(Boolean).join(' ');
+}
+
+function routeLegModeLabel(leg: ItineraryRouteLeg) {
+  const labels: Record<string, string> = {
+    BUS: '버스',
+    SUBWAY: '지하철',
+    WALK: '도보',
+    CAR: '차량',
+    PUBLIC_TRANSPORT: '대중교통',
+  };
+  return labels[leg.mode.toUpperCase()] ?? leg.mode;
+}
+
+function routeLegModeClass(leg: ItineraryRouteLeg) {
+  const mode = leg.mode.toUpperCase();
+  if (mode === 'BUS') return 'bus';
+  if (mode === 'SUBWAY') return 'subway';
+  if (mode === 'WALK') return 'walk';
+  if (mode === 'CAR') return 'car';
+  return 'public';
+}
+
+function routeLegIcon(leg: ItineraryRouteLeg) {
+  const icons: Record<string, string> = {
+    BUS: '🚌',
+    SUBWAY: '🚇',
+    WALK: '🚶',
+    CAR: '🚗',
+  };
+  return icons[leg.mode.toUpperCase()] ?? '•';
+}
+
+function routeLegTransitLabel(leg: ItineraryRouteLeg, showAllBusNumbers = false) {
+  const busNumbers = (leg.bus_number ?? [])
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => /^\d+$/.test(value) ? `${value}번` : value);
+  const subwayLines = (leg.subway_line ?? []).map((value) => value.trim()).filter(Boolean);
+  const busLabel = !showAllBusNumbers && busNumbers.length > 2
+    ? `${busNumbers.slice(0, 2).join(', ')} 외`
+    : busNumbers.join(', ');
+  return [busLabel, ...subwayLines].filter(Boolean).join(' · ');
+}
+
 function nextTransitArrivalLabel(route: ItineraryRouteItem) {
   if (route.next_arrival_minutes != null) return `${route.next_arrival_minutes}분 후 도착`;
   if (route.estimated_arrival_at) return `${formatDateTime(route.estimated_arrival_at)} 도착 예정`;
   return '도착 정보 확인 중';
+}
+
+function routeTimeRangeLabel(route: ItineraryRouteItem) {
+  const departure = route.estimated_departure_at ? formatDateTime(route.estimated_departure_at) : null;
+  const arrival = route.estimated_arrival_at ? formatDateTime(route.estimated_arrival_at) : null;
+  if (departure && arrival) return `${departure} - ${arrival}`;
+  if (departure) return `${departure} 출발`;
+  if (arrival) return `${arrival} 도착`;
+  return '';
 }
 
 function formatDateTime(value: string) {

@@ -179,6 +179,22 @@ type BackendItineraryItem = {
   completed_at?: string | null;
 };
 
+type BackendRouteStop = {
+  name?: string | null;
+  station_number?: string | null;
+};
+
+type BackendRouteLeg = {
+  sequence: number;
+  mode: string;
+  boarding_stop?: BackendRouteStop | null;
+  alighting_stop?: BackendRouteStop | null;
+  duration_minute?: number | null;
+  distance_meter?: number | null;
+  bus_number?: string[] | null;
+  subway_line?: string[] | null;
+};
+
 type BackendRoute = {
   route_segment_id: number;
   from_itinerary_item_id: number;
@@ -188,10 +204,9 @@ type BackendRoute = {
   distance_meter?: number | null;
   total_fare_amount?: number | null;
   order: number;
+  legs?: BackendRouteLeg[] | null;
   line_name?: string | null;
   vehicle_number?: string | null;
-  boarding_stop_name?: string | null;
-  alighting_stop_name?: string | null;
   next_arrival_minutes?: number | null;
   estimated_departure_at?: string | null;
   estimated_arrival_at?: string | null;
@@ -231,10 +246,18 @@ function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {
       distance_km: route.distance_meter == null ? undefined : route.distance_meter / 1000,
       total_fare_amount: route.total_fare_amount ?? undefined,
       order: route.order,
+      legs: (route.legs ?? []).map((leg) => ({
+        sequence: leg.sequence,
+        mode: leg.mode,
+        boarding_stop: leg.boarding_stop ?? null,
+        alighting_stop: leg.alighting_stop ?? null,
+        duration_minute: leg.duration_minute ?? null,
+        distance_meter: leg.distance_meter ?? null,
+        bus_number: leg.bus_number ?? [],
+        subway_line: leg.subway_line ?? [],
+      })),
       line_name: route.line_name,
       vehicle_number: route.vehicle_number,
-      boarding_stop_name: route.boarding_stop_name,
-      alighting_stop_name: route.alighting_stop_name,
       next_arrival_minutes: route.next_arrival_minutes,
       estimated_departure_at: route.estimated_departure_at,
       estimated_arrival_at: route.estimated_arrival_at,

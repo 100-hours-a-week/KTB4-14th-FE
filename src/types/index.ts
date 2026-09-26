@@ -164,6 +164,22 @@ export type ItineraryPlaceItem = {
   completed_at?: string | null;
 };
 
+export type ItineraryRouteStop = {
+  name?: string | null;
+  station_number?: string | null;
+};
+
+export type ItineraryRouteLeg = {
+  sequence: number;
+  mode: string;
+  boarding_stop?: ItineraryRouteStop | null;
+  alighting_stop?: ItineraryRouteStop | null;
+  duration_minute?: number | null;
+  distance_meter?: number | null;
+  bus_number?: string[];
+  subway_line?: string[];
+};
+
 export type ItineraryRouteItem = {
   itinerary_item_id: number;
   type: 'ROUTE';
@@ -175,12 +191,11 @@ export type ItineraryRouteItem = {
   distance_km?: number;
   total_fare_amount?: number;
   order?: number;
+  legs?: ItineraryRouteLeg[];
   transport?: TransportType;
   transport_type?: 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
   line_name?: string | null;
   vehicle_number?: string | null;
-  boarding_stop_name?: string | null;
-  alighting_stop_name?: string | null;
   next_arrival_minutes?: number | null;
   estimated_departure_at?: string | null;
   estimated_arrival_at?: string | null;

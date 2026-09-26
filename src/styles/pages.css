@@ -1324,6 +1324,344 @@
   white-space: nowrap;
 }
 
+.route-leg-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.route-leg-list.compact {
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.route-leg-title {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.route-leg {
+  display: grid;
+  gap: 4px;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--white);
+}
+
+.route-leg-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.route-leg-head span {
+  font-weight: 800;
+}
+
+.route-leg-head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 10px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-leg-stops {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 5px;
+  align-items: start;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.route-leg-stops span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-leg-stops span:last-child {
+  text-align: right;
+}
+
+.route-leg-meta {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.route-detail-open {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 2px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--navy);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.route-detail-backdrop {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(21 28 41 / 34%);
+}
+
+.route-detail-sheet {
+  display: flex;
+  width: min(100%, 520px);
+  max-height: min(92vh, 760px);
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 26px 26px 0 0;
+  background: var(--white);
+  box-shadow: 0 -12px 36px rgb(21 28 41 / 16%);
+}
+
+.route-detail-handle {
+  width: 48px;
+  height: 4px;
+  margin: 9px auto 0;
+  border-radius: 999px;
+  background: #9b9b9b;
+}
+
+.route-detail-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 18px 14px;
+}
+
+.route-detail-header strong {
+  display: block;
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.route-detail-header p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.route-detail-close {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #f6f6f6;
+  color: var(--ink);
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.route-detail-body {
+  overflow-y: auto;
+  padding: 0 18px 28px;
+}
+
+.route-detail-timeline {
+  position: relative;
+  padding: 6px 0 12px 42px;
+}
+
+.route-detail-timeline::before {
+  position: absolute;
+  top: 22px;
+  bottom: 28px;
+  left: 15px;
+  width: 3px;
+  border-radius: 999px;
+  background: #d9dce4;
+  content: '';
+}
+
+.route-timeline-point,
+.route-timeline-leg {
+  position: relative;
+}
+
+.route-timeline-point {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+}
+
+.route-timeline-point > strong {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.route-timeline-marker {
+  position: absolute;
+  left: -42px;
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border: 3px solid #777b84;
+  border-radius: 50%;
+  background: var(--white);
+  color: #777b84;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.route-timeline-marker-start,
+.route-timeline-marker-end {
+  width: 18px;
+  height: 18px;
+  left: -35px;
+  border-width: 3px;
+  font-size: 10px;
+}
+
+.route-timeline-marker-start {
+  border-color: #6c7079;
+  color: #6c7079;
+}
+
+.route-timeline-marker-end {
+  border-color: #6c7079;
+  color: var(--white);
+}
+
+.route-timeline-leg {
+  display: flex;
+  min-height: 92px;
+  align-items: center;
+}
+
+.route-timeline-leg-copy {
+  display: grid;
+  width: 100%;
+  gap: 7px;
+}
+
+.route-timeline-leg-title {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.route-timeline-leg-title strong {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.route-timeline-leg-title span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-timeline-leg-stops {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.route-timeline-leg-stops span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-timeline-leg-stops span:last-child {
+  text-align: right;
+}
+
+.route-timeline-leg-copy small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mode-bus .route-timeline-mode-marker {
+  border-color: #40589b;
+  color: #40589b;
+}
+
+.mode-subway .route-timeline-mode-marker {
+  border-color: #f2bb28;
+  color: #d79800;
+}
+
+.mode-walk .route-timeline-mode-marker,
+.mode-car .route-timeline-mode-marker,
+.mode-public .route-timeline-mode-marker {
+  border-color: #7b7f87;
+  color: #62666e;
+}
+
+.route-detail-live {
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f5f7fb;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.route-detail-fallback {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 24px 8px;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.route-detail-fallback strong:last-of-type {
+  text-align: right;
+}
+
+.route-detail-fallback p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .route-info-completion {
   position: absolute;
   top: 10px;

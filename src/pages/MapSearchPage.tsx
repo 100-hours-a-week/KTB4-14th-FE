@@ -5,7 +5,7 @@ import { PlaceRow } from '@/components/PlaceRow';
 import { useToast } from '@/context/ToastContext';
 import { useTravelDraft } from '@/context/TravelDraftContext';
 import type { PlaceCandidate } from '@/types';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 type SearchStatus = 'idle' | 'loading' | 'results' | 'empty' | 'invalid' | 'error';
@@ -22,62 +22,6 @@ export function MapSearchPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
   const searchRequestRef = useRef(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const initialKeyword = draft.destination_district && draft.destination_district !== '전체'
-      ? draft.destination_district
-      : draft.destination_province ?? draft.destination ?? '';
-
-    if (!draft.region_id || !initialKeyword.trim()) {
-      setResults([]);
-      setSelected(null);
-      setSearchError(null);
-      setSearchStatus('idle');
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    setQuery(initialKeyword);
-    const keyword = initialKeyword.trim();
-    if (keyword.length < 2) {
-      setResults([]);
-      setSelected(null);
-      setSearchStatus('invalid');
-      setSearchError('검색어를 2글자 이상 입력해 주세요.');
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const requestId = ++searchRequestRef.current;
-    setResults([]);
-    setSelected(null);
-    setSearchError(null);
-    setSearchStatus('loading');
-
-    void placesApi.search(keyword, draft.region_id)
-      .then((found) => {
-        if (cancelled || requestId !== searchRequestRef.current) return;
-        setResults(found);
-        setSelected(found[0] ?? null);
-        setSearchError(null);
-        setSearchStatus(found.length > 0 ? 'results' : 'empty');
-      })
-      .catch((error: unknown) => {
-        if (cancelled || requestId !== searchRequestRef.current) return;
-        setResults([]);
-        setSelected(null);
-        setSearchStatus('error');
-        setSearchError(toSearchErrorMessage(error));
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [draft.destination, draft.destination_district, draft.destination_province, draft.region_id]);
 
   const search = async () => {
     const keyword = query.trim();

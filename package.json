@@ -9,9 +9,12 @@
     "web": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test",
-    "test:e2e:p0": "playwright test --grep @P0",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e": "playwright test --project=mock",
+    "test:e2e:p0": "playwright test --project=mock --grep @P0",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:live": "playwright test --project=live",
+    "test:e2e:live:session": "playwright test --project=live-setup",
+    "test:e2e:typecheck": "tsc -p e2e"
   },
   "dependencies": {
     "react": "^19.1.1",

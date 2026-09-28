@@ -10,6 +10,8 @@ export type BasicInfo = {
   startTime?: [string, string];
   endTime?: [string, string];
   companion?: '혼자' | '연인' | '친구' | '가족';
+  /** 달력을 이번 달에서 몇 달 뒤로 넘겨서 고를지(live 스위트: 실제 현재 시각 기준 미래 날짜를 고르기 위해 사용) */
+  monthOffset?: number;
 };
 
 export const DEFAULT_BASIC: Required<BasicInfo> = {
@@ -20,6 +22,7 @@ export const DEFAULT_BASIC: Required<BasicInfo> = {
   startTime: ['10', '00'],
   endTime: ['18', '00'],
   companion: '친구',
+  monthOffset: 0,
 };
 
 export type PreferenceInfo = {
@@ -53,9 +56,11 @@ export async function selectRegion(page: Page, province: string, district: strin
     .click();
 }
 
-export async function pickDate(page: Page, which: 'start' | 'end', day: number) {
+export async function pickDate(page: Page, which: 'start' | 'end', day: number, monthOffset = 0) {
   await page.locator('.date-select').nth(which === 'start' ? 0 : 1).click();
-  await page.getByRole('dialog', { name: '날짜 선택' }).getByRole('button', { name: String(day), exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '날짜 선택' });
+  for (let i = 0; i < monthOffset; i += 1) await dialog.getByRole('button', { name: '다음 달' }).click();
+  await dialog.getByRole('button', { name: String(day), exact: true }).click();
 }
 
 export function calendarDay(page: Page, day: number): Locator {
@@ -73,9 +78,9 @@ export async function pickTime(page: Page, which: 'start' | 'end', [hour, minute
 export async function fillBasicInfo(page: Page, info: BasicInfo = {}) {
   const v = { ...DEFAULT_BASIC, ...info };
   await selectRegion(page, v.province, v.district);
-  await pickDate(page, 'start', v.startDay);
+  await pickDate(page, 'start', v.startDay, v.monthOffset);
   await pickTime(page, 'start', v.startTime);
-  await pickDate(page, 'end', v.endDay);
+  await pickDate(page, 'end', v.endDay, v.monthOffset);
   await pickTime(page, 'end', v.endTime);
   await page.getByRole('radio', { name: v.companion }).click();
 }

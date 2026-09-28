@@ -2,6 +2,8 @@ import { getJson, setJson, storage } from '@/storage';
 import type { PlaceCandidate, TravelDraft } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+export const MAX_REQUIRED_PLACES = 10;
+
 function createEmptyDraft(): TravelDraft {
   return {
     headcount: 2,
@@ -38,7 +40,14 @@ export function TravelDraftProvider({ children }: { children: ReactNode }) {
     const saved = getJson<TravelDraft>(storage.keys.travelDraft);
     if (saved) {
       const defaults = createEmptyDraft();
-      setDraft({ ...defaults, ...saved, preference: { ...defaults.preference, ...saved.preference } });
+      setDraft({
+        ...defaults,
+        ...saved,
+        required_places: Array.isArray(saved.required_places)
+          ? saved.required_places.slice(0, MAX_REQUIRED_PLACES)
+          : defaults.required_places,
+        preference: { ...defaults.preference, ...saved.preference },
+      });
     }
     setHydrated(true);
   }, []);
@@ -57,7 +66,10 @@ export function TravelDraftProvider({ children }: { children: ReactNode }) {
 
   const addPlace = useCallback((place: PlaceCandidate) => {
     setDraft((current) => {
-      if (current.required_places.some((item) => item.provider_place_id === place.provider_place_id)) return current;
+      if (
+        current.required_places.length >= MAX_REQUIRED_PLACES
+        || current.required_places.some((item) => item.provider_place_id === place.provider_place_id)
+      ) return current;
       return { ...current, required_places: [...current.required_places, place] };
     });
   }, []);

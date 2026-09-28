@@ -5,7 +5,7 @@ import { Modal } from '@/components/Modal';
 import { PlaceRow } from '@/components/PlaceRow';
 import { Progress } from '@/components/Progress';
 import { useToast } from '@/context/ToastContext';
-import { useTravelDraft } from '@/context/TravelDraftContext';
+import { MAX_REQUIRED_PLACES, useTravelDraft } from '@/context/TravelDraftContext';
 import { toDatetime } from '@/lib/options';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -48,6 +48,9 @@ function validateDraftForGeneration(draft: ReturnType<typeof useTravelDraft>['dr
   if (draft.preference.budget_min > draft.preference.budget_max) {
     return '최소 예산은 최대 예산보다 클 수 없어요.';
   }
+  if (draft.required_places.length > MAX_REQUIRED_PLACES) {
+    return `필수 장소는 최대 ${MAX_REQUIRED_PLACES}개까지 추가할 수 있어요.`;
+  }
 
   const invalidPlace = draft.required_places.find(
     (place) => !place.provider_place_id || !place.name?.trim() || !place.address?.trim()
@@ -65,6 +68,7 @@ export function PlacesPage() {
   const { draft, removePlace, reset } = useTravelDraft();
   const [target, setTarget] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const requiredPlacesLimitReached = draft.required_places.length >= MAX_REQUIRED_PLACES;
 
   const generate = async () => {
     const validationMessage = validateDraftForGeneration(draft);
@@ -120,8 +124,16 @@ export function PlacesPage() {
             ))}
           </div>
         )}
-        <button type="button" className="menu-row" style={{ marginTop: 12 }} onClick={() => navigate('/create-travel/map-search')}>
-          + 카카오맵에서 장소 추가
+        <button
+          type="button"
+          className="menu-row"
+          style={{ marginTop: 12 }}
+          onClick={() => navigate('/create-travel/map-search')}
+          disabled={requiredPlacesLimitReached}
+        >
+          {requiredPlacesLimitReached
+            ? `필수 장소는 최대 ${MAX_REQUIRED_PLACES}개까지 추가할 수 있어요.`
+            : '+ 카카오맵에서 장소 추가'}
         </button>
       </div>
       <div className="footer-bar">

@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { KakaoMap } from '@/components/KakaoMap';
 import { PlaceRow } from '@/components/PlaceRow';
 import { useToast } from '@/context/ToastContext';
-import { useTravelDraft } from '@/context/TravelDraftContext';
+import { MAX_REQUIRED_PLACES, useTravelDraft } from '@/context/TravelDraftContext';
 import type { PlaceCandidate, TravelDraft } from '@/types';
 import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -22,6 +22,7 @@ export function MapSearchPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
   const searchRequestRef = useRef(0);
+  const requiredPlacesLimitReached = !replaceItemId && draft.required_places.length >= MAX_REQUIRED_PLACES;
 
   const search = async () => {
     const keyword = query.trim();
@@ -73,6 +74,10 @@ export function MapSearchPage() {
       toast.show('이미 필수 장소에 추가된 장소예요.');
       return;
     }
+    if (draft.required_places.length >= MAX_REQUIRED_PLACES) {
+      toast.show(`필수 장소는 최대 ${MAX_REQUIRED_PLACES}개까지 추가할 수 있어요.`);
+      return;
+    }
     addPlace(place);
     toast.show('장소가 추가되었습니다.');
   };
@@ -116,8 +121,10 @@ export function MapSearchPage() {
                 <PlaceRow
                   place={selected}
                   onAdd={() => add(selected)}
-                  addDisabled={!isPlaceInTravelRegion(selected, draft)}
-                  addLabel={isPlaceInTravelRegion(selected, draft) ? '추가' : '지역 외'}
+                  addDisabled={!isPlaceInTravelRegion(selected, draft) || requiredPlacesLimitReached}
+                  addLabel={!isPlaceInTravelRegion(selected, draft)
+                    ? '지역 외'
+                    : requiredPlacesLimitReached ? `최대 ${MAX_REQUIRED_PLACES}개` : '추가'}
                 />
               </div>
             ) : null}
@@ -127,14 +134,19 @@ export function MapSearchPage() {
             {results.some((place) => !isPlaceInTravelRegion(place, draft)) ? (
               <p className="search-status search-region-help">선택한 여행 지역 밖의 장소는 추가할 수 없어요.</p>
             ) : null}
+            {requiredPlacesLimitReached ? (
+              <p className="search-status search-region-help">필수 장소는 최대 {MAX_REQUIRED_PLACES}개까지 추가할 수 있어요.</p>
+            ) : null}
             <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
               {results.map((place) => (
                 <PlaceRow
                   key={place.provider_place_id}
                   place={place}
                   onAdd={() => add(place)}
-                  addDisabled={!isPlaceInTravelRegion(place, draft)}
-                  addLabel={isPlaceInTravelRegion(place, draft) ? '추가' : '지역 외'}
+                  addDisabled={!isPlaceInTravelRegion(place, draft) || requiredPlacesLimitReached}
+                  addLabel={!isPlaceInTravelRegion(place, draft)
+                    ? '지역 외'
+                    : requiredPlacesLimitReached ? `최대 ${MAX_REQUIRED_PLACES}개` : '추가'}
                 />
               ))}
             </div>

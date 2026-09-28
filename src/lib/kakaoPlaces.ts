@@ -34,6 +34,16 @@ type KakaoWindow = {
 };
 
 const KAKAO_SDK_TIMEOUT_MS = 8000;
+const KAKAO_SEARCH_TIMEOUT_MS = 15_000;
+
+class KakaoPlaceSearchTimeoutError extends Error {
+  readonly code = 'search_timeout';
+
+  constructor() {
+    super('카카오 장소 검색 시간이 초과되었습니다.');
+    this.name = 'KakaoPlaceSearchTimeoutError';
+  }
+}
 
 export async function searchKakaoPlaces(
   keyword: string,
@@ -44,34 +54,47 @@ export async function searchKakaoPlaces(
 
   return new Promise((resolve, reject) => {
     const places = new services.Places();
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      settled = true;
+      reject(new KakaoPlaceSearchTimeoutError());
+    }, KAKAO_SEARCH_TIMEOUT_MS);
+
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      callback();
+    };
+
     places.keywordSearch(keyword, (documents, status) => {
+      if (settled) return;
       if (status === services.Status.ZERO_RESULT) {
-        resolve([]);
+        settle(() => resolve([]));
         return;
       }
       if (status !== services.Status.OK) {
-        reject(new Error('카카오 장소 검색에 실패했습니다.'));
+        settle(() => reject(new Error('카카오 장소 검색에 실패했습니다.')));
         return;
       }
 
-      resolve(
-        documents.flatMap((place) => {
-          const latitude = Number(place.y);
-          const longitude = Number(place.x);
-          if (!place.id || !place.place_name || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-            return [];
-          }
-          return [{
-            provider: 'KAKAO' as const,
-            provider_place_id: place.id,
-            name: place.place_name,
-            address: place.road_address_name || place.address_name || '',
-            latitude,
-            longitude,
-            place_type: 'TOURISM' as const,
-          }];
-        }),
-      );
+      const mappedPlaces = documents.flatMap((place) => {
+        const latitude = Number(place.y);
+        const longitude = Number(place.x);
+        if (!place.id || !place.place_name || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          return [];
+        }
+        return [{
+          provider: 'KAKAO' as const,
+          provider_place_id: place.id,
+          name: place.place_name,
+          address: place.road_address_name || place.address_name || '',
+          latitude,
+          longitude,
+          place_type: 'TOURISM' as const,
+        }];
+      });
+      settle(() => resolve(mappedPlaces));
     }, { page, size });
   });
 }

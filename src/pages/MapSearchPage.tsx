@@ -184,10 +184,13 @@ function travelRegionLabel(draft: TravelDraft) {
 
 function toSearchErrorMessage(error: unknown) {
   const candidate = error && typeof error === 'object'
-    ? error as { status?: number; message?: string; payload?: { message?: string } }
+    ? error as { code?: string; status?: number; message?: string; payload?: { message?: string } }
     : {};
   const code = candidate.payload?.message ?? candidate.message;
 
+  if (candidate.code === 'search_timeout') {
+    return '검색이 지연되고 있어요. 잠시 후 다시 시도해 주세요.';
+  }
   if (code === 'region_not_found' || candidate.status === 404) {
     return '선택한 지역 정보를 찾을 수 없습니다. 지역 목록을 다시 확인해 주세요.';
   }

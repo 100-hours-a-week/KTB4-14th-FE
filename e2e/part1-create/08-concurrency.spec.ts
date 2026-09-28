@@ -4,7 +4,7 @@ import { generateButton, goToPlacesStep } from '../support/flows';
 /** 8. 동시성 · 멱등성 */
 test.describe('8. 동시성 · 멱등성', () => {
   test.skip('CONC-01 동일 요청 재전송 시 서버가 단일 요청으로만 처리', { tag: ['@P0', '@BE'] }, async () => {
-    // 서버측 중복 감지(멱등성 키/락)는 백엔드 통합 테스트에서 동일 요청 2회 전송으로 검증.
+    // 서버측 중복 감지(멱등성 키/락)는 live 스위트 LIVE-CONC-01(e2e/live/04-backend-rules.spec.ts)에서 동일 요청 2회 동시 전송으로 검증.
     // 클라이언트측 연속 클릭 방지는 ASY-06 에서 검증.
   });
 
@@ -27,7 +27,7 @@ test.describe('8. 동시성 · 멱등성', () => {
   });
 
   test.skip('CONC-03 LLM 성공 직후 DB 저장 실패 시 LLM 재호출 없이 저장만 재시도', { tag: ['@P1', '@BE'] }, async () => {
-    // 저장 단계 장애 주입은 백엔드 통합 테스트(Testcontainers + 장애 주입)에서만 가능.
+    // 저장 단계 장애 주입은 백엔드 통합 테스트(Testcontainers + 장애 주입)에서만 가능(live 스위트로도 불가).
   });
 
   test('CONC-04 같은 계정으로 두 탭에서 동시에 생성하면 두 번째 요청은 거절', { tag: '@P2' }, async ({ page, context, api }) => {

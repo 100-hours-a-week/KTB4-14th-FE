@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import { API_BASE_URL, APP_ORIGIN } from './env';
+import { API_BASE_URL, APP_ORIGIN, apiPathOf } from './env';
 import * as data from './data';
 import { KAKAO_SDK_STUB } from './kakao-sdk-stub';
 
@@ -71,6 +71,15 @@ function toRegex(path: string) {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export type MockBackendOptions = {
+  /**
+   * true 면 실제 백엔드 연동(live) 모드.
+   * - `api.on()/api.once()` 로 덮어쓴 요청만 가짜 응답(예외 주입)하고, 나머지는 실제 백엔드로 보낸다.
+   * - 시계를 고정하지 않고, 카카오 인가 화면도 가로채지 않는다.
+   */
+  passthrough?: boolean;
+};
+
 /**
  * 상태를 가진 가짜 AUDIGO 백엔드.
  * - 기본 라우트는 "정상 동작"을 흉내 낸다.
@@ -113,20 +122,25 @@ export class MockBackend {
   private nextPlanId = 500;
   private nextJobId = 900;
 
-  constructor(now: string | Date) {
+  readonly passthrough: boolean;
+
+  constructor(now: string | Date, options: MockBackendOptions = {}) {
     this.now = new Date(now);
+    this.passthrough = options.passthrough ?? false;
     this.registerDefaults();
   }
 
   /* ------------------------------------------------------------------ 설치 */
 
   async attach(page: Page) {
-    await page.clock.setFixedTime(this.now);
+    if (!this.passthrough) await page.clock.setFixedTime(this.now);
     await page.route(`${API_BASE_URL}/**`, (route) => this.handle(route));
     await page.route('https://dapi.kakao.com/**', (route) =>
       route.fulfill({ status: 200, contentType: 'application/javascript', body: KAKAO_SDK_STUB }),
     );
-    await page.route('https://kauth.kakao.com/**', (route) => this.handleKakaoAuthorize(route));
+    if (!this.passthrough) {
+      await page.route('https://kauth.kakao.com/**', (route) => this.handleKakaoAuthorize(route));
+    }
   }
 
   /* --------------------------------------------------------------- 덮어쓰기 */
@@ -327,6 +341,7 @@ export class MockBackend {
         return { handler: override.handler, params };
       }
     }
+    if (this.passthrough) return null;
     for (const def of this.routes) {
       const params = matchDef(def);
       if (params) return { handler: def.handler, params };
@@ -349,7 +364,8 @@ export class MockBackend {
     const cors = this.corsHeaders(headers.origin);
     try {
       if (request.method() === 'OPTIONS') {
-        await route.fulfill({ status: 204, headers: cors });
+        if (this.passthrough) await route.continue();
+        else await route.fulfill({ status: 204, headers: cors });
         return;
       }
       if (this.offline) {
@@ -363,10 +379,14 @@ export class MockBackend {
       } catch {
         body = request.postData();
       }
-      const base = { method: request.method(), path: url.pathname, query: url.searchParams, body, headers };
+      const base = { method: request.method(), path: apiPathOf(url), query: url.searchParams, body, headers };
       this.calls.push({ ...base, at: Date.now() });
 
       const resolved = this.resolve(base);
+      if (!resolved && this.passthrough) {
+        await route.continue();
+        return;
+      }
       const reply: MockReply = resolved
         ? await resolved.handler({ ...base, params: resolved.params }, this)
         : { status: 404, body: { message: 'not_found' } };

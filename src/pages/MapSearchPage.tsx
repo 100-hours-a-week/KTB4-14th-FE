@@ -4,7 +4,7 @@ import { KakaoMap } from '@/components/KakaoMap';
 import { PlaceRow } from '@/components/PlaceRow';
 import { useToast } from '@/context/ToastContext';
 import { useTravelDraft } from '@/context/TravelDraftContext';
-import type { PlaceCandidate } from '@/types';
+import type { PlaceCandidate, TravelDraft } from '@/types';
 import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -59,6 +59,10 @@ export function MapSearchPage() {
       toast.show('주소 정보가 없는 장소는 필수 장소로 추가할 수 없어요.');
       return;
     }
+    if (!isPlaceInTravelRegion(place, draft)) {
+      toast.show(`${travelRegionLabel(draft)} 밖의 장소는 추가할 수 없어요.`);
+      return;
+    }
     if (replaceItemId) {
       await placesApi.changePlace(Number(replaceItemId), place);
       toast.show('장소가 변경되었습니다.');
@@ -109,15 +113,29 @@ export function MapSearchPage() {
           <div className="scroll" style={{ paddingTop: 4 }}>
             {selected ? (
               <div style={{ marginBottom: 10 }}>
-                <PlaceRow place={selected} onAdd={() => add(selected)} />
+                <PlaceRow
+                  place={selected}
+                  onAdd={() => add(selected)}
+                  addDisabled={!isPlaceInTravelRegion(selected, draft)}
+                  addLabel={isPlaceInTravelRegion(selected, draft) ? '추가' : '지역 외'}
+                />
               </div>
             ) : null}
             <strong>검색 결과</strong>
             {searchStatus === 'loading' ? <p className="search-status">검색 중이에요.</p> : null}
             {searchStatus === 'idle' ? <p className="search-status">검색어를 입력하고 검색해 주세요.</p> : null}
+            {results.some((place) => !isPlaceInTravelRegion(place, draft)) ? (
+              <p className="search-status search-region-help">선택한 여행 지역 밖의 장소는 추가할 수 없어요.</p>
+            ) : null}
             <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
               {results.map((place) => (
-                <PlaceRow key={place.provider_place_id} place={place} onAdd={() => add(place)} />
+                <PlaceRow
+                  key={place.provider_place_id}
+                  place={place}
+                  onAdd={() => add(place)}
+                  addDisabled={!isPlaceInTravelRegion(place, draft)}
+                  addLabel={isPlaceInTravelRegion(place, draft) ? '추가' : '지역 외'}
+                />
               ))}
             </div>
           </div>
@@ -125,6 +143,43 @@ export function MapSearchPage() {
       )}
     </section>
   );
+}
+
+function isPlaceInTravelRegion(place: PlaceCandidate, draft: TravelDraft) {
+  const address = normalizeRegionText(place.address);
+  const province = normalizeRegionText(
+    draft.destination_province ?? draft.destination?.split(/\s+/)[0] ?? '',
+  );
+  const district = normalizeRegionText(draft.destination_district ?? '');
+
+  if (!address || !province) return false;
+
+  const provinceMatches = regionPartMatches(address, province);
+  if (!provinceMatches) return false;
+
+  return !district || district === '전체' || regionPartMatches(address, district);
+}
+
+function regionPartMatches(address: string, regionPart: string) {
+  const normalizedPart = normalizeRegionText(regionPart);
+  if (!normalizedPart) return false;
+  if (address.includes(normalizedPart)) return true;
+
+  const shortPart = normalizedPart.replace(/(특별자치도|특별자치시|광역시|특별시|도|시)$/, '');
+  return shortPart.length >= 2 && address.includes(shortPart);
+}
+
+function normalizeRegionText(value: string) {
+  return value.normalize('NFKC').replace(/\s+/g, ' ').trim();
+}
+
+function travelRegionLabel(draft: TravelDraft) {
+  const destination = normalizeRegionText(draft.destination ?? '');
+  if (destination) return destination;
+
+  const province = normalizeRegionText(draft.destination_province ?? '');
+  const district = normalizeRegionText(draft.destination_district ?? '');
+  return [province, district && district !== '전체' ? district : null].filter(Boolean).join(' ') || '선택한 여행 지역';
 }
 
 function toSearchErrorMessage(error: unknown) {

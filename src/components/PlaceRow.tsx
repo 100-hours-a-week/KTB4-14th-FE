@@ -4,10 +4,14 @@ export function PlaceRow({
   place,
   onRemove,
   onAdd,
+  addDisabled = false,
+  addLabel = '추가',
 }: {
   place: PlaceCandidate;
   onRemove?: () => void;
   onAdd?: () => void;
+  addDisabled?: boolean;
+  addLabel?: string;
 }) {
   return (
     <div className="place-row">
@@ -17,8 +21,8 @@ export function PlaceRow({
         <div className="place-addr">{place.address}</div>
       </div>
       {onAdd ? (
-        <button type="button" className="add-mini" onClick={onAdd}>
-          추가
+        <button type="button" className="add-mini" onClick={onAdd} disabled={addDisabled}>
+          {addLabel}
         </button>
       ) : null}
       {onRemove ? (

@@ -98,7 +98,7 @@ function loadKakaoMapScript(appKey: string, onReady: () => void, onError: () => 
 
   const script = document.createElement('script');
   script.dataset.audigoKakaoMap = 'true';
-  script.src = `${KAKAO_MAP_SCRIPT_URL}?appkey=${encodeURIComponent(appKey)}&autoload=false`;
+  script.src = `${KAKAO_MAP_SCRIPT_URL}?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=services`;
   script.async = true;
   script.addEventListener('load', handleLoad, { once: true });
   script.addEventListener('error', fail, { once: true });

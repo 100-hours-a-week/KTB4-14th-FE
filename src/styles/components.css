@@ -246,6 +246,12 @@
   font-weight: 800;
 }
 
+.add-mini:disabled {
+  background: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .ghost-icon {
   border: 0;
   background: transparent;

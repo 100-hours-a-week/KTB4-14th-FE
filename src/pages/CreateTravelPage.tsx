@@ -167,7 +167,7 @@ export function CreateTravelPage() {
 
   return (
     <section className="screen create-travel-screen">
-      <Header title="여행 생성하기" className="create-travel-header" onBack={() => navigate(-1)} showBell />
+      <Header title="여행 생성하기" className="create-travel-header" onBack={() => navigate('/home', { replace: true })} showBell />
 
       <div className="scroll">
         <Progress step={1} labeled />

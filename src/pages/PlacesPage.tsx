@@ -27,6 +27,9 @@ function generationErrorMessage(error: unknown) {
   if (apiError.status === 404 || code === 'region_not_found') {
     return '선택한 여행 지역을 찾을 수 없어요. 지역을 다시 선택해 주세요.';
   }
+  if (code === 'travel_generation_in_progress') {
+    return '현재 다른 여행 일정을 생성 중이에요. 생성이 완료된 후 다시 시도해 주세요.';
+  }
   if (apiError.status === 409 || code === 'duplicated_required_place') {
     return '필수 장소가 중복됐어요. 장소를 다시 확인해 주세요.';
   }

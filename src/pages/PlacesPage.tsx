@@ -7,6 +7,8 @@ import { Progress } from '@/components/Progress';
 import { useToast } from '@/context/ToastContext';
 import { MAX_REQUIRED_PLACES, useTravelDraft } from '@/context/TravelDraftContext';
 import { toDatetime } from '@/lib/options';
+import { saveTravelGenerationRequest } from '@/storage';
+import type { CreateTravelPlanRequest } from '@/types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -82,7 +84,7 @@ export function PlacesPage() {
 
     setLoading(true);
     try {
-      const created = await travelsApi.create({
+      const request: CreateTravelPlanRequest = {
         region_id: draft.region_id ?? 1,
         headcount: draft.headcount ?? 2,
         companion_type: draft.companion ?? 'COUPLE',
@@ -99,7 +101,11 @@ export function PlacesPage() {
           place_type: place.place_type ?? 'TOURISM',
           order: index + 1,
         })),
-      });
+      };
+      const created = await travelsApi.create(request);
+      // 서버에는 장소 상세정보를 저장하지 않으므로, 같은 브라우저에서 재생성할 때만
+      // 최초 요청을 다시 사용할 수 있도록 여행 ID별로 임시 보관한다.
+      saveTravelGenerationRequest(created.travel_plan_id, request);
       reset();
       const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
       navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });

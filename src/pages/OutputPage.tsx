@@ -1,8 +1,9 @@
-import { USE_MOCK, travelsApi } from '@/api';
+import { placesApi, USE_MOCK, travelsApi } from '@/api';
 import { Header } from '@/components/Header';
 import { KakaoRouteMap } from '@/components/KakaoRouteMap';
 import { Modal } from '@/components/Modal';
 import { nightsAndDays } from '@/lib/options';
+import { getTravelGenerationRequest } from '@/storage';
 import type {
   ItineraryDay,
   ItineraryItem,
@@ -123,6 +124,26 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     [detail],
   );
 
+  useEffect(() => {
+    if (!detail) return undefined;
+
+    const unresolvedPlaceIds = places
+      .filter(needsKakaoPlaceResolution)
+      .map((place) => place.provider_place_id)
+      .filter((placeId): placeId is string => Boolean(placeId));
+    if (unresolvedPlaceIds.length === 0) return undefined;
+
+    let cancelled = false;
+    void placesApi.resolveLivePlaces(unresolvedPlaceIds).then((resolved) => {
+      if (cancelled || resolved.size === 0) return;
+      setDetail((current) => current ? mergeResolvedPlaces(current, resolved) : current);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detail, places]);
+
   const changeTab = (nextTab: OutputTab) => {
     if (nextTab === tab) return;
     navigate(`/output/${planId}/${nextTab}`);
@@ -200,9 +221,16 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         onClose={() => setRecreate(false)}
         onConfirm={async () => {
           setRecreate(false);
-          const created = await travelsApi.regenerate(planId);
-          const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
-          navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });
+          try {
+            const created = await travelsApi.regenerate(
+              planId,
+              getTravelGenerationRequest(planId),
+            );
+            const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
+            navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });
+          } catch {
+            setError('일정 재생성 요청에 실패했어요. 잠시 후 다시 시도해 주세요.');
+          }
         }}
       />
     </section>
@@ -930,6 +958,40 @@ function formatDateTime(value: string) {
 
 function isPlaceItem(item: ItineraryItem): item is ItineraryPlaceItem {
   return item.type === 'PLACE';
+}
+
+function needsKakaoPlaceResolution(place: ItineraryPlaceItem) {
+  const providerPlaceId = place.provider_place_id?.trim();
+  if (!providerPlaceId) return false;
+  return !place.name.trim() || place.name === providerPlaceId || place.name === '장소 정보 없음';
+}
+
+function mergeResolvedPlaces(
+  detail: TravelDetail,
+  resolved: Map<string, { place_name: string | null }>,
+): TravelDetail {
+  let changed = false;
+  const itineraryDays = detail.itinerary_days.map((day) => ({
+    ...day,
+    items: day.items.map((item) => {
+      if (item.type !== 'PLACE' || !item.provider_place_id) return item;
+      const place = resolved.get(item.provider_place_id);
+      if (!place?.place_name) return item;
+
+      const nextItem = {
+        ...item,
+        name: needsKakaoPlaceResolution(item) ? place.place_name : item.name,
+      };
+      if (
+        nextItem.name !== item.name
+      ) {
+        changed = true;
+      }
+      return nextItem;
+    }),
+  }));
+
+  return changed ? { ...detail, itinerary_days: itineraryDays } : detail;
 }
 
 function updatePlaceCompletion(

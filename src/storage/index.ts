@@ -1,6 +1,9 @@
+import type { CreateTravelPlanRequest } from '@/types';
+
 const KEYS = {
   user: 'audigo.user',
   travelDraft: 'audigo.travel_draft',
+  travelGenerationRequests: 'audigo.travel_generation_requests',
 } as const;
 
 function read(key: string) {
@@ -24,6 +27,24 @@ export function getJson<T>(key: string): T | null {
 
 export function setJson(key: string, value: unknown) {
   write(key, JSON.stringify(value));
+}
+
+export function saveTravelGenerationRequest(
+  travelPlanId: number,
+  request: CreateTravelPlanRequest,
+) {
+  const requests = getJson<Record<string, CreateTravelPlanRequest>>(
+    KEYS.travelGenerationRequests,
+  ) ?? {};
+  requests[String(travelPlanId)] = request;
+  setJson(KEYS.travelGenerationRequests, requests);
+}
+
+export function getTravelGenerationRequest(travelPlanId: number) {
+  const requests = getJson<Record<string, CreateTravelPlanRequest>>(
+    KEYS.travelGenerationRequests,
+  );
+  return requests?.[String(travelPlanId)] ?? null;
 }
 
 export const storage = {

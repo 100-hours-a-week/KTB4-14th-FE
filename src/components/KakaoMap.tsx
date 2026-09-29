@@ -11,9 +11,29 @@ type KakaoMapInstance = {
   setBounds: (bounds: unknown) => void;
 };
 
+type KakaoAddressDocument = {
+  x?: string;
+  y?: string;
+};
+
+type KakaoGeocoder = {
+  addressSearch: (
+    query: string,
+    callback: (documents: KakaoAddressDocument[], status: string) => void,
+  ) => void;
+};
+
+type KakaoMapServices = {
+  Geocoder: new () => KakaoGeocoder;
+  Status: {
+    OK: string;
+  };
+};
+
 type KakaoMapApi = {
-  maps: {
-    load: (callback: () => void) => void;
+    maps: {
+      load: (callback: () => void) => void;
+    services?: KakaoMapServices;
     Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMapInstance;
     LatLng: new (latitude: number, longitude: number) => KakaoLatLng;
     LatLngBounds: new () => { extend: (position: KakaoLatLng) => void };
@@ -115,10 +135,12 @@ export function KakaoMap({
   places,
   selectedPlaceId,
   onSelect,
+  regionQuery,
 }: {
   places: PlaceCandidate[];
   selectedPlaceId?: string;
   onSelect: (place: PlaceCandidate) => void;
+  regionQuery?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMapInstance | null>(null);
@@ -147,6 +169,30 @@ export function KakaoMap({
       markersRef.current = [];
     };
   }, [ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const kakao = window.kakao;
+    const query = regionQuery?.trim();
+    const services = kakao?.maps?.services;
+    if (!map || !kakao || !query || !services) return;
+
+    let active = true;
+    const geocoder = new services.Geocoder();
+    geocoder.addressSearch(query, (documents, status) => {
+      if (!active || status !== services.Status.OK || !documents[0]) return;
+
+      const latitude = Number(documents[0].y);
+      const longitude = Number(documents[0].x);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+      map.setCenter(new kakao.maps.LatLng(latitude, longitude));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [ready, regionQuery]);
 
   useEffect(() => {
     const map = mapRef.current;

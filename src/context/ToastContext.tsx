@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 type ToastContextValue = { show: (message: string) => void };
 
@@ -13,6 +13,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setMessage(null), 1800);
   }, []);
+
+  useEffect(() => {
+    const handleOffline = () => show('인터넷 연결이 끊어졌습니다.');
+    const handleOnline = () => show('인터넷 연결이 복구되었습니다.');
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    if (!navigator.onLine) handleOffline();
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [show]);
 
   const value = useMemo(() => ({ show }), [show]);
 

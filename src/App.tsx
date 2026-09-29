@@ -21,7 +21,7 @@ import { PlacesPage } from '@/pages/PlacesPage';
 import { PoliciesPage } from '@/pages/PoliciesPage';
 import { PreferencePage } from '@/pages/PreferencePage';
 import { VideoPage } from '@/pages/VideoPage';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 
 function Gate() {
   const { ready, user } = useAuth();
@@ -33,6 +33,25 @@ function Gate() {
     );
   }
   return <Navigate to={user ? '/home' : '/login'} replace />;
+}
+
+function ProtectedRoute() {
+  const { ready, user } = useAuth();
+  const location = useLocation();
+
+  if (!ready) {
+    return (
+      <div className="splash">
+        <div className="splash-mark">AUDIGO</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
 }
 
 export default function App() {
@@ -48,28 +67,30 @@ export default function App() {
                     <Route path="/" element={<Gate />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/auth/kakao" element={<KakaoCallbackPage />} />
-                    <Route element={<TabLayout />}>
-                      <Route path="/home" element={<HomePage />} />
-                      <Route path="/matching" element={<MatchingPage />} />
-                      <Route path="/chat" element={<ChatPage />} />
-                      <Route path="/my" element={<MyPage />} />
+                    <Route element={<ProtectedRoute />}>
+                      <Route element={<TabLayout />}>
+                        <Route path="/home" element={<HomePage />} />
+                        <Route path="/matching" element={<MatchingPage />} />
+                        <Route path="/chat" element={<ChatPage />} />
+                        <Route path="/my" element={<MyPage />} />
+                      </Route>
+                      <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/create-travel" element={<CreateTravelPage />} />
+                      <Route path="/create-travel/preference" element={<PreferencePage />} />
+                      <Route path="/create-travel/places" element={<PlacesPage />} />
+                      <Route path="/create-travel/map-search" element={<MapSearchPage />} />
+                      <Route path="/generating/:id" element={<GeneratingPage />} />
+                      <Route path="/output/:id/places" element={<OutputPlacesPage />} />
+                      <Route path="/output/:id/routes" element={<OutputRoutesPage />} />
+                      <Route path="/output/:id" element={<Navigate to="places" replace />} />
+                      <Route path="/itinerary/:id" element={<ItineraryPage />} />
+                      <Route path="/checklist/:id" element={<ChecklistPage />} />
+                      <Route path="/video/:id" element={<VideoPage />} />
+                      <Route path="/my-trips" element={<MyTripsPage />} />
+                      <Route path="/matching-settings" element={<MatchingSettingsPage />} />
+                      <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+                      <Route path="/policies" element={<PoliciesPage />} />
                     </Route>
-                    <Route path="/notifications" element={<NotificationsPage />} />
-                    <Route path="/create-travel" element={<CreateTravelPage />} />
-                    <Route path="/create-travel/preference" element={<PreferencePage />} />
-                    <Route path="/create-travel/places" element={<PlacesPage />} />
-                    <Route path="/create-travel/map-search" element={<MapSearchPage />} />
-                    <Route path="/generating/:id" element={<GeneratingPage />} />
-                    <Route path="/output/:id/places" element={<OutputPlacesPage />} />
-                    <Route path="/output/:id/routes" element={<OutputRoutesPage />} />
-                    <Route path="/output/:id" element={<Navigate to="places" replace />} />
-                    <Route path="/itinerary/:id" element={<ItineraryPage />} />
-                    <Route path="/checklist/:id" element={<ChecklistPage />} />
-                    <Route path="/video/:id" element={<VideoPage />} />
-                    <Route path="/my-trips" element={<MyTripsPage />} />
-                    <Route path="/matching-settings" element={<MatchingSettingsPage />} />
-                    <Route path="/notification-settings" element={<NotificationSettingsPage />} />
-                    <Route path="/policies" element={<PoliciesPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </NotificationProvider>

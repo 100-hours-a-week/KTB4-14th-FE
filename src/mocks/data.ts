@@ -10,6 +10,7 @@
   TravelSummary,
   TravelVideo,
 } from '@/types';
+import { defaultPolicies } from '@/data/policies';
 
 export const mockUser = {
   user_id: 1,
@@ -28,26 +29,7 @@ export const mockMyPage: MyPage = {
   upcoming_travel_count: 3,
 };
 
-export const mockPolicies: Record<string, Policy> = {
-  TERMS_OF_SERVICE: {
-    policy_id: 1,
-    policy_type: 'TERMS_OF_SERVICE',
-    title: '이용약관',
-    content:
-      'AUDIGO 서비스 이용약관입니다.\n\n1. 서비스는 AI 여행 일정 생성, 경로 추천, 체크리스트와 여행 영상을 제공합니다.\n2. 생성된 일정은 참고용이며, 실제 영업시간/교통 상황은 달라질 수 있습니다.\n3. 회원은 카카오 계정으로 로그인하며, AUDIGO가 발급한 토큰으로 API를 이용합니다.',
-    version: '1.0',
-    effective_date: '2026-09-01',
-  },
-  PRIVACY_POLICY: {
-    policy_id: 2,
-    policy_type: 'PRIVACY_POLICY',
-    title: '개인정보 처리방침',
-    content:
-      'AUDIGO는 카카오 로그인 식별값, 닉네임, 여행 조건, 알림 설정만 필요한 범위에서 처리합니다.\n프로필 이미지와 장소 검색 결과는 화면 표시 및 일정 구성 목적으로만 사용됩니다.',
-    version: '1.0',
-    effective_date: '2026-09-01',
-  },
-};
+export const mockPolicies: Record<string, Policy> = defaultPolicies;
 
 export const mockPlaces: PlaceCandidate[] = [
   {

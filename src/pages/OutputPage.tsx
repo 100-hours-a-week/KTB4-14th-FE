@@ -589,8 +589,8 @@ function RouteDetailCard({
       </button>
       {expanded ? (
         <div className="output-route-detail">
-          <div><span>탑승 위치</span><strong>{boardingLocationLabel(route, from)}</strong></div>
-          <div><span>하차 위치</span><strong>{alightingLocationLabel(route, to)}</strong></div>
+          <div className="output-route-location-row"><span>탑승 위치</span><strong>{boardingLocationLabel(route, from)}</strong></div>
+          <div className="output-route-location-row"><span>하차 위치</span><strong>{alightingLocationLabel(route, to)}</strong></div>
           <RouteLegList route={route} compact />
           <button type="button" className="route-detail-open" onClick={onOpenDetail}>
             상세 경로 보기

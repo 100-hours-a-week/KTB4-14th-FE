@@ -859,6 +859,11 @@
   cursor: default;
 }
 
+.calendar-day.disabled-date {
+  color: #b4aaa0;
+  text-decoration: line-through;
+}
+
 .calendar-day.selected {
   background: #111111;
   color: var(--white);
@@ -1313,8 +1318,13 @@
   position: absolute;
   top: 50%;
   right: 10px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1;
   transform: translateY(-50%);
 }
 
@@ -1781,28 +1791,41 @@
   position: absolute;
   top: 50%;
   right: 14px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
   color: var(--navy);
   font-size: 15px;
   font-weight: 900;
+  line-height: 1;
   transform: translateY(-50%);
 }
 
 .output-route-detail {
   display: grid;
-  gap: 5px;
-  padding: 0 14px 12px;
+  gap: 8px;
+  padding: 8px 14px 12px;
   background: #faf8f5;
 }
 
-.output-route-detail > div {
-  display: flex;
-  gap: 10px;
-  justify-content: space-between;
+.output-route-location-row {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 22px;
+  padding: 2px 0;
   color: var(--muted);
   font-size: 10px;
 }
 
-.output-route-detail strong {
+.output-route-location-row span {
+  font-weight: 800;
+}
+
+.output-route-location-row strong {
+  min-width: 0;
   overflow: hidden;
   color: var(--ink);
   font-weight: 700;

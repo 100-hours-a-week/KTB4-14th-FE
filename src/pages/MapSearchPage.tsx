@@ -23,6 +23,11 @@ export function MapSearchPage() {
   const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
   const searchRequestRef = useRef(0);
   const requiredPlacesLimitReached = !replaceItemId && draft.required_places.length >= MAX_REQUIRED_PLACES;
+  const regionQuery = draft.destination
+    ?? [
+      draft.destination_province,
+      draft.destination_district && draft.destination_district !== '전체' ? draft.destination_district : null,
+    ].filter(Boolean).join(' ');
 
   const search = async () => {
     const keyword = query.trim();
@@ -113,6 +118,7 @@ export function MapSearchPage() {
               places={results}
               selectedPlaceId={selected?.provider_place_id}
               onSelect={setSelected}
+              regionQuery={regionQuery}
             />
           </div>
           <div className="scroll" style={{ paddingTop: 4 }}>

@@ -69,11 +69,11 @@ export function NotificationsPage() {
               <span className="menu-icon" style={{ background: 'var(--sand)' }}>
                 {ICONS[item.type]}
               </span>
-              <span style={{ flex: 1 }}>
+              <span className="noti-content">
                 <strong>{item.title}</strong>
-                <div className="place-addr">{item.body}</div>
+                <div className="place-addr noti-message">{item.body}</div>
               </span>
-              <small className="place-addr">{timeLabel(item.created_at)}</small>
+              <small className="place-addr noti-date">{timeLabel(item.created_at)}</small>
             </button>
           ))
         )}

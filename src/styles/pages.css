@@ -1988,6 +1988,7 @@
 
 .noti-row {
   display: flex;
+  align-items: flex-start;
   gap: 12px;
   padding: 14px;
   border-radius: var(--radius-md);
@@ -1996,11 +1997,29 @@
   margin-bottom: 8px;
   width: 100%;
   text-align: left;
+  opacity: 0.6;
 }
 
 .noti-row.unread {
-  background: var(--primary-soft);
-  border-color: var(--primary-soft);
+  background: var(--white);
+  border-color: var(--line);
+  opacity: 1;
+}
+
+.noti-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.noti-message {
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  line-height: 1.45;
+}
+
+.noti-date {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .thumb {

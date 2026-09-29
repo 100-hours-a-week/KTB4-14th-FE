@@ -1,9 +1,10 @@
 import { notificationsApi } from '@/api';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
+import { Modal } from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import type { NotificationSettings } from '@/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ITEMS: { key: keyof NotificationSettings; label: string; desc: string }[] = [
@@ -17,6 +18,7 @@ const ITEMS: { key: keyof NotificationSettings; label: string; desc: string }[] 
 export function NotificationSettingsPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const [initialSettings, setInitialSettings] = useState<NotificationSettings | null>(null);
   const [settings, setSettings] = useState<NotificationSettings>({
     match_success_enabled: true,
     chat_enabled: true,
@@ -24,14 +26,31 @@ export function NotificationSettingsPage() {
     travel_complete_enabled: true,
     notification_enabled: true,
   });
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   useEffect(() => {
-    notificationsApi.getSettings().then(setSettings);
+    notificationsApi.getSettings().then((next) => {
+      setSettings(next);
+      setInitialSettings(next);
+    });
   }, []);
+
+  const hasChanges = useMemo(() => {
+    if (!initialSettings) return false;
+    return ITEMS.some((item) => initialSettings[item.key] !== settings[item.key]);
+  }, [initialSettings, settings]);
+
+  const handleBack = () => {
+    if (hasChanges) {
+      setLeaveConfirmOpen(true);
+      return;
+    }
+    navigate(-1);
+  };
 
   return (
     <section className="screen">
-      <Header title="알림 설정" onBack={() => navigate(-1)} />
+      <Header title="알림 설정" onBack={handleBack} />
       <div className="scroll">
         {ITEMS.map((item) => (
           <div key={item.key} className="setting-row">
@@ -59,6 +78,15 @@ export function NotificationSettingsPage() {
           }}
         />
       </div>
+      <Modal
+        open={leaveConfirmOpen}
+        title="변경사항이 있습니다."
+        message="저장하지 않고 나가면 변경한 알림 설정이 반영되지 않습니다."
+        confirmLabel="나가기"
+        cancelLabel="계속 수정"
+        onClose={() => setLeaveConfirmOpen(false)}
+        onConfirm={() => navigate(-1)}
+      />
     </section>
   );
 }

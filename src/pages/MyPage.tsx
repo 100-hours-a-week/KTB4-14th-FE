@@ -1,4 +1,4 @@
-import { matchingApi, usersApi } from '@/api';
+import { usersApi } from '@/api';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
@@ -111,8 +111,7 @@ export function MyPage() {
           type="button"
           className="menu-row"
           onClick={() => {
-            void matchingApi.getSettings();
-            navigate('/matching-settings');
+            toast.show('매칭 설정은 준비 중입니다.');
           }}>
           매칭 설정 <span>›</span>
         </button>

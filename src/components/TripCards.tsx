@@ -27,9 +27,11 @@ export function TripHeroCard({ trip, onClick }: { trip: TravelSummary; onClick: 
 }
 
 export function TripListCard({ trip, onClick }: { trip: TravelSummary; onClick: () => void }) {
+  const dotColor = trip.status === 'FAILED' ? 'var(--danger)' : trip.cover_color ?? '#2A9D8F';
+
   return (
     <button type="button" className="list-card" onClick={onClick}>
-      <span className="dot" style={{ background: trip.cover_color ?? '#2A9D8F' }} />
+      <span className="dot" style={{ background: dotColor }} />
       <span style={{ flex: 1 }}>
         <strong>{trip.title}</strong>
         <div className="place-addr">

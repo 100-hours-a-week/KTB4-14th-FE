@@ -10,6 +10,8 @@ import { toDatetime } from '@/lib/options';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const DEFAULT_TRAVEL_TIME = '10:00';
+
 function generationErrorMessage(error: unknown) {
   const apiError = error as {
     status?: number;
@@ -41,8 +43,8 @@ function generationErrorMessage(error: unknown) {
 
 function validateDraftForGeneration(draft: ReturnType<typeof useTravelDraft>['draft']) {
   if (!draft.region_id) return '여행 지역을 다시 선택해 주세요.';
-  if (!draft.start_date || !draft.start_time || !draft.end_date || !draft.end_time) {
-    return '여행 날짜와 시간을 모두 선택해 주세요.';
+  if (!draft.start_date || !draft.end_date) {
+    return '여행 날짜를 모두 선택해 주세요.';
   }
   if (!draft.companion || !draft.headcount) return '동행 유형과 인원을 확인해 주세요.';
   if (!draft.preference.pace_type || !draft.preference.transport_type) {
@@ -65,6 +67,12 @@ function validateDraftForGeneration(draft: ReturnType<typeof useTravelDraft>['dr
   return null;
 }
 
+function normalizedHeadcount(draft: ReturnType<typeof useTravelDraft>['draft']) {
+  if (draft.companion === 'SOLO') return 1;
+  if (draft.companion === 'COUPLE') return 2;
+  return draft.headcount ?? 2;
+}
+
 export function PlacesPage() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -84,10 +92,10 @@ export function PlacesPage() {
     try {
       const created = await travelsApi.create({
         region_id: draft.region_id ?? 1,
-        headcount: draft.headcount ?? 2,
+        headcount: normalizedHeadcount(draft),
         companion_type: draft.companion ?? 'COUPLE',
-        arrival_datetime: toDatetime(draft.start_date, draft.start_time),
-        departure_datetime: toDatetime(draft.end_date, draft.end_time),
+        arrival_datetime: toDatetime(draft.start_date, draft.start_time ?? DEFAULT_TRAVEL_TIME),
+        departure_datetime: toDatetime(draft.end_date, draft.end_time ?? DEFAULT_TRAVEL_TIME),
         preference: draft.preference,
         required_places: draft.required_places.map((place, index) => ({
           provider: place.provider,

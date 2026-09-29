@@ -95,6 +95,8 @@ const relationshipOptions = [
   { value: 'FAMILY', label: '가족' },
 ] as const;
 
+const DEFAULT_TRAVEL_TIME = '10:00';
+
 type Picker = null | 'region' | 'startDate' | 'endDate' | 'startTime' | 'endTime';
 
 export function CreateTravelPage() {
@@ -104,8 +106,12 @@ export function CreateTravelPage() {
   const [apiRegions, setApiRegions] = useState<RegionSummary[]>([]);
   const headcount = draft.headcount ?? 2;
   const isSolo = draft.companion === 'SOLO';
+  const isCouple = draft.companion === 'COUPLE';
+  const isFixedHeadcount = isSolo || isCouple;
   const minimumHeadcount = isSolo ? 1 : 2;
-  const displayedHeadcount = Math.max(minimumHeadcount, isSolo ? 1 : headcount);
+  const displayedHeadcount = isSolo ? 1 : isCouple ? 2 : Math.max(minimumHeadcount, headcount);
+  const startTime = draft.start_time ?? DEFAULT_TRAVEL_TIME;
+  const endTime = draft.end_time ?? DEFAULT_TRAVEL_TIME;
   const [selectedProvince, setSelectedProvince] = useState(() => findProvinceValue(draft));
 
   useEffect(() => {
@@ -127,6 +133,14 @@ export function CreateTravelPage() {
     if (draft.headcount !== displayedHeadcount) update({ headcount: displayedHeadcount });
   }, [displayedHeadcount, draft.headcount, hydrated, update]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+    const patch: { start_time?: string; end_time?: string } = {};
+    if (!draft.start_time) patch.start_time = DEFAULT_TRAVEL_TIME;
+    if (!draft.end_time) patch.end_time = DEFAULT_TRAVEL_TIME;
+    if (patch.start_time || patch.end_time) update(patch);
+  }, [draft.end_time, draft.start_time, hydrated, update]);
+
   const togglePicker = (next: Exclude<Picker, null>) => {
     if (next === 'region') setSelectedProvince(findProvinceValue(draft));
     setPicker((current) => (current === next ? null : next));
@@ -147,8 +161,8 @@ export function CreateTravelPage() {
     update({ [field]: value });
   };
 
-  const arrival = toComparableDateTime(draft.start_date, draft.start_time);
-  const departure = toComparableDateTime(draft.end_date, draft.end_time);
+  const arrival = toComparableDateTime(draft.start_date, startTime);
+  const departure = toComparableDateTime(draft.end_date, endTime);
   const now = currentComparableDateTime();
   const scheduleError = arrival && arrival < now
     ? '여행지 도착 시간은 현재 이후로 선택해 주세요.'
@@ -158,9 +172,7 @@ export function CreateTravelPage() {
   const canContinue = Boolean(
     draft.region_id
       && draft.start_date
-      && draft.start_time
       && draft.end_date
-      && draft.end_time
       && draft.companion
       && !scheduleError,
   );
@@ -256,7 +268,7 @@ export function CreateTravelPage() {
                   onClick={() => togglePicker('startTime')}
                   aria-haspopup="dialog"
                   aria-expanded={picker === 'startTime'}>
-                  <span className={draft.start_time ? 'has-value' : ''}>{draft.start_time ?? '시간 선택'}</span>
+                  <span className="has-value">{startTime}</span>
                   <span className={`select-chevron${picker === 'startTime' ? ' up' : ''}`} aria-hidden="true" />
                 </button>
               </div>
@@ -279,7 +291,7 @@ export function CreateTravelPage() {
                   onClick={() => togglePicker('endTime')}
                   aria-haspopup="dialog"
                   aria-expanded={picker === 'endTime'}>
-                  <span className={draft.end_time ? 'has-value' : ''}>{draft.end_time ?? '시간 선택'}</span>
+                  <span className="has-value">{endTime}</span>
                   <span className={`select-chevron${picker === 'endTime' ? ' up' : ''}`} aria-hidden="true" />
                 </button>
               </div>
@@ -296,7 +308,7 @@ export function CreateTravelPage() {
 
             {picker === 'startTime' || picker === 'endTime' ? (
               <TimePopover
-                value={picker === 'startTime' ? draft.start_time : draft.end_time}
+                value={picker === 'startTime' ? startTime : endTime}
                 placement={picker === 'startTime' ? 'start' : 'end'}
                 onSelect={(value) => updateTime(picker === 'startTime' ? 'start_time' : 'end_time', value)}
                 onClose={() => setPicker(null)}
@@ -335,7 +347,7 @@ export function CreateTravelPage() {
                 type="button"
                 className="stepper-button"
                 onClick={() => update({ headcount: Math.max(minimumHeadcount, displayedHeadcount - 1) })}
-                disabled={displayedHeadcount <= minimumHeadcount}
+                disabled={isFixedHeadcount || displayedHeadcount <= minimumHeadcount}
                 aria-label="인원 한 명 줄이기">
                 −
               </button>
@@ -344,7 +356,7 @@ export function CreateTravelPage() {
                 type="button"
                 className="stepper-button"
                 onClick={() => update({ headcount: Math.min(30, displayedHeadcount + 1) })}
-                disabled={isSolo || displayedHeadcount >= 30}
+                disabled={isFixedHeadcount || displayedHeadcount >= 30}
                 aria-label="인원 한 명 늘리기">
                 +
               </button>
@@ -420,12 +432,13 @@ function CalendarPopover({
         {Array.from({ length: cellCount }, (_, index) => {
           const day = index < firstDay || index >= firstDay + daysInMonth ? null : index - firstDay + 1;
           const iso = day ? `${year}-${pad(monthIndex + 1)}-${pad(day)}` : '';
-          const disabled = !day || iso < minDate;
+          const isPastDate = Boolean(day && iso < minDate);
+          const disabled = !day || isPastDate;
           return (
             <button
               key={`${iso}-${index}`}
               type="button"
-              className={`calendar-day${iso === value ? ' selected' : ''}`}
+              className={`calendar-day${iso === value ? ' selected' : ''}${isPastDate ? ' disabled-date' : ''}`}
               disabled={disabled}
               onClick={() => !disabled && onSelect(iso)}>
               {day ?? ''}
@@ -519,7 +532,7 @@ function monthFromValue(value?: string) {
 }
 
 function parseTime(value?: string): [number, number] {
-  const [hour, minute] = (value ?? '10:00').split(':').map(Number);
+  const [hour, minute] = (value ?? DEFAULT_TRAVEL_TIME).split(':').map(Number);
   return [Number.isFinite(hour) ? hour : 10, Number.isFinite(minute) ? minute : 0];
 }
 

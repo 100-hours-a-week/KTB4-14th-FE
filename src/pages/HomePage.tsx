@@ -2,6 +2,7 @@ import { travelsApi } from '@/api';
 import { Header } from '@/components/Header';
 import { TripHeroCard, TripListCard } from '@/components/TripCards';
 import { useAuth } from '@/context/AuthContext';
+import { useTravelDraft } from '@/context/TravelDraftContext';
 import type { TravelSummary } from '@/types';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 export function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { reset } = useTravelDraft();
   const [upcoming, setUpcoming] = useState<TravelSummary | null>(null);
   const [recent, setRecent] = useState<TravelSummary[]>([]);
 
@@ -50,7 +52,13 @@ export function HomePage() {
             <strong>여행 기록 보기</strong>
             <p className="place-addr">다녀온 여행 보러가기</p>
           </button>
-          <button type="button" className="menu" onClick={() => navigate('/create-travel')}>
+          <button
+            type="button"
+            className="menu"
+            onClick={() => {
+              reset();
+              navigate('/create-travel');
+            }}>
             <div className="menu-icon" style={{ background: 'var(--primary-soft)' }}>
               ✦
             </div>

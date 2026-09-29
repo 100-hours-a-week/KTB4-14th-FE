@@ -104,12 +104,13 @@ export function CreateTravelPage() {
   const { draft, hydrated, update } = useTravelDraft();
   const [picker, setPicker] = useState<Picker>(null);
   const [apiRegions, setApiRegions] = useState<RegionSummary[]>([]);
-  const headcount = draft.headcount ?? 2;
+  const headcount = draft.headcount ?? 0;
+  const hasCompanion = Boolean(draft.companion);
   const isSolo = draft.companion === 'SOLO';
   const isCouple = draft.companion === 'COUPLE';
-  const isFixedHeadcount = isSolo || isCouple;
-  const minimumHeadcount = isSolo ? 1 : 2;
-  const displayedHeadcount = isSolo ? 1 : isCouple ? 2 : Math.max(minimumHeadcount, headcount);
+  const isFixedHeadcount = !hasCompanion || isSolo || isCouple;
+  const minimumHeadcount = !hasCompanion ? 0 : isSolo ? 1 : 2;
+  const displayedHeadcount = !hasCompanion ? 0 : isSolo ? 1 : isCouple ? 2 : Math.max(minimumHeadcount, headcount);
   const startTime = draft.start_time ?? DEFAULT_TRAVEL_TIME;
   const endTime = draft.end_time ?? DEFAULT_TRAVEL_TIME;
   const [selectedProvince, setSelectedProvince] = useState(() => findProvinceValue(draft));

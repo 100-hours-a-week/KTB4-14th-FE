@@ -6,7 +6,7 @@ export const MAX_REQUIRED_PLACES = 10;
 
 function createEmptyDraft(): TravelDraft {
   return {
-    headcount: 2,
+    headcount: 0,
     preference: {
       budget_min: 100000,
       budget_max: 1000000,

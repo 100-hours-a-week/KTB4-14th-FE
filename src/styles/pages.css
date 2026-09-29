@@ -1987,7 +1987,8 @@
 }
 
 .noti-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) max-content;
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
@@ -2007,18 +2008,22 @@
 }
 
 .noti-content {
-  flex: 1;
   min-width: 0;
+}
+
+.noti-content strong {
+  display: block;
 }
 
 .noti-message {
   overflow-wrap: anywhere;
+  white-space: normal;
   word-break: keep-all;
   line-height: 1.45;
+  overflow: visible;
 }
 
 .noti-date {
-  flex: 0 0 auto;
   white-space: nowrap;
 }
 

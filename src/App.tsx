@@ -67,6 +67,7 @@ export default function App() {
                     <Route path="/" element={<Gate />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/auth/kakao" element={<KakaoCallbackPage />} />
+                    <Route path="/policies" element={<PoliciesPage />} />
                     <Route element={<ProtectedRoute />}>
                       <Route element={<TabLayout />}>
                         <Route path="/home" element={<HomePage />} />
@@ -89,7 +90,6 @@ export default function App() {
                       <Route path="/my-trips" element={<MyTripsPage />} />
                       <Route path="/matching-settings" element={<MatchingSettingsPage />} />
                       <Route path="/notification-settings" element={<NotificationSettingsPage />} />
-                      <Route path="/policies" element={<PoliciesPage />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

@@ -2,6 +2,7 @@ import { USE_MOCK, travelsApi } from '@/api';
 import { Header } from '@/components/Header';
 import { KakaoRouteMap } from '@/components/KakaoRouteMap';
 import { Modal } from '@/components/Modal';
+import { useToast } from '@/context/ToastContext';
 import { nightsAndDays } from '@/lib/options';
 import type {
   ItineraryDay,
@@ -43,6 +44,7 @@ export function ItineraryPage() {
 function OutputPage({ tab }: { tab: OutputTab }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const planId = Number(id);
   const [detail, setDetail] = useState<TravelDetail | null>(null);
   const [recreate, setRecreate] = useState(false);
@@ -171,7 +173,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
             detail={detail}
             updatingItemId={updatingItemId}
             onToggleCompletion={updateCompletion}
-            onChangePlace={(itemId) => navigate(`/create-travel/map-search?replaceItemId=${itemId}`)}
+            onChangePlace={() => toast.show('서비스 준비 중입니다.')}
             onOpenRouteDetail={(entry) => setRouteDetailId(getRouteId(entry.route))}
           />
         ) : (

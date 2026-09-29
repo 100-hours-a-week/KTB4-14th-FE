@@ -126,14 +126,14 @@ export const travelsApi = {
   },
 
   /** POST /api/travel-plans/:id/regeneration */
-  async regenerate(travelPlanId: number) {
+  async regenerate(travelPlanId: number, request?: CreateTravelPlanRequest | null) {
     if (USE_MOCK) {
       generationStore.set(travelPlanId, { createdAt: Date.now() });
       return { travel_plan_id: travelPlanId, generation_job_id: travelPlanId, status: 'GENERATING' as const };
     }
     return apiRequest<TravelPlanCreatedResponse>(
       `/api/travel-plans/${travelPlanId}/regeneration`,
-      { method: 'POST' },
+      { method: 'POST', ...(request ? { body: request } : {}) },
     );
   },
 

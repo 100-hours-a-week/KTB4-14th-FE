@@ -1,6 +1,7 @@
 import { travelsApi } from '@/api';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
+import { getTravelGenerationRequest } from '@/storage';
 import type { TravelGenerationStatus } from '@/types';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -89,7 +90,10 @@ export function GeneratingPage() {
             onClick={async () => {
               setFailOpen(false);
               try {
-                const created = await travelsApi.regenerate(planId);
+                const created = await travelsApi.regenerate(
+                  planId,
+                  getTravelGenerationRequest(planId),
+                );
                 const jobQuery = created.generation_job_id ? `?job_id=${created.generation_job_id}` : '';
                 setStatus(null);
                 navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });

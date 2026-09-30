@@ -41,7 +41,15 @@ export function HomePage() {
         {upcoming ? (
           <TripHeroCard trip={upcoming} onClick={() => navigate(`/output/${upcoming.travel_plan_id}/places`)} />
         ) : (
-          <div className="empty-box">여행을 만들어볼까요?</div>
+          <button
+            type="button"
+            className="empty-box empty-action"
+            onClick={() => {
+              reset();
+              navigate('/create-travel');
+            }}>
+            여행을 만들어볼까요?
+          </button>
         )}
         <h3 className="section">추천 메뉴</h3>
         <div className="menus">
@@ -72,7 +80,11 @@ export function HomePage() {
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
             {recent.map((trip) => (
-              <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/output/${trip.travel_plan_id}/places`)} />
+              <TripListCard
+                key={trip.travel_plan_id}
+                trip={trip}
+                onClick={() => navigate(`/output/${trip.travel_plan_id}/places`)}
+              />
             ))}
           </div>
         )}

@@ -124,6 +124,7 @@ export type TravelSummary = {
   start_date: string;
   end_date: string;
   status: TravelPlanStatus;
+  confirmed_at?: string | null;
   companion_label?: string;
   cover_color?: string;
 };

@@ -219,7 +219,6 @@ type BackendRoute = {
   estimated_arrival_at?: string | null;
   realtime?: boolean;
   last_refreshed_at?: string | null;
-  realtime_message?: string | null;
 };
 
 type BackendRouteRecalculationResponse = {
@@ -263,7 +262,6 @@ function normalizeRoute(route: BackendRoute): ItineraryRouteItem {
     estimated_arrival_at: route.estimated_arrival_at,
     realtime: route.realtime,
     last_refreshed_at: route.last_refreshed_at,
-    realtime_message: route.realtime_message,
   };
 }
 

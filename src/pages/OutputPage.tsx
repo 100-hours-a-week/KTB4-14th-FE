@@ -47,7 +47,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const navigate = useNavigate();
   const toast = useToast();
   const planId = Number(id);
-  const toast = useToast();
   const [detail, setDetail] = useState<TravelDetail | null>(null);
   const [recreate, setRecreate] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,7 +54,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
-  const notifiedRealtimeMessageRef = useRef<string | null>(null);
   const routeDetailEntry = useMemo(
     () => detail?.itinerary_days
       .flatMap((day) => getRouteEntries(day))
@@ -122,17 +120,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       request.cancelled = true;
     };
   }, [planId]);
-
-  useEffect(() => {
-    const message = detail?.itinerary_days
-      .flatMap((day) => day.items)
-      .filter((item): item is ItineraryRouteItem => item.type === 'ROUTE' && item.realtime !== true)
-      .map((route) => route.realtime_message)
-      .find((value): value is string => Boolean(value));
-    if (!message || notifiedRealtimeMessageRef.current === message) return;
-    notifiedRealtimeMessageRef.current = message;
-    toast.show(message);
-  }, [detail, toast]);
 
   const places = useMemo(
     () => detail?.itinerary_days.flatMap((day) => day.items.filter(isPlaceItem)) ?? [],
@@ -1042,8 +1029,7 @@ function mergeRecalculatedRoutes(detail: TravelDetail, refreshedRoutes: Itinerar
     const refreshed = routeById.get(getRouteId(route));
     if (!refreshed) return route;
 
-    const hasRealtimeUnavailableMessage = refreshed.realtime !== true && Boolean(refreshed.realtime_message);
-    const hasFreshRealtime = refreshed.realtime === true && !hasRealtimeUnavailableMessage;
+    const hasFreshRealtime = refreshed.realtime === true;
     return {
       ...route,
       ...refreshed,
@@ -1055,23 +1041,18 @@ function mergeRecalculatedRoutes(detail: TravelDetail, refreshedRoutes: Itinerar
       total_fare_amount: refreshed.total_fare_amount ?? route.total_fare_amount,
       line_name: refreshed.line_name ?? route.line_name,
       vehicle_number: refreshed.vehicle_number ?? route.vehicle_number,
-      // 안내 문구가 있으면 실시간 실패 상태와 null 값을 우선한다.
+      // realtime=false는 BE fallback일 수 있으므로 기존 예상시간을 유지한다.
       next_arrival_minutes: hasFreshRealtime
         ? refreshed.next_arrival_minutes
-        : hasRealtimeUnavailableMessage ? null : route.next_arrival_minutes,
+        : route.next_arrival_minutes,
       estimated_departure_at: hasFreshRealtime
         ? refreshed.estimated_departure_at
-        : hasRealtimeUnavailableMessage ? null : route.estimated_departure_at,
+        : route.estimated_departure_at,
       estimated_arrival_at: hasFreshRealtime
         ? refreshed.estimated_arrival_at
-        : hasRealtimeUnavailableMessage ? null : route.estimated_arrival_at,
-      realtime: hasFreshRealtime ? refreshed.realtime : hasRealtimeUnavailableMessage ? false : route.realtime,
-      last_refreshed_at: hasFreshRealtime
-        ? refreshed.last_refreshed_at
-        : hasRealtimeUnavailableMessage ? null : route.last_refreshed_at,
-      realtime_message: refreshed.realtime === true
-        ? null
-        : refreshed.realtime_message ?? route.realtime_message,
+        : route.estimated_arrival_at,
+      realtime: hasFreshRealtime ? refreshed.realtime : route.realtime,
+      last_refreshed_at: hasFreshRealtime ? refreshed.last_refreshed_at : route.last_refreshed_at,
     };
   };
 

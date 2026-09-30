@@ -51,6 +51,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [recreate, setRecreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
@@ -180,6 +181,23 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     }
   };
 
+  const confirmTravel = async () => {
+    if (!detail || detail.confirmed_at) return;
+    setConfirming(true);
+    try {
+      const confirmed = await travelsApi.confirm(planId);
+      setDetail((current) => current ? {
+        ...current,
+        confirmed_at: confirmed.confirmed_at ?? new Date().toISOString(),
+      } : current);
+      toast.show('여행 일정이 확정되었습니다.');
+    } catch {
+      toast.show('여행 일정을 확정하지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (loading && !detail) {
     return <OutputFrame onBack={() => navigate('/home', { replace: true })}>여행 일정을 불러오는 중이에요.</OutputFrame>;
   }
@@ -196,7 +214,13 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     <section className="screen output-screen">
       <Header title="추천 경로" onBack={() => navigate('/home', { replace: true })} showBell />
       <div className="scroll output-scroll">
-        <OutputTripSummary detail={detail} placeCount={places.length} onRecreate={() => setRecreate(true)} />
+        <OutputTripSummary
+          detail={detail}
+          placeCount={places.length}
+          confirming={confirming}
+          onConfirm={confirmTravel}
+          onRecreate={() => setRecreate(true)}
+        />
         {error ? <p className="field-help error" role="alert">{error}</p> : null}
         <OutputTabs active={tab} onChange={changeTab} />
         {tab === 'places' ? <p className="output-helper">다음 장소로 이동할 때 체크표시를 눌러주세요.</p> : null}
@@ -263,10 +287,14 @@ function OutputFrame({ onBack, children }: { onBack: () => void; children: React
 function OutputTripSummary({
   detail,
   placeCount,
+  confirming,
+  onConfirm,
   onRecreate,
 }: {
   detail: TravelDetail;
   placeCount: number;
+  confirming: boolean;
+  onConfirm: () => void;
   onRecreate: () => void;
 }) {
   const accommodationCount = detail.itinerary_days
@@ -276,6 +304,7 @@ function OutputTripSummary({
   const meta = [`장소 ${placeCount}곳`, accommodationCount > 0 ? `숙소 ${accommodationCount}곳` : null]
     .filter(Boolean)
     .join(' · ');
+  const confirmed = Boolean(detail.confirmed_at);
 
   return (
     <div className="output-trip-summary">
@@ -286,9 +315,18 @@ function OutputTripSummary({
           {detail.start_date.replaceAll('-', '.')} - {detail.end_date.replaceAll('-', '.')} · {nightsAndDays(detail.start_date, detail.end_date)}
         </small>
       </div>
-      <button type="button" className="recreate output-recreate" onClick={onRecreate}>
-        일정 다시 만들기
-      </button>
+      <div className="output-summary-actions">
+        <button
+          type="button"
+          className={`output-confirm${confirmed ? ' done' : ''}`}
+          disabled={confirmed || confirming}
+          onClick={onConfirm}>
+          {confirmed ? '확정 완료' : confirming ? '확정 중...' : '여행 확정하기'}
+        </button>
+        <button type="button" className="recreate output-recreate" onClick={onRecreate}>
+          일정 다시 만들기
+        </button>
+      </div>
     </div>
   );
 }

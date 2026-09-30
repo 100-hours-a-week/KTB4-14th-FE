@@ -1,4 +1,4 @@
-import { placesApi, USE_MOCK, travelsApi } from '@/api';
+import { placesApi, USE_MOCK, travelsApi, type LivePlaceInfo } from '@/api';
 import { Header } from '@/components/Header';
 import { KakaoRouteMap } from '@/components/KakaoRouteMap';
 import { Modal } from '@/components/Modal';
@@ -965,12 +965,17 @@ function isPlaceItem(item: ItineraryItem): item is ItineraryPlaceItem {
 function needsKakaoPlaceResolution(place: ItineraryPlaceItem) {
   const providerPlaceId = place.provider_place_id?.trim();
   if (!providerPlaceId) return false;
-  return !place.name.trim() || place.name === providerPlaceId || place.name === '장소 정보 없음';
+  const missingName = !place.name.trim()
+    || place.name === providerPlaceId
+    || place.name === '장소 정보 없음';
+  const missingCoordinates = !Number.isFinite(place.latitude)
+    || !Number.isFinite(place.longitude);
+  return missingName || missingCoordinates;
 }
 
 function mergeResolvedPlaces(
   detail: TravelDetail,
-  resolved: Map<string, { place_name: string | null }>,
+  resolved: Map<string, LivePlaceInfo>,
 ): TravelDetail {
   let changed = false;
   const itineraryDays = detail.itinerary_days.map((day) => ({
@@ -978,14 +983,18 @@ function mergeResolvedPlaces(
     items: day.items.map((item) => {
       if (item.type !== 'PLACE' || !item.provider_place_id) return item;
       const place = resolved.get(item.provider_place_id);
-      if (!place?.place_name) return item;
+      if (!place) return item;
 
       const nextItem = {
         ...item,
-        name: needsKakaoPlaceResolution(item) ? place.place_name : item.name,
+        name: place.place_name && needsKakaoPlaceResolution(item) ? place.place_name : item.name,
+        latitude: Number.isFinite(place.latitude) ? place.latitude : item.latitude,
+        longitude: Number.isFinite(place.longitude) ? place.longitude : item.longitude,
       };
       if (
         nextItem.name !== item.name
+        || nextItem.latitude !== item.latitude
+        || nextItem.longitude !== item.longitude
       ) {
         changed = true;
       }

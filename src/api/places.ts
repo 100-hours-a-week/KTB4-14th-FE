@@ -10,6 +10,8 @@ export type LivePlaceInfo = {
   provider: 'KAKAO';
   provider_place_id: string;
   place_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
   place_url: string;
 };
 
@@ -34,7 +36,7 @@ export const placesApi = {
     });
   },
 
-  /** GET /api/places/:provider/:providerPlaceId/live — 상세 URL 기반 실시간 장소명 조회 */
+  /** GET /api/places/:provider/:providerPlaceId/live — 상세 URL 기반 실시간 장소 메타데이터 조회 */
   async resolveLivePlace(providerPlaceId: string): Promise<LivePlaceInfo | null> {
     const normalizedId = providerPlaceId.trim();
     if (!normalizedId || USE_MOCK) return null;
@@ -45,7 +47,7 @@ export const placesApi = {
     const request = apiRequest<LivePlaceInfo>(
       `/api/places/KAKAO/${encodeURIComponent(normalizedId)}/live`,
     )
-      .then((place) => place?.place_name ? place : null)
+      .then((place) => hasLivePlaceMetadata(place) ? place : null)
       .catch(() => null);
     livePlaceRequests.set(normalizedId, request);
     return request;
@@ -71,3 +73,10 @@ export const placesApi = {
     return resolved;
   },
 };
+
+function hasLivePlaceMetadata(place: LivePlaceInfo | null | undefined) {
+  if (!place) return false;
+  return Boolean(place.place_name)
+    || Number.isFinite(place.latitude)
+    || Number.isFinite(place.longitude);
+}

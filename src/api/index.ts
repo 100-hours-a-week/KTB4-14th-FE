@@ -3,6 +3,7 @@ export { usersApi } from '@/api/users';
 export { policiesApi } from '@/api/policies';
 export { travelsApi } from '@/api/travels';
 export { placesApi } from '@/api/places';
+export type { LivePlaceInfo } from '@/api/places';
 export { regionsApi } from '@/api/regions';
 export { checklistsApi } from '@/api/checklists';
 export { videosApi } from '@/api/videos';

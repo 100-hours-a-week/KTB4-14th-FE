@@ -134,6 +134,12 @@
   color: var(--muted);
 }
 
+.empty-action {
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+}
+
 .my-trips-scroll {
   padding-top: 8px;
 }

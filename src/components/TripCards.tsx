@@ -7,16 +7,21 @@ function dday(startDate: string) {
   return Math.ceil((start.getTime() - today.getTime()) / 86400000);
 }
 
+function formatDday(startDate: string) {
+  const daysLeft = dday(startDate);
+  if (daysLeft <= 0) return 'D-DAY';
+  return `D-${daysLeft}`;
+}
+
 function formatRange(start: string, end: string) {
   return `${start.replaceAll('-', '.')} - ${end.replaceAll('-', '.')}`;
 }
 
 export function TripHeroCard({ trip, onClick }: { trip: TravelSummary; onClick: () => void }) {
-  const day = dday(trip.start_date);
   return (
     <article className="hero-card">
       <div className="hero-glow" />
-      <span className="dday">{day >= 0 ? `D-${day}` : `D+${Math.abs(day)}`}</span>
+      <span className="dday">{formatDday(trip.start_date)}</span>
       <h2 className="hero-title">{trip.title}</h2>
       <p className="hero-meta">{formatRange(trip.start_date, trip.end_date)} · 추천 완료</p>
       <button type="button" className="hero-cta" onClick={onClick}>

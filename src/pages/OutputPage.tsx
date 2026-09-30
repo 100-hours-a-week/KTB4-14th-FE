@@ -47,7 +47,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const navigate = useNavigate();
   const toast = useToast();
   const planId = Number(id);
-  const toast = useToast();
   const [detail, setDetail] = useState<TravelDetail | null>(null);
   const [recreate, setRecreate] = useState(false);
   const [loading, setLoading] = useState(true);

@@ -71,7 +71,6 @@ export type BackendRoute = {
   estimated_arrival_at?: string | null;
   realtime?: boolean;
   last_refreshed_at?: string | null;
-  realtime_message?: string | null;
 };
 
 export type BackendDay = {

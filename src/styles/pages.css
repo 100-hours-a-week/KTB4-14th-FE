@@ -1143,6 +1143,34 @@
   flex: 0 0 auto;
 }
 
+.output-summary-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.output-confirm {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--white);
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.output-confirm.done {
+  background: var(--teal);
+}
+
+.output-confirm:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
 .output-tabs {
   margin-bottom: 8px;
 }

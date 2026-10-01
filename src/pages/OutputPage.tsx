@@ -209,10 +209,10 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       </div>
       <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailId(null)} />
       <div className="bottom-actions">
-        <button type="button" onClick={() => navigate(`/checklist/${planId}`)}>
+        <button type="button" onClick={() => toast.show('서비스 준비 중입니다.')}>
           체크리스트
         </button>
-        <button type="button" onClick={() => navigate(`/video/${planId}`)}>
+        <button type="button" onClick={() => toast.show('서비스 준비 중입니다.')}>
           여행 영상
         </button>
       </div>

@@ -1131,7 +1131,11 @@ function transitLineLabel(route: ItineraryRouteItem) {
       return transit ? `${routeLegModeLabel(leg)} ${transit}` : '';
     })
     .filter(Boolean);
-  if (legLabels.length > 0) return legLabels.join(' · ');
+  if (legLabels.length > 0) {
+    return legLabels.length > 2
+      ? `${legLabels.slice(0, 2).join(' · ')} 외`
+      : legLabels.join(' · ');
+  }
 
   const lineName = route.line_name?.trim();
   const vehicleNumber = route.vehicle_number?.trim();

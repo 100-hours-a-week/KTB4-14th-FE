@@ -1365,12 +1365,28 @@
 .route-info-panel {
   position: relative;
   display: grid;
+  min-width: 0;
   gap: 8px;
-  padding: 10px 44px 10px 10px;
+  padding: 10px;
   border: 1px solid var(--navy);
   border-top: 0;
   border-radius: 0 0 8px 8px;
   background: #f8f7f5;
+}
+
+.route-info-panel > .route-info-row {
+  padding-right: 34px;
+}
+
+.route-info-panel > *,
+.route-info-panel .route-leg,
+.route-info-panel .route-leg-head,
+.route-info-panel .route-leg-stops {
+  min-width: 0;
+}
+
+.route-info-panel .route-leg-list {
+  width: 100%;
 }
 
 .route-info-row {

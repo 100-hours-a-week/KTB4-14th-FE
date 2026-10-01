@@ -1,4 +1,10 @@
-import { placesApi, USE_MOCK, travelsApi, type LivePlaceInfo } from '@/api';
+import {
+  placesApi,
+  USE_MOCK,
+  travelsApi,
+  type BusArrivalLookupResponse,
+  type LivePlaceInfo,
+} from '@/api';
 import { Header } from '@/components/Header';
 import { KakaoRouteMap } from '@/components/KakaoRouteMap';
 import { Modal } from '@/components/Modal';
@@ -18,6 +24,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 type OutputTab = 'places' | 'routes';
+
+const REALTIME_UNAVAILABLE_MESSAGE = '실시간 버스 도착 서비스 제공이 불가능한 지역입니다';
 
 type RouteEntry = {
   route: ItineraryRouteItem;
@@ -55,6 +63,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
   const notifiedRealtimeMessageRef = useRef<string | null>(null);
+  const realtimeRequestIdsRef = useRef<Set<string>>(new Set());
   const routeDetailEntry = useMemo(
     () => detail?.itinerary_days
       .flatMap((day) => getRouteEntries(day))
@@ -62,15 +71,21 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     [detail, routeDetailId],
   );
 
-  const load = async (isActive: () => boolean = () => true): Promise<TravelDetail | null> => {
+  const load = async (
+    isActive: () => boolean = () => true,
+    preserveRealtimeFrom?: TravelDetail,
+  ): Promise<TravelDetail | null> => {
     setLoading(true);
     try {
       const nextDetail = await travelsApi.getDetail(planId);
+      const detailToSet = preserveRealtimeFrom
+        ? preserveRealtimeState(nextDetail, preserveRealtimeFrom)
+        : nextDetail;
       if (isActive()) {
-        setDetail(nextDetail);
+        setDetail(detailToSet);
         setError(null);
       }
-      return nextDetail;
+      return detailToSet;
     } catch {
       if (isActive()) {
         setError('여행 일정을 불러오지 못했어요. 생성이 완료된 뒤 다시 시도해 주세요.');
@@ -79,6 +94,45 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     } finally {
       if (isActive()) setLoading(false);
     }
+  };
+
+  const requestRouteRealtime = async (
+    route: ItineraryRouteItem | undefined,
+    isActive: () => boolean = () => true,
+  ) => {
+    if (!route || !isBusRoute(route)) return;
+    const routeId = getRouteId(route);
+    if (routeId == null) return;
+
+    const requestKey = `${planId}:${routeId}`;
+    if (realtimeRequestIdsRef.current.has(requestKey)) return;
+    if (route.realtime_status === 'AVAILABLE' || route.realtime === true) return;
+    realtimeRequestIdsRef.current.add(requestKey);
+
+    if (isActive()) {
+      setDetail((current) => current ? updateRouteRealtimeState(current, routeId, 'LOADING') : current);
+    }
+
+    try {
+      const result = await travelsApi.getBusArrivals(planId, routeId);
+      if (!isActive()) return;
+      setDetail((current) => current ? mergeBusArrivalLookup(current, routeId, result) : current);
+    } catch {
+      if (!isActive()) return;
+      setDetail((current) => current
+        ? mergeBusArrivalLookup(current, routeId, {
+          route_segment_id: routeId,
+          available: false,
+          arrivals: [],
+          last_refreshed_at: null,
+        })
+        : current);
+    }
+  };
+
+  const isPageActive = () => {
+    const request = entryRequestRef.current;
+    return request?.planId === planId && !request.cancelled;
   };
 
   useEffect(() => {
@@ -100,23 +154,18 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     const request = { planId, cancelled: false };
     entryRequestRef.current = request;
 
-    const loadAndRecalculate = async () => {
+    const loadInitialItinerary = async () => {
       const initialDetail = await load(() => !request.cancelled);
       if (!initialDetail || request.cancelled) return;
 
-      try {
-        const recalculated = await travelsApi.recalculateRoutes(planId);
-        if (request.cancelled || !recalculated) return;
-
-        if (recalculated.routes.length === 0) return;
-
-        setDetail((current) => current ? mergeRecalculatedRoutes(current, recalculated.routes) : current);
-      } catch {
-        // 재계산 실패 시 이미 표시한 AI 계산값을 그대로 유지한다.
+      // 일정은 먼저 표시하고, 첫 번째 BUS 이동 구간만 별도로 실시간 조회한다.
+      const firstBusRoute = findFirstBusRoute(initialDetail);
+      if (firstBusRoute) {
+        void requestRouteRealtime(firstBusRoute, () => !request.cancelled);
       }
     };
 
-    void loadAndRecalculate();
+    void loadInitialItinerary();
     return () => {
       request.cancelled = true;
     };
@@ -125,7 +174,8 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   useEffect(() => {
     const message = detail?.itinerary_days
       .flatMap((day) => day.items)
-      .filter((item): item is ItineraryRouteItem => item.type === 'ROUTE' && item.realtime !== true)
+      .filter((item): item is ItineraryRouteItem => item.type === 'ROUTE'
+        && item.realtime_status === 'UNAVAILABLE')
       .map((route) => route.realtime_message)
       .find((value): value is string => Boolean(value));
     if (!message || notifiedRealtimeMessageRef.current === message) return;
@@ -164,15 +214,27 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   };
 
   const updateCompletion = async (place: ItineraryPlaceItem) => {
+    const currentDetail = detail;
+    if (!currentDetail) return;
     setUpdatingItemId(place.itinerary_item_id);
+    const completing = place.is_completed !== true;
     try {
       const result = await travelsApi.updateItineraryCompletion(
         place.itinerary_item_id,
-        !place.is_completed,
+        completing,
       );
       setDetail((current) => current ? updatePlaceCompletion(current, result) : current);
-      // 완료 시 대중교통 경로의 실시간 값을 서버가 다시 계산하므로 최신 경로를 재조회한다.
-      if (!USE_MOCK && (place.is_completed === false || place.is_completed === undefined)) await load();
+
+      if (!USE_MOCK && completing) {
+        // 완료 체크에 따른 일정 시간 재계산 결과만 다시 받고,
+        // 실시간 버스 조회는 다음 BUS 구간 한 건에 대해서만 별도로 시작한다.
+        const refreshedDetail = await load(isPageActive, currentDetail);
+        const nextBusRoute = findNextBusRouteAfterCompletion(
+          refreshedDetail ?? currentDetail,
+          place.itinerary_item_id,
+        );
+        if (nextBusRoute) void requestRouteRealtime(nextBusRoute, isPageActive);
+      }
     } catch {
       setError('일정 완료 상태를 저장하지 못했어요.');
     } finally {
@@ -808,6 +870,150 @@ function getRouteId(route: ItineraryRouteItem) {
   return route.route_segment_id ?? route.itinerary_item_id;
 }
 
+function findFirstBusRoute(detail: TravelDetail) {
+  const firstRoute = detail.itinerary_days
+    .flatMap((day) => getRouteEntries(day))
+    .at(0)?.route;
+  return firstRoute && isBusRoute(firstRoute) ? firstRoute : undefined;
+}
+
+function findNextBusRouteAfterCompletion(detail: TravelDetail, completedPlaceId: number) {
+  const entries = detail.itinerary_days.flatMap((day) => getRouteEntries(day));
+  const currentRouteIndex = entries.findIndex(
+    (entry) => entry.from?.itinerary_item_id === completedPlaceId,
+  );
+  if (currentRouteIndex < 0) return undefined;
+
+  const nextEntry = entries[currentRouteIndex + 1];
+  return nextEntry && isBusRoute(nextEntry.route) ? nextEntry.route : undefined;
+}
+
+function isBusRoute(route: ItineraryRouteItem) {
+  return (route.legs ?? []).some((leg) => isBusMode(leg.mode));
+}
+
+function isBusMode(mode: string | null | undefined) {
+  if (!mode) return false;
+  const normalized = mode.trim().toUpperCase();
+  return normalized === 'BUS' || normalized === 'EXPRESSBUS' || normalized === 'INTERCITY_BUS';
+}
+
+function updateRouteRealtimeState(
+  detail: TravelDetail,
+  routeId: number,
+  status: 'LOADING',
+) {
+  return mergeRouteInDetail(detail, routeId, (route) => ({
+    ...route,
+    realtime: undefined,
+    realtime_status: status,
+    next_arrival_minutes: null,
+    last_refreshed_at: null,
+    realtime_message: null,
+  }));
+}
+
+function mergeBusArrivalLookup(
+  detail: TravelDetail,
+  routeId: number,
+  lookup: BusArrivalLookupResponse,
+) {
+  const arrivals = lookup.arrivals ?? [];
+  const usableArrivals = arrivals.filter((arrival) => arrival.next_arrival_minutes != null);
+  const representativeArrival = [...usableArrivals]
+    .sort((left, right) => (left.next_arrival_minutes ?? Number.MAX_SAFE_INTEGER)
+      - (right.next_arrival_minutes ?? Number.MAX_SAFE_INTEGER))[0];
+  const available = lookup.available && usableArrivals.length > 0;
+  const arrivalsByLeg = new Map(arrivals.map((arrival) => [arrival.leg_sequence, arrival]));
+
+  return mergeRouteInDetail(detail, routeId, (route) => ({
+    ...route,
+    realtime: available,
+    realtime_status: available ? 'AVAILABLE' : 'UNAVAILABLE',
+    next_arrival_minutes: available ? representativeArrival?.next_arrival_minutes ?? null : null,
+    last_refreshed_at: available
+      ? lookup.last_refreshed_at ?? representativeArrival?.fetched_at ?? null
+      : null,
+    realtime_message: available ? null : REALTIME_UNAVAILABLE_MESSAGE,
+    legs: (route.legs ?? []).map((leg) => {
+      if (!isBusMode(leg.mode)) return leg;
+      const arrival = arrivalsByLeg.get(leg.sequence);
+      return {
+        ...leg,
+        realtime: available && arrival != null,
+        next_arrival_minutes: available ? arrival?.next_arrival_minutes ?? null : null,
+        remaining_stops: available ? arrival?.remaining_stops ?? null : null,
+        expected_arrival_at: available ? arrival?.expected_arrival_at ?? null : null,
+        last_refreshed_at: available
+          ? lookup.last_refreshed_at ?? arrival?.fetched_at ?? null
+          : null,
+      };
+    }),
+  }));
+}
+
+function mergeRouteInDetail(
+  detail: TravelDetail,
+  routeId: number,
+  update: (route: ItineraryRouteItem) => ItineraryRouteItem,
+) {
+  return {
+    ...detail,
+    itinerary_days: detail.itinerary_days.map((day) => ({
+      ...day,
+      items: day.items.map((item) => item.type === 'ROUTE' && getRouteId(item) === routeId
+        ? update(item)
+        : item),
+      routes: day.routes?.map((route) => getRouteId(route) === routeId ? update(route) : route),
+    })),
+  };
+}
+
+function preserveRealtimeState(nextDetail: TravelDetail, previousDetail: TravelDetail) {
+  const previousRoutes = new Map(
+    previousDetail.itinerary_days
+      .flatMap((day) => day.items)
+      .filter((item): item is ItineraryRouteItem => item.type === 'ROUTE')
+      .map((route) => [getRouteId(route), route]),
+  );
+
+  const preserveRoute = (route: ItineraryRouteItem) => {
+    const previous = previousRoutes.get(getRouteId(route));
+    if (!previous || !previous.realtime_status || previous.realtime_status === 'PENDING') return route;
+
+    const previousLegs = new Map((previous.legs ?? []).map((leg) => [leg.sequence, leg]));
+    return {
+      ...route,
+      realtime: previous.realtime,
+      realtime_status: previous.realtime_status,
+      next_arrival_minutes: previous.next_arrival_minutes,
+      last_refreshed_at: previous.last_refreshed_at,
+      realtime_message: previous.realtime_message,
+      legs: (route.legs ?? []).map((leg) => {
+        const previousLeg = previousLegs.get(leg.sequence);
+        if (!previousLeg || !isBusMode(leg.mode)) return leg;
+        return {
+          ...leg,
+          realtime: previousLeg.realtime,
+          next_arrival_minutes: previousLeg.next_arrival_minutes,
+          remaining_stops: previousLeg.remaining_stops,
+          expected_arrival_at: previousLeg.expected_arrival_at,
+          last_refreshed_at: previousLeg.last_refreshed_at,
+        };
+      }),
+    };
+  };
+
+  return {
+    ...nextDetail,
+    itinerary_days: nextDetail.itinerary_days.map((day) => ({
+      ...day,
+      items: day.items.map((item) => item.type === 'ROUTE' ? preserveRoute(item) : item),
+      routes: day.routes?.map(preserveRoute),
+    })),
+  };
+}
+
 function findPreviousPlace(items: ItineraryItem[], index: number) {
   for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
     const candidate = items[cursor];
@@ -948,6 +1154,8 @@ function routeLegTransitLabel(leg: ItineraryRouteLeg, showAllBusNumbers = false)
 }
 
 function nextTransitArrivalLabel(route: ItineraryRouteItem) {
+  if (route.realtime_status === 'LOADING') return '실시간 정보 확인 중';
+  if (route.realtime_status === 'PENDING') return '실시간 정보 대기 중';
   const currentBasis = route.realtime ? '현재 기준 ' : '';
   if (route.next_arrival_minutes != null) return `${currentBasis}${route.next_arrival_minutes}분 후 도착`;
   if (route.estimated_arrival_at) return `${currentBasis}예상 도착 ${formatDateTime(route.estimated_arrival_at)}`;
@@ -1000,8 +1208,8 @@ function mergeResolvedPlaces(
       const nextItem = {
         ...item,
         name: place.place_name && needsKakaoPlaceResolution(item) ? place.place_name : item.name,
-        latitude: Number.isFinite(place.latitude) ? place.latitude : item.latitude,
-        longitude: Number.isFinite(place.longitude) ? place.longitude : item.longitude,
+        latitude: Number.isFinite(place.latitude) ? place.latitude ?? undefined : item.latitude,
+        longitude: Number.isFinite(place.longitude) ? place.longitude ?? undefined : item.longitude,
       };
       if (
         nextItem.name !== item.name

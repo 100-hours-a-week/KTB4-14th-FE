@@ -11,6 +11,8 @@ import type {
   ItineraryDay,
   ItineraryItem,
   ItineraryRouteItem,
+  ItineraryRouteLeg,
+  ItineraryRealtimeStatus,
 } from '@/types';
 
 const generationStore = new Map<number, { createdAt: number; failed?: boolean }>();
@@ -101,6 +103,24 @@ export const travelsApi = {
     }
     const response = await apiRequest<BackendItineraryResponse>(`/api/travel-plans/${travelPlanId}/itinerary`);
     return normalizeItinerary(response);
+  },
+
+  /**
+   * GET /api/travel-plans/:id/routes/:routeId/bus-arrivals — 다음 이동 구간 한 건의 버스 도착정보.
+   * city_code/node_id는 프론트에서 전달하지 않고 백엔드가 경로의 승차 정류장으로 해석한다.
+   */
+  async getBusArrivals(travelPlanId: number, routeSegmentId: number): Promise<BusArrivalLookupResponse> {
+    if (USE_MOCK) {
+      return {
+        route_segment_id: routeSegmentId,
+        available: false,
+        arrivals: [],
+        last_refreshed_at: null,
+      };
+    }
+    return apiRequest<BusArrivalLookupResponse>(
+      `/api/travel-plans/${travelPlanId}/routes/${routeSegmentId}/bus-arrivals`,
+    );
   },
 
   /** PATCH /api/itinerary-items/:id/completion */
@@ -200,6 +220,11 @@ type BackendRouteLeg = {
   distance_meter?: number | null;
   bus_number?: string[] | null;
   subway_line?: string[] | null;
+  realtime?: boolean;
+  next_arrival_minutes?: number | null;
+  remaining_stops?: number | null;
+  expected_arrival_at?: string | null;
+  last_refreshed_at?: string | null;
 };
 
 type BackendRoute = {
@@ -220,6 +245,24 @@ type BackendRoute = {
   realtime?: boolean;
   last_refreshed_at?: string | null;
   realtime_message?: string | null;
+  realtime_status?: ItineraryRealtimeStatus;
+};
+
+export type BusArrivalLookupResponse = {
+  route_segment_id: number;
+  available: boolean;
+  arrivals: BusArrivalResponse[];
+  last_refreshed_at: string | null;
+};
+
+export type BusArrivalResponse = {
+  leg_sequence: number;
+  route_number: string | null;
+  next_arrival_minutes: number | null;
+  expected_arrival_at: string | null;
+  remaining_stops: number | null;
+  source?: string | null;
+  fetched_at: string | null;
 };
 
 type BackendRouteRecalculationResponse = {
@@ -233,6 +276,22 @@ export type RouteRecalculationResponse = {
 };
 
 function normalizeRoute(route: BackendRoute): ItineraryRouteItem {
+  const legs: ItineraryRouteLeg[] = (route.legs ?? []).map((leg) => ({
+    sequence: leg.sequence,
+    mode: leg.mode,
+    boarding_stop: leg.boarding_stop ?? null,
+    alighting_stop: leg.alighting_stop ?? null,
+    duration_minute: leg.duration_minute ?? null,
+    distance_meter: leg.distance_meter ?? null,
+    bus_number: leg.bus_number ?? [],
+    subway_line: leg.subway_line ?? [],
+    realtime: leg.realtime,
+    next_arrival_minutes: leg.next_arrival_minutes ?? null,
+    remaining_stops: leg.remaining_stops ?? null,
+    expected_arrival_at: leg.expected_arrival_at ?? null,
+    last_refreshed_at: leg.last_refreshed_at ?? null,
+  }));
+
   return {
     itinerary_item_id: route.route_segment_id,
     type: 'ROUTE',
@@ -246,16 +305,7 @@ function normalizeRoute(route: BackendRoute): ItineraryRouteItem {
     distance_km: route.distance_meter == null ? undefined : route.distance_meter / 1000,
     total_fare_amount: route.total_fare_amount ?? undefined,
     order: route.order,
-    legs: (route.legs ?? []).map((leg) => ({
-      sequence: leg.sequence,
-      mode: leg.mode,
-      boarding_stop: leg.boarding_stop ?? null,
-      alighting_stop: leg.alighting_stop ?? null,
-      duration_minute: leg.duration_minute ?? null,
-      distance_meter: leg.distance_meter ?? null,
-      bus_number: leg.bus_number ?? [],
-      subway_line: leg.subway_line ?? [],
-    })),
+    legs,
     line_name: route.line_name,
     vehicle_number: route.vehicle_number,
     next_arrival_minutes: route.next_arrival_minutes,
@@ -264,7 +314,25 @@ function normalizeRoute(route: BackendRoute): ItineraryRouteItem {
     realtime: route.realtime,
     last_refreshed_at: route.last_refreshed_at,
     realtime_message: route.realtime_message,
+    realtime_status: resolveRealtimeStatus(route, legs),
   };
+}
+
+function resolveRealtimeStatus(
+  route: BackendRoute,
+  legs: ItineraryRouteLeg[],
+): ItineraryRealtimeStatus {
+  if (route.realtime_status) return route.realtime_status;
+  if (!legs.some((leg) => isBusMode(leg.mode))) return 'NOT_APPLICABLE';
+  if (route.realtime === true) return 'AVAILABLE';
+  if (route.realtime_message) return 'UNAVAILABLE';
+  return 'PENDING';
+}
+
+function isBusMode(mode: string | null | undefined) {
+  if (!mode) return false;
+  const normalized = mode.trim().toUpperCase();
+  return normalized === 'BUS' || normalized === 'EXPRESSBUS' || normalized === 'INTERCITY_BUS';
 }
 
 function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {

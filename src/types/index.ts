@@ -179,7 +179,14 @@ export type ItineraryRouteLeg = {
   distance_meter?: number | null;
   bus_number?: string[];
   subway_line?: string[];
+  realtime?: boolean;
+  next_arrival_minutes?: number | null;
+  remaining_stops?: number | null;
+  expected_arrival_at?: string | null;
+  last_refreshed_at?: string | null;
 };
+
+export type ItineraryRealtimeStatus = 'PENDING' | 'LOADING' | 'AVAILABLE' | 'UNAVAILABLE' | 'NOT_APPLICABLE';
 
 export type ItineraryRouteItem = {
   itinerary_item_id: number;
@@ -203,6 +210,7 @@ export type ItineraryRouteItem = {
   realtime?: boolean;
   last_refreshed_at?: string | null;
   realtime_message?: string | null;
+  realtime_status?: ItineraryRealtimeStatus;
 };
 
 export type ItineraryItem = ItineraryPlaceItem | ItineraryRouteItem;

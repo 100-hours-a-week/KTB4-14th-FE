@@ -106,6 +106,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
 
     const requestKey = `${planId}:${routeId}`;
     if (realtimeRequestIdsRef.current.has(requestKey)) return;
+    if (route.realtime_status === 'LOADING') return;
     if (route.realtime_status === 'AVAILABLE' || route.realtime === true) return;
     realtimeRequestIdsRef.current.add(requestKey);
 
@@ -127,6 +128,9 @@ function OutputPage({ tab }: { tab: OutputTab }) {
           last_refreshed_at: null,
         })
         : current);
+    } finally {
+      // 요청 완료 후에는 완료 체크 시 실패·미반영 상태를 재조회할 수 있도록 해제한다.
+      realtimeRequestIdsRef.current.delete(requestKey);
     }
   };
 
@@ -871,10 +875,9 @@ function getRouteId(route: ItineraryRouteItem) {
 }
 
 function findFirstBusRoute(detail: TravelDetail) {
-  const firstRoute = detail.itinerary_days
+  return detail.itinerary_days
     .flatMap((day) => getRouteEntries(day))
-    .at(0)?.route;
-  return firstRoute && isBusRoute(firstRoute) ? firstRoute : undefined;
+    .find((entry) => entry.from?.is_completed !== true && isBusRoute(entry.route))?.route;
 }
 
 function findNextBusRouteAfterCompletion(detail: TravelDetail, completedPlaceId: number) {
@@ -884,8 +887,11 @@ function findNextBusRouteAfterCompletion(detail: TravelDetail, completedPlaceId:
   );
   if (currentRouteIndex < 0) return undefined;
 
-  const nextEntry = entries[currentRouteIndex + 1];
-  return nextEntry && isBusRoute(nextEntry.route) ? nextEntry.route : undefined;
+  // 완료한 장소에서 출발하는 경로를 포함해 이후 첫 BUS 경로를 조회한다.
+  // 현재 경로가 WALK인 경우에는 다음 BUS 경로까지 건너뛴다.
+  return entries
+    .slice(currentRouteIndex)
+    .find((entry) => isBusRoute(entry.route))?.route;
 }
 
 function isBusRoute(route: ItineraryRouteItem) {

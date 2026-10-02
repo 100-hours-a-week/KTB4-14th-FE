@@ -1,16 +1,31 @@
 import type { TravelSummary } from '@/types';
 
-function dday(startDate: string) {
-  const start = new Date(`${startDate}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((start.getTime() - today.getTime()) / 86400000);
+const DAY_MS = 86400000;
+
+function toDay(date: string) {
+  return new Date(`${date}T00:00:00`).getTime();
 }
 
-function formatDday(startDate: string) {
-  const daysLeft = dday(startDate);
-  if (daysLeft <= 0) return 'D-DAY';
-  return `D-${daysLeft}`;
+function today() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today.getTime();
+}
+
+export function isCurrentTrip(trip: TravelSummary) {
+  const todayValue = today();
+  return toDay(trip.start_date) <= todayValue && todayValue <= toDay(trip.end_date);
+}
+
+function formatDday(trip: TravelSummary) {
+  const todayValue = today();
+  const startValue = toDay(trip.start_date);
+  const endValue = toDay(trip.end_date);
+
+  if (todayValue === startValue) return 'D-DAY';
+  if (startValue < todayValue && todayValue <= endValue) return '여행중';
+  if (todayValue < startValue) return `D-${Math.ceil((startValue - todayValue) / DAY_MS)}`;
+  return '여행 종료';
 }
 
 function formatRange(start: string, end: string) {
@@ -21,7 +36,7 @@ export function TripHeroCard({ trip, onClick }: { trip: TravelSummary; onClick: 
   return (
     <article className="hero-card">
       <div className="hero-glow" />
-      <span className="dday">{formatDday(trip.start_date)}</span>
+      <span className="dday">{formatDday(trip)}</span>
       <h2 className="hero-title">{trip.title}</h2>
       <p className="hero-meta">{formatRange(trip.start_date, trip.end_date)} · 추천 완료</p>
       <button type="button" className="hero-cta" onClick={onClick}>

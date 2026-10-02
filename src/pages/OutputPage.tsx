@@ -99,6 +99,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const requestRouteRealtime = async (
     route: ItineraryRouteItem | undefined,
     isActive: () => boolean = () => true,
+    forceRefresh = false,
   ) => {
     if (!route || !isBusRoute(route)) return;
     const routeId = getRouteId(route);
@@ -106,8 +107,8 @@ function OutputPage({ tab }: { tab: OutputTab }) {
 
     const requestKey = `${planId}:${routeId}`;
     if (realtimeRequestIdsRef.current.has(requestKey)) return;
-    if (route.realtime_status === 'LOADING') return;
-    if (route.realtime_status === 'AVAILABLE' || route.realtime === true) return;
+    if (!forceRefresh && route.realtime_status === 'LOADING') return;
+    if (!forceRefresh && (route.realtime_status === 'AVAILABLE' || route.realtime === true)) return;
     realtimeRequestIdsRef.current.add(requestKey);
 
     if (isActive()) {
@@ -237,7 +238,8 @@ function OutputPage({ tab }: { tab: OutputTab }) {
           refreshedDetail ?? currentDetail,
           place.itinerary_item_id,
         );
-        if (nextBusRoute) void requestRouteRealtime(nextBusRoute, isPageActive);
+        // 완료 체크로 다음 이동을 시작하면 기존 실시간 정보가 있어도 새로 조회한다.
+        if (nextBusRoute) void requestRouteRealtime(nextBusRoute, isPageActive, true);
       }
     } catch {
       setError('일정 완료 상태를 저장하지 못했어요.');
@@ -887,10 +889,10 @@ function findNextBusRouteAfterCompletion(detail: TravelDetail, completedPlaceId:
   );
   if (currentRouteIndex < 0) return undefined;
 
-  // 완료한 장소에서 출발하는 경로를 포함해 이후 첫 BUS 경로를 조회한다.
-  // 현재 경로가 WALK인 경우에는 다음 BUS 경로까지 건너뛴다.
+  // 완료한 장소의 다음 장소에서 출발하는 경로부터 조회한다.
+  // 현재 경로가 WALK인 경우에는 이후 첫 BUS 경로까지 건너뛴다.
   return entries
-    .slice(currentRouteIndex)
+    .slice(currentRouteIndex + 1)
     .find((entry) => isBusRoute(entry.route))?.route;
 }
 

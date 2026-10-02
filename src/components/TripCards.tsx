@@ -17,6 +17,12 @@ function formatRange(start: string, end: string) {
   return `${start.replaceAll('-', '.')} - ${end.replaceAll('-', '.')}`;
 }
 
+function tripStatusColor(trip: TravelSummary) {
+  if (trip.status === 'FAILED') return 'var(--danger)';
+  if (trip.confirmed_at) return 'var(--teal)';
+  return '#f2c94c';
+}
+
 export function TripHeroCard({ trip, onClick }: { trip: TravelSummary; onClick: () => void }) {
   return (
     <article className="hero-card">
@@ -32,11 +38,9 @@ export function TripHeroCard({ trip, onClick }: { trip: TravelSummary; onClick: 
 }
 
 export function TripListCard({ trip, onClick }: { trip: TravelSummary; onClick: () => void }) {
-  const dotColor = trip.status === 'FAILED' ? 'var(--danger)' : trip.cover_color ?? '#2A9D8F';
-
   return (
     <button type="button" className="list-card" onClick={onClick}>
-      <span className="dot" style={{ background: dotColor }} />
+      <span className="dot" style={{ background: tripStatusColor(trip) }} />
       <span style={{ flex: 1 }}>
         <strong>{trip.title}</strong>
         <div className="place-addr">

@@ -234,12 +234,12 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         // 완료 체크에 따른 일정 시간 재계산 결과만 다시 받고,
         // 실시간 버스 조회는 다음 BUS 구간 한 건에 대해서만 별도로 시작한다.
         const refreshedDetail = await load(isPageActive, currentDetail);
-        const nextBusRoute = findNextBusRouteAfterCompletion(
+        const busRoute = findBusRouteForCompletedPlace(
           refreshedDetail ?? currentDetail,
           place.itinerary_item_id,
         );
-        // 완료 체크로 다음 이동을 시작하면 기존 실시간 정보가 있어도 새로 조회한다.
-        if (nextBusRoute) void requestRouteRealtime(nextBusRoute, isPageActive, true);
+        // 완료한 장소에서 다음 장소로 이동하는 BUS 구간을 새로 조회한다.
+        if (busRoute) void requestRouteRealtime(busRoute, isPageActive, true);
       }
     } catch {
       setError('일정 완료 상태를 저장하지 못했어요.');
@@ -882,17 +882,17 @@ function findFirstBusRoute(detail: TravelDetail) {
     .find((entry) => entry.from?.is_completed !== true && isBusRoute(entry.route))?.route;
 }
 
-function findNextBusRouteAfterCompletion(detail: TravelDetail, completedPlaceId: number) {
+function findBusRouteForCompletedPlace(detail: TravelDetail, completedPlaceId: number) {
   const entries = detail.itinerary_days.flatMap((day) => getRouteEntries(day));
   const currentRouteIndex = entries.findIndex(
     (entry) => entry.from?.itinerary_item_id === completedPlaceId,
   );
   if (currentRouteIndex < 0) return undefined;
 
-  // 완료한 장소의 다음 장소에서 출발하는 경로부터 조회한다.
-  // 현재 경로가 WALK인 경우에는 이후 첫 BUS 경로까지 건너뛴다.
+  // 완료한 장소에서 다음 장소로 이동하는 경로를 포함해 첫 BUS 경로를 조회한다.
+  // 해당 구간이 WALK인 경우에는 이후 첫 BUS 경로까지 건너뛴다.
   return entries
-    .slice(currentRouteIndex + 1)
+    .slice(currentRouteIndex)
     .find((entry) => isBusRoute(entry.route))?.route;
 }
 

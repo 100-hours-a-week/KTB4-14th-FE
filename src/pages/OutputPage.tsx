@@ -34,6 +34,17 @@ type RealtimePollingState = {
   generation: number;
 };
 
+const GENERIC_ROUTE_STOP_LABELS = new Set([
+  '출발지',
+  '도착지',
+  '출발장소',
+  '도착장소',
+  '출발정류장',
+  '도착정류장',
+  '승차위치확인중',
+  '하차위치확인중',
+]);
+
 type RouteEntry = {
   route: ItineraryRouteItem;
   from?: ItineraryPlaceItem;
@@ -66,6 +77,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [recreate, setRecreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
@@ -321,6 +333,23 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     }
   };
 
+  const confirmTravel = async () => {
+    if (!detail || detail.confirmed_at) return;
+    setConfirming(true);
+    try {
+      const confirmed = await travelsApi.confirm(planId);
+      setDetail((current) => current ? {
+        ...current,
+        confirmed_at: confirmed.confirmed_at ?? new Date().toISOString(),
+      } : current);
+      toast.show('여행 일정이 확정되었습니다.');
+    } catch {
+      toast.show('여행 일정을 확정하지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (loading && !detail) {
     return <OutputFrame onBack={() => navigate('/home', { replace: true })}>여행 일정을 불러오는 중이에요.</OutputFrame>;
   }
@@ -337,7 +366,13 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     <section className="screen output-screen">
       <Header title="추천 경로" onBack={() => navigate('/home', { replace: true })} showBell />
       <div className="scroll output-scroll">
-        <OutputTripSummary detail={detail} placeCount={places.length} onRecreate={() => setRecreate(true)} />
+        <OutputTripSummary
+          detail={detail}
+          placeCount={places.length}
+          confirming={confirming}
+          onConfirm={confirmTravel}
+          onRecreate={() => setRecreate(true)}
+        />
         {error ? <p className="field-help error" role="alert">{error}</p> : null}
         <OutputTabs active={tab} onChange={changeTab} />
         {tab === 'places' ? <p className="output-helper">다음 장소로 이동할 때 체크표시를 눌러주세요.</p> : null}
@@ -362,10 +397,10 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       </div>
       <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailId(null)} />
       <div className="bottom-actions">
-        <button type="button" onClick={() => navigate(`/checklist/${planId}`)}>
+        <button type="button" onClick={() => toast.show('서비스 준비 중입니다.')}>
           체크리스트
         </button>
-        <button type="button" onClick={() => navigate(`/video/${planId}`)}>
+        <button type="button" onClick={() => toast.show('서비스 준비 중입니다.')}>
           여행 영상
         </button>
       </div>
@@ -404,10 +439,14 @@ function OutputFrame({ onBack, children }: { onBack: () => void; children: React
 function OutputTripSummary({
   detail,
   placeCount,
+  confirming,
+  onConfirm,
   onRecreate,
 }: {
   detail: TravelDetail;
   placeCount: number;
+  confirming: boolean;
+  onConfirm: () => void;
   onRecreate: () => void;
 }) {
   const accommodationCount = detail.itinerary_days
@@ -417,6 +456,7 @@ function OutputTripSummary({
   const meta = [`장소 ${placeCount}곳`, accommodationCount > 0 ? `숙소 ${accommodationCount}곳` : null]
     .filter(Boolean)
     .join(' · ');
+  const confirmed = Boolean(detail.confirmed_at);
 
   return (
     <div className="output-trip-summary">
@@ -427,9 +467,18 @@ function OutputTripSummary({
           {detail.start_date.replaceAll('-', '.')} - {detail.end_date.replaceAll('-', '.')} · {nightsAndDays(detail.start_date, detail.end_date)}
         </small>
       </div>
-      <button type="button" className="recreate output-recreate" onClick={onRecreate}>
-        일정 다시 만들기
-      </button>
+      <div className="output-summary-actions">
+        <button
+          type="button"
+          className={`output-confirm${confirmed ? ' done' : ''}`}
+          disabled={confirmed || confirming}
+          onClick={onConfirm}>
+          {confirmed ? '확정 완료' : confirming ? '확정 중...' : '여행 확정하기'}
+        </button>
+        <button type="button" className="recreate output-recreate" onClick={onRecreate}>
+          일정 다시 만들기
+        </button>
+      </div>
     </div>
   );
 }
@@ -499,6 +548,7 @@ function PlacesOutput({
                     number={currentNumber}
                     route={routeEntry?.route}
                     boardingPlace={routeEntry?.from ?? item}
+                    arrivalPlace={routeEntry?.to}
                     showCompletion={!isLastPlace}
                     routeExpanded={routeEntry?.route.itinerary_item_id === expandedRouteId}
                     updating={updatingItemId === item.itinerary_item_id}
@@ -528,6 +578,7 @@ function OutputPlaceRow({
   number,
   route,
   boardingPlace,
+  arrivalPlace,
   showCompletion,
   routeExpanded,
   updating,
@@ -540,6 +591,7 @@ function OutputPlaceRow({
   number: number;
   route?: ItineraryRouteItem;
   boardingPlace?: ItineraryPlaceItem;
+  arrivalPlace?: ItineraryPlaceItem;
   showCompletion: boolean;
   routeExpanded: boolean;
   updating: boolean;
@@ -566,6 +618,7 @@ function OutputPlaceRow({
           <RouteInfoDisclosure
             route={route}
             boardingPlace={boardingPlace}
+            arrivalPlace={arrivalPlace}
             expanded={routeExpanded}
             completed={Boolean(place.is_completed)}
             updating={updating}
@@ -591,6 +644,7 @@ function OutputPlaceRow({
 function RouteInfoDisclosure({
   route,
   boardingPlace,
+  arrivalPlace,
   expanded,
   completed,
   updating,
@@ -600,6 +654,7 @@ function RouteInfoDisclosure({
 }: {
   route: ItineraryRouteItem;
   boardingPlace?: ItineraryPlaceItem;
+  arrivalPlace?: ItineraryPlaceItem;
   expanded: boolean;
   completed: boolean;
   updating: boolean;
@@ -622,6 +677,7 @@ function RouteInfoDisclosure({
         <RouteInfoPanel
           route={route}
           boardingPlace={boardingPlace}
+          arrivalPlace={arrivalPlace}
           completed={completed}
           updating={updating}
           onOpenDetail={onOpenDetail}
@@ -635,6 +691,7 @@ function RouteInfoDisclosure({
 function RouteInfoPanel({
   route,
   boardingPlace,
+  arrivalPlace,
   completed,
   updating,
   onOpenDetail,
@@ -642,6 +699,7 @@ function RouteInfoPanel({
 }: {
   route: ItineraryRouteItem;
   boardingPlace?: ItineraryPlaceItem;
+  arrivalPlace?: ItineraryPlaceItem;
   completed: boolean;
   updating: boolean;
   onOpenDetail: () => void;
@@ -672,7 +730,7 @@ function RouteInfoPanel({
           <strong>{transitLineLabel(route)}</strong>
         </div>
       ) : null}
-      <RouteLegList route={route} />
+      <RouteLegList route={route} from={boardingPlace} to={arrivalPlace} />
       <button type="button" className="route-detail-open" onClick={onOpenDetail}>
         상세 경로 보기
       </button>
@@ -768,7 +826,7 @@ function RouteDetailCard({
         <div className="output-route-detail">
           <div className="output-route-location-row"><span>탑승 위치</span><strong>{boardingLocationLabel(route, from)}</strong></div>
           <div className="output-route-location-row"><span>하차 위치</span><strong>{alightingLocationLabel(route, to)}</strong></div>
-          <RouteLegList route={route} compact />
+          <RouteLegList route={route} from={from} to={to} compact />
           <button type="button" className="route-detail-open" onClick={onOpenDetail}>
             상세 경로 보기
           </button>
@@ -828,7 +886,8 @@ function RouteDetailTimeline({ entry }: { entry: RouteEntry }) {
     );
   }
 
-  const start = routeStopLabel(legs[0].boarding_stop) || from?.address || from?.name || '출발 장소';
+  const resolvedStops = resolveRouteLegStops(legs, from, to);
+  const start = resolvedStops[0]?.boarding || from?.name || from?.address || '출발 장소';
 
   return (
     <div className="route-detail-timeline">
@@ -836,12 +895,12 @@ function RouteDetailTimeline({ entry }: { entry: RouteEntry }) {
         <span className="route-timeline-marker route-timeline-marker-start" aria-hidden="true">●</span>
         <strong>{start}</strong>
       </div>
-      {legs.map((leg) => {
+      {legs.map((leg, index) => {
         const transit = routeLegTransitLabel(leg, true);
         const duration = leg.duration_minute != null ? `${leg.duration_minute}분` : '';
         const distance = leg.distance_meter != null ? `${(leg.distance_meter / 1000).toFixed(1)}km` : '';
-        const boarding = routeStopLabel(leg.boarding_stop) || '승차 위치 확인 중';
-        const alighting = routeStopLabel(leg.alighting_stop) || '하차 위치 확인 중';
+        const boarding = resolvedStops[index]?.boarding || '승차 위치 확인 중';
+        const alighting = resolvedStops[index]?.alighting || '하차 위치 확인 중';
         const meta = [duration, distance].filter(Boolean).join(' · ');
         const modeClass = routeLegModeClass(leg);
         const realtime = routeLegRealtimeLabel(route, leg);
@@ -877,14 +936,25 @@ function RouteDetailTimeline({ entry }: { entry: RouteEntry }) {
   );
 }
 
-function RouteLegList({ route, compact = false }: { route: ItineraryRouteItem; compact?: boolean }) {
+function RouteLegList({
+  route,
+  from,
+  to,
+  compact = false,
+}: {
+  route: ItineraryRouteItem;
+  from?: ItineraryPlaceItem;
+  to?: ItineraryPlaceItem;
+  compact?: boolean;
+}) {
   const legs = [...(route.legs ?? [])].sort((a, b) => a.sequence - b.sequence);
   if (legs.length === 0) return null;
+  const resolvedStops = resolveRouteLegStops(legs, from, to);
 
   return (
     <div className={`route-leg-list${compact ? ' compact' : ''}`}>
       {!compact ? <span className="route-leg-title">세부 이동</span> : null}
-      {legs.map((leg) => {
+      {legs.map((leg, index) => {
         const duration = leg.duration_minute != null ? `${leg.duration_minute}분` : '';
         const distance = leg.distance_meter != null ? `${(leg.distance_meter / 1000).toFixed(1)}km` : '';
         const meta = [duration, distance].filter(Boolean).join(' · ');
@@ -898,9 +968,9 @@ function RouteLegList({ route, compact = false }: { route: ItineraryRouteItem; c
               {transit ? <strong>{transit}</strong> : null}
             </div>
             <div className="route-leg-stops">
-              <span>{routeStopLabel(leg.boarding_stop) || '승차 위치 확인 중'}</span>
+              <span>{resolvedStops[index]?.boarding || '승차 위치 확인 중'}</span>
               <span aria-hidden="true">→</span>
-              <span>{routeStopLabel(leg.alighting_stop) || '하차 위치 확인 중'}</span>
+              <span>{resolvedStops[index]?.alighting || '하차 위치 확인 중'}</span>
             </div>
             {realtime ? <small className="route-leg-realtime">{realtime}</small> : null}
             {meta ? <small className="route-leg-meta">{meta}</small> : null}
@@ -1173,14 +1243,20 @@ function transportLabel(route: ItineraryRouteItem) {
 
 function boardingLocationLabel(route: ItineraryRouteItem, place?: ItineraryPlaceItem) {
   if (isPublicTransport(route)) {
-    return routeStopLabel(route.legs?.[0]?.boarding_stop) || place?.address || '승차 정류장 정보 확인 중';
+    return place?.name?.trim()
+      || routeStopLabel(route.legs?.[0]?.boarding_stop)
+      || place?.address
+      || '승차 정류장 정보 확인 중';
   }
   return place?.address ?? '출발 장소';
 }
 
 function alightingLocationLabel(route: ItineraryRouteItem, place?: ItineraryPlaceItem) {
   if (isPublicTransport(route)) {
-    return routeStopLabel(route.legs?.at(-1)?.alighting_stop) || place?.address || '하차 정류장 정보 확인 중';
+    return place?.name?.trim()
+      || routeStopLabel(route.legs?.at(-1)?.alighting_stop)
+      || place?.address
+      || '하차 정류장 정보 확인 중';
   }
   return place?.address ?? '도착 장소';
 }
@@ -1196,7 +1272,11 @@ function transitLineLabel(route: ItineraryRouteItem) {
       return transit ? `${routeLegModeLabel(leg)} ${transit}` : '';
     })
     .filter(Boolean);
-  if (legLabels.length > 0) return legLabels.join(' · ');
+  if (legLabels.length > 0) {
+    return legLabels.length > 2
+      ? `${legLabels.slice(0, 2).join(' · ')} 외`
+      : legLabels.join(' · ');
+  }
 
   const lineName = route.line_name?.trim();
   const vehicleNumber = route.vehicle_number?.trim();
@@ -1212,6 +1292,44 @@ function routeStopLabel(stop?: ItineraryRouteStop | null) {
   const name = stop.name?.trim();
   const stationNumber = stop.station_number?.trim();
   return [name, stationNumber ? `(${stationNumber})` : null].filter(Boolean).join(' ');
+}
+
+function resolveRouteLegStops(
+  legs: ItineraryRouteLeg[],
+  from?: ItineraryPlaceItem,
+  to?: ItineraryPlaceItem,
+) {
+  return legs.map((leg, index) => {
+    const previous = legs[index - 1];
+    const next = legs[index + 1];
+    const rawBoarding = routeStopLabel(leg.boarding_stop);
+    const rawAlighting = routeStopLabel(leg.alighting_stop);
+    const previousAlighting = routeStopLabel(previous?.alighting_stop);
+    const nextBoarding = routeStopLabel(next?.boarding_stop);
+    const origin = from?.name?.trim() || from?.address || '';
+    const destination = to?.name?.trim() || to?.address || '';
+    const boardingFallbacks = index === 0
+      ? [origin, previousAlighting, nextBoarding]
+      : [previousAlighting, nextBoarding];
+    const alightingFallbacks = index === legs.length - 1
+      ? [destination, nextBoarding, previousAlighting]
+      : [nextBoarding, previousAlighting];
+
+    return {
+      boarding: usableRouteStopLabel(rawBoarding)
+        ? rawBoarding
+        : boardingFallbacks.find(usableRouteStopLabel) || '',
+      alighting: usableRouteStopLabel(rawAlighting)
+        ? rawAlighting
+        : alightingFallbacks.find(usableRouteStopLabel) || '',
+    };
+  });
+}
+
+function usableRouteStopLabel(value: string) {
+  if (!value) return false;
+  const normalized = value.replace(/\s/g, '');
+  return !GENERIC_ROUTE_STOP_LABELS.has(normalized);
 }
 
 function routeLegModeLabel(leg: ItineraryRouteLeg) {

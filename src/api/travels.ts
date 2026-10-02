@@ -70,6 +70,20 @@ export const travelsApi = {
     return apiRequest<TravelSummary[]>('/api/travel-plans/me');
   },
 
+  /** PATCH /api/travel-plans/:id/confirm — 추천 여행 일정 확정 */
+  async confirm(travelPlanId: number): Promise<TravelSummary> {
+    if (USE_MOCK) {
+      return {
+        ...mockTravelDetail,
+        travel_plan_id: travelPlanId,
+        confirmed_at: new Date().toISOString(),
+      };
+    }
+    return apiRequest<TravelSummary>(`/api/travel-plans/${travelPlanId}/confirm`, {
+      method: 'PATCH',
+    });
+  },
+
   /** POST /api/travel-plans — 여행 생성 요청. GENERATING 상태로 생성 */
   async create(body: CreateTravelPlanRequest) {
     if (USE_MOCK) {
@@ -171,6 +185,7 @@ type BackendItineraryResponse = {
   start_date?: string;
   end_date?: string;
   status?: TravelPlanStatus;
+  confirmed_at?: string | null;
   nights?: number;
   day_count?: number;
   days?: Array<{
@@ -375,6 +390,7 @@ function normalizeItinerary(response: BackendItineraryResponse): TravelDetail {
     start_date: startDate,
     end_date: endDate,
     status: response.status ?? 'COMPLETED',
+    confirmed_at: response.confirmed_at,
     nights: response.nights ?? Math.max(0, dateDiff(startDate, endDate)),
     days: response.day_count ?? days.length,
     itinerary_days: days,

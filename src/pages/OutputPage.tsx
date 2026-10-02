@@ -69,7 +69,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
-  const notifiedRealtimeMessageRef = useRef<string | null>(null);
+  const notifiedUnavailableRouteIdsRef = useRef<Set<number>>(new Set());
   const realtimeRequestIdsRef = useRef<Set<string>>(new Set());
   const detailRef = useRef<TravelDetail | null>(null);
   const realtimePollingRef = useRef<RealtimePollingState>({
@@ -125,6 +125,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     route: ItineraryRouteItem | undefined,
     isActive: () => boolean = () => true,
     forceRefresh = false,
+    notifyUnavailable = false,
   ) => {
     if (!route || !isBusRoute(route)) return;
     const routeId = getRouteId(route);
@@ -143,9 +144,25 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     try {
       const result = await travelsApi.getBusArrivals(planId, routeId);
       if (!isActive()) return;
+
+      if (notifyUnavailable) {
+        if (hasUsableBusArrival(result)) {
+          notifiedUnavailableRouteIdsRef.current.delete(routeId);
+        } else if (!notifiedUnavailableRouteIdsRef.current.has(routeId)) {
+          notifiedUnavailableRouteIdsRef.current.add(routeId);
+          toast.show(REALTIME_UNAVAILABLE_MESSAGE);
+        }
+      }
+
       setDetail((current) => current ? mergeBusArrivalLookup(current, routeId, result) : current);
     } catch {
       if (!isActive()) return;
+
+      if (notifyUnavailable && !notifiedUnavailableRouteIdsRef.current.has(routeId)) {
+        notifiedUnavailableRouteIdsRef.current.add(routeId);
+        toast.show(REALTIME_UNAVAILABLE_MESSAGE);
+      }
+
       setDetail((current) => current
         ? mergeBusArrivalLookup(current, routeId, {
           route_segment_id: routeId,
@@ -177,6 +194,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     if (routeId == null) return;
 
     stopRealtimePolling();
+    notifiedUnavailableRouteIdsRef.current.delete(routeId);
     const generation = realtimePollingRef.current.generation;
     realtimePollingRef.current.routeId = routeId;
 
@@ -193,7 +211,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         return;
       }
       const currentRoute = findRouteById(detailRef.current, routeId) ?? route;
-      void requestRouteRealtime(currentRoute, isPollingActive, true);
+      void requestRouteRealtime(currentRoute, isPollingActive, true, true);
     };
 
     // 체크 직후에는 즉시 한 번 조회하고, 이후 60초마다 갱신한다.
@@ -241,18 +259,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       request.cancelled = true;
     };
   }, [planId]);
-
-  useEffect(() => {
-    const message = detail?.itinerary_days
-      .flatMap((day) => day.items)
-      .filter((item): item is ItineraryRouteItem => item.type === 'ROUTE'
-        && item.realtime_status === 'UNAVAILABLE')
-      .map((route) => route.realtime_message)
-      .find((value): value is string => Boolean(value));
-    if (!message || notifiedRealtimeMessageRef.current === message) return;
-    notifiedRealtimeMessageRef.current = message;
-    toast.show(message);
-  }, [detail, toast]);
 
   const places = useMemo(
     () => detail?.itinerary_days.flatMap((day) => day.items.filter(isPlaceItem)) ?? [],
@@ -966,6 +972,11 @@ function findBusRouteForCompletedPlace(detail: TravelDetail, completedPlaceId: n
 
 function isBusRoute(route: ItineraryRouteItem) {
   return (route.legs ?? []).some((leg) => isBusMode(leg.mode));
+}
+
+function hasUsableBusArrival(lookup: BusArrivalLookupResponse) {
+  return lookup.available
+    && (lookup.arrivals ?? []).some((arrival) => arrival.next_arrival_minutes != null);
 }
 
 function isBusMode(mode: string | null | undefined) {

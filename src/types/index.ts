@@ -179,6 +179,7 @@ export type ItineraryRouteLeg = {
   bus_number?: string[];
   subway_line?: string[];
   realtime?: boolean;
+  realtime_route_number?: string | null;
   next_arrival_minutes?: number | null;
   remaining_stops?: number | null;
   expected_arrival_at?: string | null;

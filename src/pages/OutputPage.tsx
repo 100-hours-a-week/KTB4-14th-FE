@@ -594,16 +594,10 @@ function RouteInfoPanel({
         <strong>{secondaryInfo || '상세 이동 정보를 준비 중이에요.'}</strong>
       </div>
       {publicTransport ? (
-        <>
-          <div className="route-info-row">
-            <span>노선</span>
-            <strong>{transitLineLabel(route)}</strong>
-          </div>
-          <div className="route-info-row">
-            <span>다음 버스·열차</span>
-            <strong>{nextTransitArrivalLabel(route)}</strong>
-          </div>
-        </>
+        <div className="route-info-row">
+          <span>노선</span>
+          <strong>{transitLineLabel(route)}</strong>
+        </div>
       ) : null}
       <RouteLegList route={route} />
       <button type="button" className="route-detail-open" onClick={onOpenDetail}>
@@ -740,9 +734,6 @@ function RouteDetailSheet({ entry, onClose }: { entry: RouteEntry | null; onClos
         </header>
         <div className="route-detail-body">
           <RouteDetailTimeline entry={entry} />
-          {isPublicTransport(route) && route.next_arrival_minutes != null ? (
-            <p className="route-detail-live">다음 버스·열차 · {nextTransitArrivalLabel(route)}</p>
-          ) : null}
         </div>
       </section>
     </div>
@@ -780,6 +771,7 @@ function RouteDetailTimeline({ entry }: { entry: RouteEntry }) {
         const alighting = routeStopLabel(leg.alighting_stop) || '하차 위치 확인 중';
         const meta = [duration, distance].filter(Boolean).join(' · ');
         const modeClass = routeLegModeClass(leg);
+        const realtime = routeLegRealtimeLabel(route, leg);
 
         return (
           <div className={`route-timeline-group mode-${modeClass}`} key={`${leg.sequence}-${leg.mode}`}>
@@ -797,6 +789,7 @@ function RouteDetailTimeline({ entry }: { entry: RouteEntry }) {
                   <span aria-hidden="true">→</span>
                   <span>{alighting}</span>
                 </div>
+                {realtime ? <small className="route-leg-realtime">{realtime}</small> : null}
                 {meta ? <small>{meta}</small> : null}
               </div>
             </div>
@@ -823,6 +816,7 @@ function RouteLegList({ route, compact = false }: { route: ItineraryRouteItem; c
         const distance = leg.distance_meter != null ? `${(leg.distance_meter / 1000).toFixed(1)}km` : '';
         const meta = [duration, distance].filter(Boolean).join(' · ');
         const transit = routeLegTransitLabel(leg);
+        const realtime = routeLegRealtimeLabel(route, leg);
 
         return (
           <div className="route-leg" key={`${leg.sequence}-${leg.mode}`}>
@@ -835,6 +829,7 @@ function RouteLegList({ route, compact = false }: { route: ItineraryRouteItem; c
               <span aria-hidden="true">→</span>
               <span>{routeStopLabel(leg.alighting_stop) || '하차 위치 확인 중'}</span>
             </div>
+            {realtime ? <small className="route-leg-realtime">{realtime}</small> : null}
             {meta ? <small className="route-leg-meta">{meta}</small> : null}
           </div>
         );
@@ -915,6 +910,9 @@ function updateRouteRealtimeState(
     ...route,
     realtime: undefined,
     realtime_status: status,
+    legs: (route.legs ?? []).map((leg) => isBusMode(leg.mode)
+      ? { ...leg, realtime: undefined, realtime_route_number: null }
+      : leg),
     next_arrival_minutes: null,
     last_refreshed_at: null,
     realtime_message: null,
@@ -932,7 +930,18 @@ function mergeBusArrivalLookup(
     .sort((left, right) => (left.next_arrival_minutes ?? Number.MAX_SAFE_INTEGER)
       - (right.next_arrival_minutes ?? Number.MAX_SAFE_INTEGER))[0];
   const available = lookup.available && usableArrivals.length > 0;
-  const arrivalsByLeg = new Map(arrivals.map((arrival) => [arrival.leg_sequence, arrival]));
+  const fastestArrivalByLeg = new Map<
+    number,
+    BusArrivalLookupResponse['arrivals'][number]
+  >();
+  arrivals.forEach((arrival) => {
+    const current = fastestArrivalByLeg.get(arrival.leg_sequence);
+    const currentMinutes = current?.next_arrival_minutes ?? Number.MAX_SAFE_INTEGER;
+    const arrivalMinutes = arrival.next_arrival_minutes ?? Number.MAX_SAFE_INTEGER;
+    if (!current || arrivalMinutes < currentMinutes) {
+      fastestArrivalByLeg.set(arrival.leg_sequence, arrival);
+    }
+  });
 
   return mergeRouteInDetail(detail, routeId, (route) => ({
     ...route,
@@ -945,10 +954,11 @@ function mergeBusArrivalLookup(
     realtime_message: available ? null : REALTIME_UNAVAILABLE_MESSAGE,
     legs: (route.legs ?? []).map((leg) => {
       if (!isBusMode(leg.mode)) return leg;
-      const arrival = arrivalsByLeg.get(leg.sequence);
+      const arrival = fastestArrivalByLeg.get(leg.sequence);
       return {
         ...leg,
         realtime: available && arrival != null,
+        realtime_route_number: available ? arrival?.route_number ?? null : null,
         next_arrival_minutes: available ? arrival?.next_arrival_minutes ?? null : null,
         remaining_stops: available ? arrival?.remaining_stops ?? null : null,
         expected_arrival_at: available ? arrival?.expected_arrival_at ?? null : null,
@@ -1003,6 +1013,7 @@ function preserveRealtimeState(nextDetail: TravelDetail, previousDetail: TravelD
         return {
           ...leg,
           realtime: previousLeg.realtime,
+          realtime_route_number: previousLeg.realtime_route_number,
           next_arrival_minutes: previousLeg.next_arrival_minutes,
           remaining_stops: previousLeg.remaining_stops,
           expected_arrival_at: previousLeg.expected_arrival_at,
@@ -1149,11 +1160,15 @@ function routeLegIcon(leg: ItineraryRouteLeg) {
   return icons[leg.mode.toUpperCase()] ?? '•';
 }
 
+function formatBusNumber(value: string) {
+  const trimmed = value.trim();
+  return /^\d+$/.test(trimmed) ? `${trimmed}번` : trimmed;
+}
+
 function routeLegTransitLabel(leg: ItineraryRouteLeg, showAllBusNumbers = false) {
   const busNumbers = (leg.bus_number ?? [])
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .map((value) => /^\d+$/.test(value) ? `${value}번` : value);
+    .map(formatBusNumber)
+    .filter(Boolean);
   const subwayLines = (leg.subway_line ?? []).map((value) => value.trim()).filter(Boolean);
   const busLabel = !showAllBusNumbers && busNumbers.length > 2
     ? `${busNumbers.slice(0, 2).join(', ')} 외`
@@ -1161,13 +1176,25 @@ function routeLegTransitLabel(leg: ItineraryRouteLeg, showAllBusNumbers = false)
   return [busLabel, ...subwayLines].filter(Boolean).join(' · ');
 }
 
-function nextTransitArrivalLabel(route: ItineraryRouteItem) {
+function routeLegRealtimeLabel(route: ItineraryRouteItem, leg: ItineraryRouteLeg) {
+  if (!isBusMode(leg.mode)) return null;
   if (route.realtime_status === 'LOADING') return '실시간 정보 확인 중';
   if (route.realtime_status === 'PENDING') return '실시간 정보 대기 중';
-  const currentBasis = route.realtime ? '현재 기준 ' : '';
-  if (route.next_arrival_minutes != null) return `${currentBasis}${route.next_arrival_minutes}분 후 도착`;
-  if (route.estimated_arrival_at) return `${currentBasis}예상 도착 ${formatDateTime(route.estimated_arrival_at)}`;
-  return '도착 정보 확인 중';
+  if (leg.realtime === true && leg.next_arrival_minutes != null) {
+    const routeNumber = leg.realtime_route_number ? formatBusNumber(leg.realtime_route_number) : '';
+    const hasAlternatives = (leg.bus_number ?? []).length > 1;
+    const routeLabel = routeNumber
+      ? `${hasAlternatives ? '가장 빠른 ' : ''}${routeNumber} `
+      : '';
+    const remainingStops = leg.remaining_stops != null
+      ? ` · ${leg.remaining_stops}정거장`
+      : '';
+    return `${routeLabel}${leg.next_arrival_minutes}분 후 도착${remainingStops}`;
+  }
+  if (route.realtime_status !== 'UNAVAILABLE' && leg.realtime === false) {
+    return '실시간 정보 확인 불가';
+  }
+  return null;
 }
 
 function routeTimeRangeLabel(route: ItineraryRouteItem) {

@@ -1,6 +1,6 @@
 import { travelsApi } from '@/api';
 import { Header } from '@/components/Header';
-import { TripHeroCard, TripListCard } from '@/components/TripCards';
+import { isCurrentTrip, TripHeroCard, TripListCard } from '@/components/TripCards';
 import { useAuth } from '@/context/AuthContext';
 import { useTravelDraft } from '@/context/TravelDraftContext';
 import type { TravelSummary } from '@/types';
@@ -37,7 +37,9 @@ export function HomePage() {
       <div className="scroll">
         <div className="kicker">내 여행</div>
         <p className="hello">안녕하세요, {user?.nickname ?? '여행자'}님</p>
-        <h2 className="page-title">다음 여행을 이어서 준비해요</h2>
+        <h2 className="page-title">
+          {upcoming && isCurrentTrip(upcoming) ? '지금 여행 일정을 확인해 보세요' : '다음 여행을 이어서 준비해요'}
+        </h2>
         {upcoming ? (
           <TripHeroCard trip={upcoming} onClick={() => navigate(`/output/${upcoming.travel_plan_id}/places`)} />
         ) : (

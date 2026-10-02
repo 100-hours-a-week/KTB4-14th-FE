@@ -5,6 +5,7 @@ import {
   type BusArrivalLookupResponse,
   type LivePlaceInfo,
 } from '@/api';
+import { ApiError } from '@/api/client';
 import { Header } from '@/components/Header';
 import { KakaoRouteMap } from '@/components/KakaoRouteMap';
 import { Modal } from '@/components/Modal';
@@ -343,8 +344,12 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         confirmed_at: confirmed.confirmed_at ?? new Date().toISOString(),
       } : current);
       toast.show('여행 일정이 확정되었습니다.');
-    } catch {
-      toast.show('여행 일정을 확정하지 못했습니다. 다시 시도해주세요.');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.show('해당 기간에 확정된 여행이 있습니다.');
+      } else {
+        toast.show('여행 일정을 확정하지 못했습니다. 다시 시도해주세요.');
+      }
     } finally {
       setConfirming(false);
     }

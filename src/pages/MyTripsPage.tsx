@@ -10,18 +10,24 @@ export function MyTripsPage() {
   const [trips, setTrips] = useState<TravelSummary[]>([]);
 
   useEffect(() => {
-    travelsApi.getMyTrips().then(setTrips);
+    travelsApi.getMyTrips().then((nextTrips) => {
+      setTrips(nextTrips.filter((trip) => trip.status !== 'FAILED'));
+    });
   }, []);
 
   return (
     <section className="screen">
       <Header title="여행 기록 보기" onBack={() => navigate(-1)} showBell />
       <div className="scroll my-trips-scroll">
-        <div className="my-trips-list">
-          {trips.map((trip) => (
-            <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/output/${trip.travel_plan_id}/places`)} />
-          ))}
-        </div>
+        {trips.length === 0 ? (
+          <div className="empty-box">생성된 여행이 없습니다.</div>
+        ) : (
+          <div className="my-trips-list">
+            {trips.map((trip) => (
+              <TripListCard key={trip.travel_plan_id} trip={trip} onClick={() => navigate(`/output/${trip.travel_plan_id}/places`)} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -26,6 +26,14 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 type OutputTab = 'places' | 'routes';
 
 const REALTIME_UNAVAILABLE_MESSAGE = '실시간 버스 도착 서비스 제공이 불가능한 지역입니다';
+const REALTIME_POLL_INTERVAL_MS = 60_000;
+
+type RealtimePollingState = {
+  routeId: number | null;
+  timerId: number | null;
+  generation: number;
+};
+
 const GENERIC_ROUTE_STOP_LABELS = new Set([
   '출발지',
   '도착지',
@@ -73,14 +81,32 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [routeDetailId, setRouteDetailId] = useState<number | null>(null);
   const entryRequestRef = useRef<{ planId: number; cancelled: boolean } | null>(null);
-  const notifiedRealtimeMessageRef = useRef<string | null>(null);
+  const notifiedUnavailableRouteIdsRef = useRef<Set<number>>(new Set());
   const realtimeRequestIdsRef = useRef<Set<string>>(new Set());
+  const detailRef = useRef<TravelDetail | null>(null);
+  const realtimePollingRef = useRef<RealtimePollingState>({
+    routeId: null,
+    timerId: null,
+    generation: 0,
+  });
   const routeDetailEntry = useMemo(
     () => detail?.itinerary_days
       .flatMap((day) => getRouteEntries(day))
       .find((entry) => getRouteId(entry.route) === routeDetailId) ?? null,
     [detail, routeDetailId],
   );
+
+  useEffect(() => {
+    detailRef.current = detail;
+  }, [detail]);
+
+  useEffect(() => () => {
+    const polling = realtimePollingRef.current;
+    if (polling.timerId !== null) window.clearInterval(polling.timerId);
+    polling.timerId = null;
+    polling.routeId = null;
+    polling.generation += 1;
+  }, [planId]);
 
   const load = async (
     isActive: () => boolean = () => true,
@@ -111,6 +137,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     route: ItineraryRouteItem | undefined,
     isActive: () => boolean = () => true,
     forceRefresh = false,
+    notifyUnavailable = false,
   ) => {
     if (!route || !isBusRoute(route)) return;
     const routeId = getRouteId(route);
@@ -129,9 +156,25 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     try {
       const result = await travelsApi.getBusArrivals(planId, routeId);
       if (!isActive()) return;
+
+      if (notifyUnavailable) {
+        if (hasUsableBusArrival(result)) {
+          notifiedUnavailableRouteIdsRef.current.delete(routeId);
+        } else if (!notifiedUnavailableRouteIdsRef.current.has(routeId)) {
+          notifiedUnavailableRouteIdsRef.current.add(routeId);
+          toast.show(REALTIME_UNAVAILABLE_MESSAGE);
+        }
+      }
+
       setDetail((current) => current ? mergeBusArrivalLookup(current, routeId, result) : current);
     } catch {
       if (!isActive()) return;
+
+      if (notifyUnavailable && !notifiedUnavailableRouteIdsRef.current.has(routeId)) {
+        notifiedUnavailableRouteIdsRef.current.add(routeId);
+        toast.show(REALTIME_UNAVAILABLE_MESSAGE);
+      }
+
       setDetail((current) => current
         ? mergeBusArrivalLookup(current, routeId, {
           route_segment_id: routeId,
@@ -144,6 +187,48 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       // 요청 완료 후에는 완료 체크 시 실패·미반영 상태를 재조회할 수 있도록 해제한다.
       realtimeRequestIdsRef.current.delete(requestKey);
     }
+  };
+
+  const stopRealtimePolling = () => {
+    const polling = realtimePollingRef.current;
+    if (polling.timerId !== null) window.clearInterval(polling.timerId);
+    polling.timerId = null;
+    polling.routeId = null;
+    polling.generation += 1;
+  };
+
+  const startRealtimePolling = (
+    route: ItineraryRouteItem | undefined,
+    isActive: () => boolean = () => true,
+  ) => {
+    if (!route || !isBusRoute(route)) return;
+    const routeId = getRouteId(route);
+    if (routeId == null) return;
+
+    stopRealtimePolling();
+    notifiedUnavailableRouteIdsRef.current.delete(routeId);
+    const generation = realtimePollingRef.current.generation;
+    realtimePollingRef.current.routeId = routeId;
+
+    const isPollingActive = () => {
+      const polling = realtimePollingRef.current;
+      return isActive()
+        && polling.routeId === routeId
+        && polling.generation === generation;
+    };
+
+    const poll = () => {
+      if (!isPollingActive()) {
+        if (realtimePollingRef.current.generation === generation) stopRealtimePolling();
+        return;
+      }
+      const currentRoute = findRouteById(detailRef.current, routeId) ?? route;
+      void requestRouteRealtime(currentRoute, isPollingActive, true, true);
+    };
+
+    // 체크 직후에는 즉시 한 번 조회하고, 이후 60초마다 갱신한다.
+    poll();
+    realtimePollingRef.current.timerId = window.setInterval(poll, REALTIME_POLL_INTERVAL_MS);
   };
 
   const isPageActive = () => {
@@ -187,18 +272,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
     };
   }, [planId]);
 
-  useEffect(() => {
-    const message = detail?.itinerary_days
-      .flatMap((day) => day.items)
-      .filter((item): item is ItineraryRouteItem => item.type === 'ROUTE'
-        && item.realtime_status === 'UNAVAILABLE')
-      .map((route) => route.realtime_message)
-      .find((value): value is string => Boolean(value));
-    if (!message || notifiedRealtimeMessageRef.current === message) return;
-    notifiedRealtimeMessageRef.current = message;
-    toast.show(message);
-  }, [detail, toast]);
-
   const places = useMemo(
     () => detail?.itinerary_days.flatMap((day) => day.items.filter(isPlaceItem)) ?? [],
     [detail],
@@ -239,18 +312,19 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         place.itinerary_item_id,
         completing,
       );
+      // 다른 장소를 체크하거나 완료를 취소하면 기존 route polling을 중단한다.
+      stopRealtimePolling();
       setDetail((current) => current ? updatePlaceCompletion(current, result) : current);
 
       if (!USE_MOCK && completing) {
-        // 완료 체크에 따른 일정 시간 재계산 결과만 다시 받고,
-        // 실시간 버스 조회는 다음 BUS 구간 한 건에 대해서만 별도로 시작한다.
+        // 완료 체크에 따른 일정 시간 재계산 결과를 다시 받고,
+        // 선택한 BUS 구간의 실시간 조회 polling을 시작한다.
         const refreshedDetail = await load(isPageActive, currentDetail);
         const busRoute = findBusRouteForCompletedPlace(
           refreshedDetail ?? currentDetail,
           place.itinerary_item_id,
         );
-        // 완료한 장소에서 다음 장소로 이동하는 BUS 구간을 새로 조회한다.
-        if (busRoute) void requestRouteRealtime(busRoute, isPageActive, true);
+        if (busRoute) startRealtimePolling(busRoute, isPageActive);
       }
     } catch {
       setError('일정 완료 상태를 저장하지 못했어요.');
@@ -940,6 +1014,12 @@ function getRouteId(route: ItineraryRouteItem) {
   return route.route_segment_id ?? route.itinerary_item_id;
 }
 
+function findRouteById(detail: TravelDetail | null, routeId: number) {
+  return detail?.itinerary_days
+    .flatMap((day) => getRouteEntries(day))
+    .find((entry) => getRouteId(entry.route) === routeId)?.route;
+}
+
 function findFirstBusRoute(detail: TravelDetail) {
   return detail.itinerary_days
     .flatMap((day) => getRouteEntries(day))
@@ -962,6 +1042,11 @@ function findBusRouteForCompletedPlace(detail: TravelDetail, completedPlaceId: n
 
 function isBusRoute(route: ItineraryRouteItem) {
   return (route.legs ?? []).some((leg) => isBusMode(leg.mode));
+}
+
+function hasUsableBusArrival(lookup: BusArrivalLookupResponse) {
+  return lookup.available
+    && (lookup.arrivals ?? []).some((arrival) => arrival.next_arrival_minutes != null);
 }
 
 function isBusMode(mode: string | null | undefined) {

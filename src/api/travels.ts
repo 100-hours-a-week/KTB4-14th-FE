@@ -337,8 +337,8 @@ function resolveRealtimeStatus(
   route: BackendRoute,
   legs: ItineraryRouteLeg[],
 ): ItineraryRealtimeStatus {
-  if (route.realtime_status) return route.realtime_status;
   if (!legs.some((leg) => isBusMode(leg.mode))) return 'NOT_APPLICABLE';
+  if (route.realtime_status) return route.realtime_status;
   if (route.realtime === true) return 'AVAILABLE';
   if (route.realtime_message) return 'UNAVAILABLE';
   return 'PENDING';

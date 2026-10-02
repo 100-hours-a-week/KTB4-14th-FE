@@ -1492,6 +1492,12 @@
   font-size: 9px;
 }
 
+.route-leg-realtime {
+  color: var(--navy);
+  font-size: 9px;
+  font-weight: 800;
+}
+
 .route-detail-open {
   width: 100%;
   min-height: 32px;

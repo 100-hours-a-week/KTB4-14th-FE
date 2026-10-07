@@ -1,6 +1,25 @@
 import { defineConfig, type ProxyOptions } from 'vite';
 import react from '@vitejs/plugin-react';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { fileURLToPath, URL } from 'node:url';
+
+const hasSentryBuildConfig = Boolean(
+  process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT,
+);
+
+const sentryBuildPlugin = hasSentryBuildConfig
+  ? sentryVitePlugin({
+      org: process.env.SENTRY_ORG!,
+      project: process.env.SENTRY_PROJECT!,
+      authToken: process.env.SENTRY_AUTH_TOKEN!,
+      sourcemaps: {
+        // JavaScript 번들과 소스맵만 Sentry에 업로드한다.
+        assets: ['dist/**/*.js', 'dist/**/*.map'],
+        // Sentry 업로드 후 배포 산출물에서 소스맵을 제거해 원본 코드 노출을 막는다.
+        filesToDeleteAfterUpload: ['dist/**/*.map'],
+      },
+    })
+  : undefined;
 
 /**
  * E2E(live) 전용 백엔드 프록시. playwright.config.ts 가 E2E_PROXY_TARGET 을 넣어 줄 때만 켜진다.
@@ -32,7 +51,11 @@ function e2eBackendProxy(target: string | undefined): Record<string, ProxyOption
 }
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), ...(sentryBuildPlugin ? [sentryBuildPlugin] : [])],
+  build: {
+    // Sentry 빌드 환경에서만 소스맵을 생성하고 업로드한다.
+    sourcemap: hasSentryBuildConfig,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

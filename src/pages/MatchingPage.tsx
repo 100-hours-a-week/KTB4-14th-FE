@@ -107,6 +107,7 @@ export function MatchingPage() {
     }
     setJson(storage.keys.matchingConditionDraft, condition);
     toast.show('매칭 조건이 저장되었습니다.');
+    navigate('/matching/progress');
   };
 
   return (

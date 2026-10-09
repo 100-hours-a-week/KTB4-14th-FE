@@ -293,10 +293,18 @@ export type NotificationSettings = {
 };
 
 export type MatchingSettings = {
-  enabled: boolean;
-  style?: TripStyle;
-  region_preference?: RegionPreference;
-  companion?: CompanionType;
+  exists: boolean;
+  is_active: boolean;
+  pace: TravelPaceType | null;
+  themes: TravelTheme[];
+  is_complete: boolean;
+  can_match: boolean;
+};
+
+export type UpdateMatchingSettingsRequest = {
+  is_active: boolean;
+  pace: TravelPaceType;
+  themes: TravelTheme[];
 };
 
 export type ChatRoom = {

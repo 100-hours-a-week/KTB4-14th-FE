@@ -2583,6 +2583,139 @@
   line-height: 1.45;
 }
 
+.matching-result-screen {
+  background: var(--cream);
+}
+
+.matching-result-scroll {
+  padding-top: 28px;
+  padding-bottom: 18px;
+}
+
+.matching-result-icon {
+  display: grid;
+  width: 96px;
+  height: 96px;
+  place-items: center;
+  margin: 0 auto 18px;
+  border: 2px solid var(--navy);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--navy);
+  font-size: 42px;
+  line-height: 1;
+}
+
+.matching-result-icon.fail {
+  font-size: 38px;
+  font-weight: 300;
+}
+
+.matching-result-title,
+.matching-result-fail h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+
+.matching-result-subtitle,
+.matching-result-fail p {
+  margin: 8px 0 22px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.matching-candidate-list {
+  display: grid;
+  gap: 9px;
+}
+
+.matching-candidate-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  gap: 12px;
+  align-items: center;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.matching-candidate-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.matching-candidate-copy {
+  min-width: 0;
+}
+
+.matching-candidate-copy small,
+.matching-candidate-copy span,
+.matching-candidate-copy p {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.matching-candidate-copy strong {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matching-candidate-copy span {
+  margin-top: 2px;
+}
+
+.matching-candidate-copy p {
+  margin: 8px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matching-candidate-send {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.matching-result-fail {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 80px;
+}
+
 @media (max-width: 360px) {
   .matching-choice {
     gap: 4px;

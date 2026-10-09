@@ -14,6 +14,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { MapSearchPage } from '@/pages/MapSearchPage';
 import { MatchingPage } from '@/pages/MatchingPage';
 import { MatchingProgressPage } from '@/pages/MatchingProgressPage';
+import { MatchingResultPage } from '@/pages/MatchingResultPage';
 import { MatchingSettingsPage } from '@/pages/MatchingSettingsPage';
 import { MyPage } from '@/pages/MyPage';
 import { MyTripsPage } from '@/pages/MyTripsPage';
@@ -75,6 +76,7 @@ export default function App() {
                         <Route path="/home" element={<HomePage />} />
                         <Route path="/matching" element={<MatchingPage />} />
                         <Route path="/matching/progress" element={<MatchingProgressPage />} />
+                        <Route path="/matching/result" element={<MatchingResultPage />} />
                         <Route path="/chat" element={<ChatPage />} />
                         <Route path="/my" element={<MyPage />} />
                       </Route>

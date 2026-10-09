@@ -409,10 +409,12 @@ export const mockNotificationSettings: NotificationSettings = {
 };
 
 export const mockMatchingSettings: MatchingSettings = {
-  enabled: false,
-  style: 'BALANCED',
-  region_preference: 'NATURE',
-  companion: 'FRIEND',
+  exists: true,
+  is_active: false,
+  pace: 'BALANCED',
+  themes: ['NATURE', 'FOOD'],
+  is_complete: true,
+  can_match: false,
 };
 
 export const destinations = [

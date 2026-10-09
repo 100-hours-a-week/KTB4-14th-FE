@@ -1,6 +1,11 @@
 ﻿import { mockMatchingSettings, mockNotifications, mockNotificationSettings } from '@/mocks/data';
 import { API_BASE_URL, apiRequest, USE_MOCK } from '@/api/client';
-import type { AppNotification, MatchingSettings, NotificationSettings } from '@/types';
+import type {
+  AppNotification,
+  MatchingSettings,
+  NotificationSettings,
+  UpdateMatchingSettingsRequest,
+} from '@/types';
 
 let localNotifications = mockNotifications.map((item) => ({ ...item }));
 let localNotiSettings = { ...mockNotificationSettings };
@@ -74,20 +79,27 @@ export const notificationsApi = {
 };
 
 export const matchingApi = {
-  /** GET /api/matching/settings */
+  /** GET /api/v2/matching-profiles/me */
   async getSettings() {
     if (USE_MOCK) return localMatching;
-    return apiRequest<MatchingSettings>('/api/matching/settings');
+    return apiRequest<MatchingSettings>('/api/v2/matching-profiles/me');
   },
 
-  /** PATCH /api/matching/settings */
-  async updateSettings(settings: MatchingSettings) {
+  /** PUT /api/v2/matching-profiles/me */
+  async updateSettings(settings: UpdateMatchingSettingsRequest) {
     if (USE_MOCK) {
-      localMatching = settings;
-      return settings;
+      localMatching = {
+        exists: true,
+        is_active: settings.is_active,
+        pace: settings.pace,
+        themes: settings.themes,
+        is_complete: settings.themes.length > 0,
+        can_match: settings.is_active && settings.themes.length > 0,
+      };
+      return localMatching;
     }
-    return apiRequest<MatchingSettings>('/api/matching/settings', {
-      method: 'PATCH',
+    return apiRequest<MatchingSettings>('/api/v2/matching-profiles/me', {
+      method: 'PUT',
       body: settings,
     });
   },

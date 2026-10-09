@@ -2128,6 +2128,131 @@
   margin-bottom: 8px;
 }
 
+.matching-settings-screen {
+  background: var(--cream);
+}
+
+.matching-settings-scroll {
+  padding-top: 12px;
+}
+
+.matching-settings-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 26px;
+  padding: 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.matching-settings-copy {
+  min-width: 0;
+}
+
+.matching-settings-copy strong,
+.matching-settings-section-title,
+.matching-settings-fieldset legend {
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.matching-settings-copy strong {
+  display: block;
+  font-size: 15px;
+}
+
+.matching-settings-copy p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.matching-settings-section-title {
+  margin: 0 0 14px;
+  font-size: 17px;
+}
+
+.matching-settings-fieldset {
+  min-width: 0;
+  margin: 0 0 24px;
+  padding: 0;
+  border: 0;
+}
+
+.matching-settings-fieldset legend {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.matching-settings-fieldset legend small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.matching-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.matching-choice-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.matching-choice {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.matching-choice.selected {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.matching-choice:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.matching-help,
+.matching-unsaved {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.matching-help.error,
+.matching-unsaved {
+  color: var(--danger);
+}
+
+.matching-settings-footer {
+  background: var(--cream);
+}
+
 .check-item {
   display: flex;
   align-items: center;

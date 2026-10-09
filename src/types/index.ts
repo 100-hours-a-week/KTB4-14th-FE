@@ -36,6 +36,7 @@ export type TransportType = 'PUBLIC' | 'CAR' | 'WALK' | 'ETC';
 export type TravelPaceType = 'RELAXED' | 'BALANCED' | 'PACKED';
 export type TravelTransportType = 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
 export type TravelTheme = 'NATURE' | 'FOOD' | 'CULTURE' | 'REST' | 'SNS' | 'ACTIVITY';
+export type MatchingCompanionGender = 'ANY' | 'MALE' | 'FEMALE';
 export type TripStyle = TravelPaceType;
 export type RegionPreference = 'HOTPLACE' | 'NATURE' | 'LOCAL';
 export type FoodPreference = 'KOREAN' | 'JAPANESE' | 'CHINESE' | 'WESTERN';
@@ -305,6 +306,14 @@ export type UpdateMatchingSettingsRequest = {
   is_active: boolean;
   pace: TravelPaceType;
   themes: TravelTheme[];
+};
+
+export type MatchingConditionDraft = {
+  preferred_companion_gender: MatchingCompanionGender | null;
+  themes: TravelTheme[];
+  pace: TravelPaceType | null;
+  budget_min: number;
+  budget_max: number;
 };
 
 export type ChatRoom = {

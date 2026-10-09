@@ -4,6 +4,7 @@ const KEYS = {
   user: 'audigo.user',
   travelDraft: 'audigo.travel_draft',
   travelGenerationRequests: 'audigo.travel_generation_requests',
+  matchingConditionDraft: 'audigo.matching_condition_draft',
 } as const;
 
 function read(key: string) {

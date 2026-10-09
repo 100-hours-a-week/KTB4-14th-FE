@@ -2404,6 +2404,185 @@
   background: var(--cream);
 }
 
+.matching-progress-screen {
+  background: var(--cream);
+}
+
+.matching-progress-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 26px;
+}
+
+.matching-progress-hero {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background:
+    conic-gradient(var(--navy) 0 76deg, transparent 76deg 360deg),
+    var(--line);
+  animation: matching-spin 1.1s linear infinite;
+}
+
+.matching-progress-hero::before {
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: var(--cream);
+  content: '';
+}
+
+.matching-progress-hero span {
+  position: absolute;
+  inset: 20px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+}
+
+@keyframes matching-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.matching-progress-title {
+  margin: 0;
+  color: var(--navy);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+
+.matching-progress-subtitle {
+  margin: 8px 0 22px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.matching-progress-card {
+  padding: 16px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.matching-progress-card h3 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.matching-progress-steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.matching-progress-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) max-content;
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+}
+
+.matching-progress-step:not(:last-child)::after {
+  position: absolute;
+  top: 30px;
+  bottom: -16px;
+  left: 13px;
+  width: 2px;
+  border-radius: 99px;
+  background: var(--line);
+  content: '';
+}
+
+.matching-step-marker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.matching-progress-step.done .matching-step-marker,
+.matching-progress-step.running .matching-step-marker {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.matching-progress-step.running .matching-step-marker {
+  box-shadow: 0 0 0 5px rgba(28, 36, 48, 0.08);
+}
+
+.matching-progress-step strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matching-progress-step.pending strong,
+.matching-progress-step.pending em {
+  color: var(--muted);
+}
+
+.matching-progress-step em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.matching-progress-step.running em {
+  color: var(--navy);
+}
+
+.matching-progress-notice {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--sand);
+}
+
+.matching-progress-notice strong {
+  display: block;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.matching-progress-notice p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 @media (max-width: 360px) {
   .matching-choice {
     gap: 4px;

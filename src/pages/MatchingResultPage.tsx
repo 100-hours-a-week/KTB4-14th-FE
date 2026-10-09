@@ -1,6 +1,5 @@
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
-import { useToast } from '@/context/ToastContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 type MatchCandidate = {
@@ -37,12 +36,24 @@ const mockCandidates: MatchCandidate[] = [
 
 export function MatchingResultPage() {
   const navigate = useNavigate();
-  const toast = useToast();
   const [searchParams] = useSearchParams();
   const isFailed = searchParams.get('status') === 'failed';
 
   const retryMatching = () => {
     navigate('/matching');
+  };
+
+  const openChatEntry = (candidate: MatchCandidate) => {
+    navigate(`/chat?matchedUserId=${candidate.user_id}`, {
+      state: {
+        fromMatching: true,
+        matchedUser: {
+          user_id: candidate.user_id,
+          nickname: candidate.nickname,
+          match_rate: candidate.match_rate,
+        },
+      },
+    });
   };
 
   if (isFailed) {
@@ -89,7 +100,7 @@ export function MatchingResultPage() {
                 type="button"
                 className="matching-candidate-send"
                 aria-label={`${candidate.nickname}에게 메시지 보내기`}
-                onClick={() => toast.show('채팅 연결은 준비 중입니다.')}>
+                onClick={() => openChatEntry(candidate)}>
                 ➤
               </button>
             </article>

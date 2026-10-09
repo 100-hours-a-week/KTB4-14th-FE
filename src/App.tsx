@@ -3,7 +3,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { TravelDraftProvider } from '@/context/TravelDraftContext';
 import { TabLayout } from '@/components/Layout';
-import { ChatPage, MatchingPage } from '@/pages/ComingSoonPages';
+import { ChatPage } from '@/pages/ComingSoonPages';
 import { ChecklistPage } from '@/pages/ChecklistPage';
 import { CreateTravelPage } from '@/pages/CreateTravelPage';
 import { GeneratingPage } from '@/pages/GeneratingPage';
@@ -12,6 +12,7 @@ import { ItineraryPage, OutputPlacesPage, OutputRoutesPage } from '@/pages/Outpu
 import { KakaoCallbackPage } from '@/pages/KakaoCallbackPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { MapSearchPage } from '@/pages/MapSearchPage';
+import { MatchingPage } from '@/pages/MatchingPage';
 import { MatchingSettingsPage } from '@/pages/MatchingSettingsPage';
 import { MyPage } from '@/pages/MyPage';
 import { MyTripsPage } from '@/pages/MyTripsPage';

@@ -91,10 +91,11 @@ export const matchingApi = {
       localMatching = {
         exists: true,
         is_active: settings.is_active,
+        gender: settings.gender,
         pace: settings.pace,
         themes: settings.themes,
-        is_complete: settings.themes.length > 0,
-        can_match: settings.is_active && settings.themes.length > 0,
+        is_complete: Boolean(settings.gender && settings.pace && settings.themes.length > 0),
+        can_match: Boolean(settings.is_active && settings.gender && settings.pace && settings.themes.length > 0),
       };
       return localMatching;
     }

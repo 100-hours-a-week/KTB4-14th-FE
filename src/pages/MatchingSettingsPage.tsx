@@ -4,18 +4,33 @@ import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
-import type { TravelPaceType, TravelTheme, UpdateMatchingSettingsRequest } from '@/types';
+import type { MatchingGender, TravelPaceType, TravelTheme, UpdateMatchingSettingsRequest } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const DEFAULT_SETTINGS: UpdateMatchingSettingsRequest = {
+type MatchingSettingsForm = Omit<UpdateMatchingSettingsRequest, 'gender'> & {
+  gender: MatchingGender | null;
+};
+
+const genderOptions: { value: MatchingGender; label: string }[] = [
+  { value: 'MALE', label: '남성' },
+  { value: 'FEMALE', label: '여성' },
+];
+
+const DEFAULT_SETTINGS: MatchingSettingsForm = {
   is_active: false,
+  gender: null,
   pace: 'BALANCED',
   themes: [],
 };
 
-function sameSettings(a: UpdateMatchingSettingsRequest, b: UpdateMatchingSettingsRequest) {
-  return a.is_active === b.is_active && a.pace === b.pace && a.themes.join('|') === b.themes.join('|');
+function sameSettings(a: MatchingSettingsForm, b: MatchingSettingsForm) {
+  return (
+    a.is_active === b.is_active &&
+    a.gender === b.gender &&
+    a.pace === b.pace &&
+    a.themes.join('|') === b.themes.join('|')
+  );
 }
 
 function normalizeThemes(themes: TravelTheme[]) {
@@ -27,8 +42,8 @@ function normalizeThemes(themes: TravelTheme[]) {
 export function MatchingSettingsPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const [settings, setSettings] = useState<UpdateMatchingSettingsRequest>(DEFAULT_SETTINGS);
-  const [initialSettings, setInitialSettings] = useState<UpdateMatchingSettingsRequest | null>(null);
+  const [settings, setSettings] = useState<MatchingSettingsForm>(DEFAULT_SETTINGS);
+  const [initialSettings, setInitialSettings] = useState<MatchingSettingsForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
@@ -42,6 +57,7 @@ export function MatchingSettingsPage() {
         if (!alive) return;
         const form = {
           is_active: next.is_active,
+          gender: next.gender,
           pace: next.pace ?? 'BALANCED',
           themes: normalizeThemes(next.themes),
         };
@@ -65,7 +81,7 @@ export function MatchingSettingsPage() {
     return !sameSettings(initialSettings, settings);
   }, [initialSettings, settings]);
 
-  const canSave = !loading && !saving && (!settings.is_active || settings.themes.length > 0);
+  const canSave = !loading && !saving && Boolean(settings.gender) && (!settings.is_active || settings.themes.length > 0);
 
   const handleBack = () => {
     if (hasChanges) {
@@ -89,6 +105,11 @@ export function MatchingSettingsPage() {
   };
 
   const saveSettings = async () => {
+    if (!settings.gender) {
+      toast.show('본인의 성별을 선택해주세요.');
+      return;
+    }
+
     if (settings.is_active && settings.themes.length === 0) {
       toast.show('선호 여행을 최소 1개 선택해주세요.');
       return;
@@ -96,9 +117,16 @@ export function MatchingSettingsPage() {
 
     setSaving(true);
     try {
-      const saved = await matchingApi.updateSettings(settings);
+      const payload: UpdateMatchingSettingsRequest = {
+        is_active: settings.is_active,
+        gender: settings.gender,
+        pace: settings.pace,
+        themes: settings.themes,
+      };
+      const saved = await matchingApi.updateSettings(payload);
       const form = {
         is_active: saved.is_active,
+        gender: saved.gender ?? settings.gender,
         pace: saved.pace ?? settings.pace,
         themes: normalizeThemes(saved.themes),
       };
@@ -132,6 +160,25 @@ export function MatchingSettingsPage() {
         </div>
 
         <h2 className="matching-settings-section-title">매칭 프로필</h2>
+
+        <fieldset className="matching-settings-fieldset">
+          <legend>
+            본인 성별
+            {!settings.gender ? <small>성별을 선택해주세요.</small> : null}
+          </legend>
+          <div className="matching-choice-grid two">
+            {genderOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`matching-choice${settings.gender === option.value ? ' selected' : ''}`}
+                disabled={loading}
+                onClick={() => setSettings((prev) => ({ ...prev, gender: option.value }))}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <fieldset className="matching-settings-fieldset">
           <legend>여행 스타일</legend>

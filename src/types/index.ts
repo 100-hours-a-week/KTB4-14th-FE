@@ -36,6 +36,7 @@ export type TransportType = 'PUBLIC' | 'CAR' | 'WALK' | 'ETC';
 export type TravelPaceType = 'RELAXED' | 'BALANCED' | 'PACKED';
 export type TravelTransportType = 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
 export type TravelTheme = 'NATURE' | 'FOOD' | 'CULTURE' | 'REST' | 'SNS' | 'ACTIVITY';
+export type MatchingGender = 'MALE' | 'FEMALE';
 export type MatchingCompanionGender = 'ANY' | 'MALE' | 'FEMALE';
 export type TripStyle = TravelPaceType;
 export type RegionPreference = 'HOTPLACE' | 'NATURE' | 'LOCAL';
@@ -296,6 +297,7 @@ export type NotificationSettings = {
 export type MatchingSettings = {
   exists: boolean;
   is_active: boolean;
+  gender: MatchingGender | null;
   pace: TravelPaceType | null;
   themes: TravelTheme[];
   is_complete: boolean;
@@ -304,6 +306,7 @@ export type MatchingSettings = {
 
 export type UpdateMatchingSettingsRequest = {
   is_active: boolean;
+  gender: MatchingGender;
   pace: TravelPaceType;
   themes: TravelTheme[];
 };

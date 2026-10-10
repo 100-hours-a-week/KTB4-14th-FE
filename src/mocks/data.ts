@@ -411,6 +411,7 @@ export const mockNotificationSettings: NotificationSettings = {
 export const mockMatchingSettings: MatchingSettings = {
   exists: true,
   is_active: false,
+  gender: 'FEMALE',
   pace: 'BALANCED',
   themes: ['NATURE', 'FOOD'],
   is_complete: true,

@@ -1,3 +1,5 @@
+import { matchingApi } from '@/api';
+import { ApiError } from '@/api/client';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { useToast } from '@/context/ToastContext';
@@ -50,6 +52,7 @@ export function MatchingPage() {
   const toast = useToast();
   const [condition, setCondition] = useState<MatchingConditionDraft>(DEFAULT_CONDITION);
   const [hydrated, setHydrated] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setCondition(normalizeCondition(getJson<MatchingConditionDraft>(storage.keys.matchingConditionDraft)));
@@ -100,14 +103,25 @@ export function MatchingPage() {
     navigate('/home');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValid) {
       toast.show('매칭 조건을 모두 선택해주세요.');
       return;
     }
-    setJson(storage.keys.matchingConditionDraft, condition);
-    toast.show('매칭 조건이 저장되었습니다.');
-    navigate('/matching/progress');
+    setSubmitting(true);
+    try {
+      setJson(storage.keys.matchingConditionDraft, condition);
+      await matchingApi.createRequest(condition);
+      navigate('/matching/progress');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        toast.show('마이페이지에서 매칭 설정을 켜주세요.');
+      } else {
+        toast.show('매칭 요청을 생성하지 못했습니다.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -213,7 +227,7 @@ export function MatchingPage() {
         </fieldset>
       </div>
       <div className="footer-bar matching-footer">
-        <Button label="매칭 결과 보기" variant="dark" disabled={!isValid} onClick={handleSubmit} />
+        <Button label="매칭 결과 보기" variant="dark" disabled={!isValid} loading={submitting} onClick={handleSubmit} />
       </div>
     </section>
   );

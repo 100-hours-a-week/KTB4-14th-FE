@@ -1,7 +1,9 @@
+import { matchingApi } from '@/api';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { useToast } from '@/context/ToastContext';
-import { useState } from 'react';
+import { setJson, storage } from '@/storage';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type ProgressState = 'DONE' | 'RUNNING' | 'PENDING';
@@ -24,12 +26,44 @@ export function MatchingProgressPage() {
   const toast = useToast();
   const [canceling, setCanceling] = useState(false);
 
-  const cancelMatching = () => {
+  useEffect(() => {
+    let alive = true;
+    const timer = window.setTimeout(() => {
+      matchingApi
+        .getCandidates()
+        .then((response) => {
+          if (!alive) return;
+          setJson(storage.keys.matchingCandidatesResult, response);
+          if (response.count > 0) {
+            navigate('/matching/result', { replace: true, state: { candidatesResponse: response } });
+            return;
+          }
+          navigate('/matching/result?status=failed', { replace: true });
+        })
+        .catch(() => {
+          if (!alive) return;
+          toast.show('매칭 후보를 불러오지 못했습니다.');
+          navigate('/matching/result?status=failed', { replace: true });
+        });
+    }, 600);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [navigate, toast]);
+
+  const cancelMatching = async () => {
     setCanceling(true);
-    window.setTimeout(() => {
+    try {
+      await matchingApi.cancelRequest();
       toast.show('매칭이 취소되었습니다.');
       navigate('/matching');
-    }, 250);
+    } catch {
+      toast.show('매칭을 취소하지 못했습니다.');
+    } finally {
+      setCanceling(false);
+    }
   };
 
   return (

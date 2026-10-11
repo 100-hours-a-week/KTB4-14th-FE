@@ -3,7 +3,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { TravelDraftProvider } from '@/context/TravelDraftContext';
 import { TabLayout } from '@/components/Layout';
-import { ChatPage } from '@/pages/ComingSoonPages';
+import { ChatPage } from '@/pages/ChatRoomsPage';
 import { ChecklistPage } from '@/pages/ChecklistPage';
 import { CreateTravelPage } from '@/pages/CreateTravelPage';
 import { GeneratingPage } from '@/pages/GeneratingPage';

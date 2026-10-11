@@ -351,10 +351,23 @@ export type MatchingCandidatesResponse = {
   count: number;
 };
 
+export type ChatRoomStatus = 'ACTIVE' | 'ENDED';
+
 export type ChatRoom = {
-  chat_room_id: number;
+  room_id: number;
   chat_name: string;
+  status: ChatRoomStatus;
+  is_online: boolean;
   last_message: string;
   last_message_at: string;
+  profile_image_url: string | null;
   unread_count: number;
+};
+
+export type ChatRoomListResponse = {
+  rooms: ChatRoom[];
+  size: number;
+  cursor_time: string | null;
+  cursor_id: number | null;
+  has_next: boolean;
 };

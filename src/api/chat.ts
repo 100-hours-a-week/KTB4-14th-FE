@@ -3,7 +3,12 @@ import type { ChatRoomListResponse } from '@/types';
 
 export const chatApi = {
   /** GET /api/v2/chat/rooms */
-  async listRooms(params?: { cursor_time?: string; cursor_id?: number; size?: number }) {
+  async listRooms(params?: {
+    chat_name?: string;
+    cursor_time?: string;
+    cursor_id?: number;
+    size?: number;
+  }) {
     if (USE_MOCK) {
       return {
         rooms: [],

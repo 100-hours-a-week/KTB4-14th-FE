@@ -172,6 +172,61 @@
   font-size: 12px;
 }
 
+.chat-room-search {
+  display: flex;
+  gap: 8px;
+  margin: 0 2px 12px;
+}
+
+.chat-room-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+}
+
+.chat-room-search-input:focus {
+  border-color: var(--navy);
+  outline: 2px solid rgb(28 36 48 / 12%);
+}
+
+.chat-room-search-button,
+.chat-room-search-clear {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-room-search-button {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.chat-room-search-clear {
+  padding: 0 10px;
+  background: var(--sand);
+  color: var(--navy);
+}
+
+.chat-room-search-error {
+  margin: -4px 2px 12px;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .chat-room-list {
   display: grid;
 }

@@ -2,6 +2,10 @@
 import { API_BASE_URL, apiRequest, USE_MOCK } from '@/api/client';
 import type {
   AppNotification,
+  CreateMatchingRequestRequest,
+  MatchingCandidatesResponse,
+  MatchingConditionDraft,
+  MatchingRequestResponse,
   MatchingSettings,
   NotificationSettings,
   UpdateMatchingSettingsRequest,
@@ -10,6 +14,49 @@ import type {
 let localNotifications = mockNotifications.map((item) => ({ ...item }));
 let localNotiSettings = { ...mockNotificationSettings };
 let localMatching = { ...mockMatchingSettings };
+
+const mockMatchingCandidates: MatchingCandidatesResponse = {
+  candidates: [
+    {
+      user_id: 201,
+      nickname: '닉네임1',
+      profile_image_url: null,
+      theme: ['NATURE', 'FOOD'],
+      pace: 'RELAXED',
+      match_rate: 89,
+    },
+    {
+      user_id: 202,
+      nickname: '닉네임2',
+      profile_image_url: null,
+      theme: ['NATURE', 'FOOD'],
+      pace: 'BALANCED',
+      match_rate: 76,
+    },
+    {
+      user_id: 203,
+      nickname: '닉네임3',
+      profile_image_url: null,
+      theme: ['CULTURE', 'SNS'],
+      pace: 'PACKED',
+      match_rate: 49,
+    },
+  ],
+  count: 3,
+};
+
+function toCreateMatchingRequest(condition: MatchingConditionDraft): CreateMatchingRequestRequest {
+  if (!condition.preferred_companion_gender || !condition.pace) {
+    throw new Error('매칭 조건을 모두 선택해주세요.');
+  }
+  return {
+    preferred_companion_gender: condition.preferred_companion_gender,
+    theme: condition.themes,
+    pace: condition.pace,
+    budget_min: condition.budget_min,
+    budget_max: condition.budget_max,
+  };
+}
 
 export const notificationsApi = {
   /** GET /api/notifications */
@@ -103,5 +150,37 @@ export const matchingApi = {
       method: 'PUT',
       body: settings,
     });
+  },
+
+  /** POST /api/v2/matching-requests */
+  async createRequest(condition: MatchingConditionDraft) {
+    const body = toCreateMatchingRequest(condition);
+    if (USE_MOCK) {
+      return {
+        matching_request_id: Date.now(),
+        user_id: 0,
+        preferred_companion_gender: body.preferred_companion_gender,
+        theme: body.theme,
+        pace: body.pace,
+        budget_min: body.budget_min,
+        budget_max: body.budget_max,
+      } satisfies MatchingRequestResponse;
+    }
+    return apiRequest<MatchingRequestResponse>('/api/v2/matching-requests', {
+      method: 'POST',
+      body,
+    });
+  },
+
+  /** DELETE /api/v2/matching-requests/me */
+  async cancelRequest() {
+    if (USE_MOCK) return;
+    await apiRequest<void>('/api/v2/matching-requests/me', { method: 'DELETE' });
+  },
+
+  /** GET /api/v2/matches/candidates */
+  async getCandidates() {
+    if (USE_MOCK) return mockMatchingCandidates;
+    return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates');
   },
 };

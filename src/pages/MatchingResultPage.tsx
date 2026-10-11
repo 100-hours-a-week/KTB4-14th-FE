@@ -1,49 +1,32 @@
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
+import { getJson, storage } from '@/storage';
+import type { MatchingCandidate, MatchingCandidatesResponse, TravelPaceType, TravelTheme } from '@/types';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-type MatchCandidate = {
-  user_id: number;
-  nickname: string;
-  match_rate: number;
-  description: string;
-  tags: string[];
-};
+const themeLabels = new Map<TravelTheme, string>(travelThemeOptions.map((option) => [option.value, option.label]));
+const paceLabels = new Map<TravelPaceType, string>(travelPaceOptions.map((option) => [option.value, option.label]));
 
-const mockCandidates: MatchCandidate[] = [
-  {
-    user_id: 201,
-    nickname: '닉네임1',
-    match_rate: 89,
-    description: '취향 일치 89%',
-    tags: ['자연', '맛집', '여유로운 일정'],
-  },
-  {
-    user_id: 202,
-    nickname: '닉네임2',
-    match_rate: 76,
-    description: '취향 일치 76%',
-    tags: ['자연', '미식', '균형있는 일정'],
-  },
-  {
-    user_id: 203,
-    nickname: '닉네임3',
-    match_rate: 49,
-    description: '취향 일치 49%',
-    tags: ['문화', 'SNS', '알찬 일정'],
-  },
-];
+function candidateTags(candidate: MatchingCandidate) {
+  return [...candidate.theme.map((theme) => themeLabels.get(theme) ?? theme), paceLabels.get(candidate.pace) ?? candidate.pace];
+}
 
 export function MatchingResultPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isFailed = searchParams.get('status') === 'failed';
+  const state = location.state as { candidatesResponse?: MatchingCandidatesResponse } | null;
+  const candidatesResponse =
+    state?.candidatesResponse ?? getJson<MatchingCandidatesResponse>(storage.keys.matchingCandidatesResult);
+  const candidates = candidatesResponse?.candidates ?? [];
 
   const retryMatching = () => {
     navigate('/matching');
   };
 
-  const openChatEntry = (candidate: MatchCandidate) => {
+  const openChatEntry = (candidate: MatchingCandidate) => {
     navigate(`/chat?matchedUserId=${candidate.user_id}`, {
       state: {
         fromMatching: true,
@@ -56,7 +39,7 @@ export function MatchingResultPage() {
     });
   };
 
-  if (isFailed) {
+  if (isFailed || candidates.length === 0) {
     return (
       <section className="screen matching-result-screen">
         <Header title="매칭 실패" onBack={() => navigate('/matching')} showBell />
@@ -85,16 +68,20 @@ export function MatchingResultPage() {
         <p className="matching-result-subtitle">마음에 드는 사람에게 메시지를 보내 인사해보세요.</p>
 
         <div className="matching-candidate-list">
-          {mockCandidates.map((candidate) => (
+          {candidates.map((candidate) => (
             <article key={candidate.user_id} className="matching-candidate-card">
-              <div className="matching-candidate-avatar" aria-hidden="true">
-                ●
-              </div>
+              {candidate.profile_image_url ? (
+                <img className="matching-candidate-avatar" src={candidate.profile_image_url} alt="" />
+              ) : (
+                <div className="matching-candidate-avatar" aria-hidden="true">
+                  ●
+                </div>
+              )}
               <div className="matching-candidate-copy">
                 <small>최적의 여행 메이트</small>
                 <strong>{candidate.nickname}</strong>
-                <span>{candidate.description}</span>
-                <p>{candidate.tags.join(' · ')}</p>
+                <span>취향 일치 {candidate.match_rate}%</span>
+                <p>{candidateTags(candidate).join(' · ')}</p>
               </div>
               <button
                 type="button"

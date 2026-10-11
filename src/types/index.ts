@@ -319,6 +319,38 @@ export type MatchingConditionDraft = {
   budget_max: number;
 };
 
+export type CreateMatchingRequestRequest = {
+  preferred_companion_gender: MatchingCompanionGender;
+  theme: TravelTheme[];
+  pace: TravelPaceType;
+  budget_min: number;
+  budget_max: number;
+};
+
+export type MatchingRequestResponse = {
+  matching_request_id: number;
+  user_id: number;
+  preferred_companion_gender: MatchingCompanionGender;
+  theme: TravelTheme[];
+  pace: TravelPaceType;
+  budget_min: number;
+  budget_max: number;
+};
+
+export type MatchingCandidate = {
+  user_id: number;
+  nickname: string;
+  profile_image_url: string | null;
+  theme: TravelTheme[];
+  pace: TravelPaceType;
+  match_rate: number;
+};
+
+export type MatchingCandidatesResponse = {
+  candidates: MatchingCandidate[];
+  count: number;
+};
+
 export type ChatRoom = {
   chat_room_id: number;
   chat_name: string;

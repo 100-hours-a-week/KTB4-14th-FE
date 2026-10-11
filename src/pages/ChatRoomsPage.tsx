@@ -1,7 +1,7 @@
 import { chatApi } from '@/api';
 import { Header } from '@/components/Header';
 import type { ChatRoom, ChatRoomListResponse } from '@/types';
-import { useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
@@ -77,26 +77,42 @@ export function ChatPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [activeChatName, setActiveChatName] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
-  const loadPage = useCallback(async (cursor?: ChatRoomCursor) => {
+  const loadPage = useCallback(async (cursor?: ChatRoomCursor, chatName = activeChatName) => {
+    const requestId = ++requestIdRef.current;
     const isNextPage = Boolean(cursor);
     if (isNextPage) setLoadingMore(true);
-    else setLoading(true);
+    else {
+      setLoading(true);
+      setLoadingMore(false);
+    }
     setError(false);
     setLoadMoreError(false);
 
     try {
-      const nextPage = await chatApi.listRooms({ size: PAGE_SIZE, ...cursor });
+      const nextPage = await chatApi.listRooms({
+        chat_name: chatName ?? undefined,
+        size: PAGE_SIZE,
+        ...cursor,
+      });
+      if (requestId !== requestIdRef.current) return;
       setRooms((current) => (isNextPage ? [...current, ...nextPage.rooms] : nextPage.rooms));
       setPage(nextPage);
     } catch {
+      if (requestId !== requestIdRef.current) return;
       if (isNextPage) setLoadMoreError(true);
       else setError(true);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
-  }, []);
+  }, [activeChatName]);
 
   useEffect(() => {
     if (!matchedUserId) void loadPage();
@@ -106,6 +122,34 @@ export function ChatPage() {
     if (page?.has_next && page.cursor_time && page.cursor_id !== null) {
       void loadPage({ cursor_time: page.cursor_time, cursor_id: page.cursor_id });
     }
+  };
+
+  const searchRooms = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const chatName = searchInput.trim();
+
+    if (searchInput.length > 0 && chatName.length === 0) {
+      setSearchError('검색어를 입력해 주세요.');
+      return;
+    }
+    if (chatName.length > 5) {
+      setSearchError('검색어는 5자 이내로 입력해 주세요.');
+      return;
+    }
+
+    setSearchError(null);
+    const nextChatName = chatName || null;
+    if (nextChatName === activeChatName) {
+      void loadPage(undefined, nextChatName);
+    } else {
+      setActiveChatName(nextChatName);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchInput('');
+    setSearchError(null);
+    if (activeChatName !== null) setActiveChatName(null);
   };
 
   if (matchedUserId) {
@@ -133,7 +177,37 @@ export function ChatPage() {
           {!loading && !error ? <span>{rooms.length}개</span> : null}
         </div>
 
-        {loading ? <div className="chat-room-state">채팅방을 불러오고 있어요.</div> : null}
+        <form className="chat-room-search" onSubmit={searchRooms} role="search">
+          <input
+            className="chat-room-search-input"
+            type="search"
+            aria-label="상대 닉네임으로 채팅방 검색"
+            aria-describedby={searchError ? 'chat-room-search-error' : undefined}
+            value={searchInput}
+            onChange={(event) => {
+              setSearchInput(event.target.value);
+              setSearchError(null);
+            }}
+            placeholder="상대 닉네임 검색"
+          />
+          <button type="submit" className="chat-room-search-button">검색</button>
+          {searchInput || activeChatName ? (
+            <button type="button" className="chat-room-search-clear" onClick={clearSearch}>
+              초기화
+            </button>
+          ) : null}
+        </form>
+        {searchError ? (
+          <p id="chat-room-search-error" className="chat-room-search-error" role="alert">
+            {searchError}
+          </p>
+        ) : null}
+
+        {loading ? (
+          <div className="chat-room-state">
+            {activeChatName ? '채팅방을 검색하고 있어요.' : '채팅방을 불러오고 있어요.'}
+          </div>
+        ) : null}
 
         {error ? (
           <div className="empty-box chat-room-error" role="alert">
@@ -147,8 +221,12 @@ export function ChatPage() {
         {!loading && !error && rooms.length === 0 ? (
           <div className="empty-box chat-room-empty">
             <span className="chat-room-empty-icon" aria-hidden="true">💬</span>
-            <strong>아직 채팅방이 없어요</strong>
-            <p>매칭 후 첫 메시지를 보내면 채팅을 시작할 수 있어요.</p>
+            <strong>{activeChatName ? '검색 결과가 없어요' : '아직 채팅방이 없어요'}</strong>
+            <p>
+              {activeChatName
+                ? '다른 닉네임으로 검색하거나 검색어를 초기화해 주세요.'
+                : '매칭 후 첫 메시지를 보내면 채팅을 시작할 수 있어요.'}
+            </p>
           </div>
         ) : null}
 

@@ -3,7 +3,9 @@ import { API_BASE_URL, apiRequest, USE_MOCK } from '@/api/client';
 import type {
   AppNotification,
   CreateMatchingRequestRequest,
+  MatchConnectionResponse,
   MatchingCandidatesResponse,
+  MatchingChatRoomResponse,
   MatchingConditionDraft,
   MatchingRequestResponse,
   MatchingSettings,
@@ -44,6 +46,11 @@ const mockMatchingCandidates: MatchingCandidatesResponse = {
   ],
   count: 3,
 };
+
+let nextMockMatchConnectionId = 300;
+let nextMockChatRoomId = 400;
+const mockMatchConnections = new Map<number, number>();
+const mockChatRooms = new Map<number, number>();
 
 function toCreateMatchingRequest(condition: MatchingConditionDraft): CreateMatchingRequestRequest {
   if (!condition.preferred_companion_gender || !condition.pace) {
@@ -182,5 +189,53 @@ export const matchingApi = {
   async getCandidates() {
     if (USE_MOCK) return mockMatchingCandidates;
     return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates');
+  },
+
+  /** POST /api/v2/matches/responses */
+  async respondCandidate(targetUserId: number) {
+    if (USE_MOCK) {
+      let matchConnectionId = mockMatchConnections.get(targetUserId);
+      if (!matchConnectionId) {
+        matchConnectionId = nextMockMatchConnectionId++;
+        mockMatchConnections.set(targetUserId, matchConnectionId);
+      }
+      return {
+        match_connection_id: matchConnectionId,
+        matching_request_id: 1,
+        target_user_id: targetUserId,
+        status: 'ACTIVE',
+        selected_at: new Date().toISOString(),
+      } satisfies MatchConnectionResponse;
+    }
+    return apiRequest<MatchConnectionResponse>('/api/v2/matches/responses', {
+      method: 'POST',
+      body: { target_user_id: targetUserId },
+    });
+  },
+
+  /** POST /api/v2/match-connections/{matchConnectionId}/chat-room */
+  async prepareChatRoom(matchConnectionId: number) {
+    if (USE_MOCK) {
+      let chatRoomId = mockChatRooms.get(matchConnectionId);
+      if (!chatRoomId) {
+        chatRoomId = nextMockChatRoomId++;
+        mockChatRooms.set(matchConnectionId, chatRoomId);
+      }
+      const targetUserId = [...mockMatchConnections.entries()]
+        .find(([, connectionId]) => connectionId === matchConnectionId)?.[0];
+      const candidate = mockMatchingCandidates.candidates.find((item) => item.user_id === targetUserId);
+      return {
+        chat_room_id: chatRoomId,
+        match_connection_id: matchConnectionId,
+        chat_name: candidate?.nickname ?? '채팅방',
+        status: 'ACTIVE',
+        member_user_ids: targetUserId === undefined ? [] : [targetUserId],
+        created_at: new Date().toISOString(),
+      } satisfies MatchingChatRoomResponse;
+    }
+    return apiRequest<MatchingChatRoomResponse>(
+      `/api/v2/match-connections/${matchConnectionId}/chat-room`,
+      { method: 'POST' },
+    );
   },
 };

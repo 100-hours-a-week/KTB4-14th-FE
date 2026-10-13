@@ -255,6 +255,36 @@ export class MockBackend {
       },
     }));
 
+    // 매칭 후보를 선택해 연결을 만들고, 해당 연결의 채팅방을 준비한다.
+    this.add('POST', '/api/v2/matches/responses', (req) => {
+      const targetUserId = Number(req.body?.target_user_id);
+      return {
+        status: 201,
+        body: {
+          match_connection_id: targetUserId + 1000,
+          matching_request_id: 1,
+          target_user_id: targetUserId,
+          status: 'ACTIVE',
+          selected_at: this.now.toISOString(),
+        },
+      };
+    });
+    this.add('POST', '/api/v2/match-connections/:matchConnectionId/chat-room', (req) => {
+      const matchConnectionId = Number(req.params.matchConnectionId);
+      const targetUserId = matchConnectionId - 1000;
+      return {
+        status: 201,
+        body: {
+          chat_room_id: matchConnectionId + 1000,
+          match_connection_id: matchConnectionId,
+          chat_name: '매칭 상대',
+          status: 'ACTIVE',
+          member_user_ids: [this.user.user_id, targetUserId],
+          created_at: this.now.toISOString(),
+        },
+      };
+    });
+
     // 지역 · 장소 검색(카카오 중계)
     this.add('GET', '/api/regions', () => ({ body: this.regions }));
     this.add('GET', '/api/places/search', (req) => {

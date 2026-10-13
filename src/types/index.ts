@@ -371,3 +371,26 @@ export type ChatRoomListResponse = {
   cursor_id: number | null;
   has_next: boolean;
 };
+
+export type ChatMessageSendRequest = {
+  client_message_id: string;
+  content: string;
+};
+
+/** POST 전송 및 실시간 이벤트에서 공통으로 사용하는 백엔드 메시지 형식 */
+export type ChatMessageSendResponse = {
+  message_id: number;
+  room_id: number;
+  sender_id: number;
+  client_message_id: string;
+  message_seq: number;
+  content: string;
+  sent_at: string;
+};
+
+export type ChatMessageCatchUpResponse = {
+  messages: ChatMessageSendResponse[];
+  size: number;
+  next_after_message_seq: number;
+  has_next: boolean;
+};

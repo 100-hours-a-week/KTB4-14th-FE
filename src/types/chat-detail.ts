@@ -9,6 +9,8 @@ export type ChatRoomDetailOpponent = {
 
 export type ChatRoomDetailMessage = {
   chat_id: number;
+  /** 메시지 전송/동기화 API가 제공하는 방별 순번. 상세 조회 응답에는 생략될 수 있다. */
+  message_seq?: number;
   sender_id: number;
   content: string;
   sent_at: string;

@@ -4,7 +4,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { TravelDraftProvider } from '@/context/TravelDraftContext';
 import { TabLayout } from '@/components/Layout';
 import { ChatPage } from '@/pages/ChatRoomsPage';
-import { ChatRoomDetailPage } from '@/pages/ChatRoomDetailPage';
+import { ChatRoomMessagingPage } from '@/pages/ChatRoomMessagingPage';
 import { ChecklistPage } from '@/pages/ChecklistPage';
 import { CreateTravelPage } from '@/pages/CreateTravelPage';
 import { GeneratingPage } from '@/pages/GeneratingPage';
@@ -81,7 +81,7 @@ export default function App() {
                         <Route path="/chat" element={<ChatPage />} />
                         <Route path="/my" element={<MyPage />} />
                       </Route>
-                      <Route path="/chat/:roomId" element={<ChatRoomDetailPage />} />
+                      <Route path="/chat/:roomId" element={<ChatRoomMessagingPage />} />
                       <Route path="/notifications" element={<NotificationsPage />} />
                       <Route path="/create-travel" element={<CreateTravelPage />} />
                       <Route path="/create-travel/preference" element={<PreferencePage />} />

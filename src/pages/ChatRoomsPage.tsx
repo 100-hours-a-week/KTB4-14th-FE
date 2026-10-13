@@ -2,7 +2,7 @@ import { chatApi } from '@/api';
 import { Header } from '@/components/Header';
 import type { ChatRoom, ChatRoomListResponse } from '@/types';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
 
@@ -28,8 +28,14 @@ function formatMessageTime(value: string) {
 }
 
 function ChatRoomRow({ room }: { room: ChatRoom }) {
+  const navigate = useNavigate();
+
   return (
-    <article className="chat-room-row">
+    <button
+      type="button"
+      className="chat-room-row"
+      aria-label={`${room.chat_name} 채팅방 열기`}
+      onClick={() => navigate(`/chat/${room.room_id}`)}>
       <div className="chat-room-avatar-wrap">
         <div className="chat-room-avatar">
           {room.profile_image_url ? (
@@ -58,7 +64,7 @@ function ChatRoomRow({ room }: { room: ChatRoom }) {
           ) : null}
         </div>
       </div>
-    </article>
+    </button>
   );
 }
 

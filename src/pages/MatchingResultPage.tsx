@@ -5,7 +5,7 @@ import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import { getJson, storage } from '@/storage';
 import type { MatchingCandidate, MatchingCandidatesResponse, TravelPaceType, TravelTheme } from '@/types';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const themeLabels = new Map<TravelTheme, string>(travelThemeOptions.map((option) => [option.value, option.label]));
@@ -21,6 +21,7 @@ export function MatchingResultPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [preparingCandidateUserId, setPreparingCandidateUserId] = useState<number | null>(null);
+  const preparingCandidateUserIdRef = useRef<number | null>(null);
   const isFailed = searchParams.get('status') === 'failed';
   const state = location.state as { candidatesResponse?: MatchingCandidatesResponse } | null;
   const candidatesResponse =
@@ -32,16 +33,21 @@ export function MatchingResultPage() {
   };
 
   const openChatEntry = async (candidate: MatchingCandidate) => {
-    if (preparingCandidateUserId !== null) return;
+    if (preparingCandidateUserIdRef.current !== null) return;
 
+    preparingCandidateUserIdRef.current = candidate.user_id;
     setPreparingCandidateUserId(candidate.user_id);
     try {
       const connection = await matchingApi.respondCandidate(candidate.user_id);
       const chatRoom = await matchingApi.prepareChatRoom(connection.match_connection_id);
+      if (!Number.isSafeInteger(chatRoom.chat_room_id) || chatRoom.chat_room_id < 1) {
+        throw new Error('채팅방 ID가 올바르지 않습니다.');
+      }
       navigate(`/chat/${chatRoom.chat_room_id}`);
     } catch {
       toast.show('채팅방을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
+      preparingCandidateUserIdRef.current = null;
       setPreparingCandidateUserId(null);
     }
   };

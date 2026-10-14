@@ -351,6 +351,23 @@ export type MatchingCandidatesResponse = {
   count: number;
 };
 
+export type MatchConnectionResponse = {
+  match_connection_id: number;
+  matching_request_id: number;
+  target_user_id: number;
+  status: 'ACTIVE' | 'ENDED' | 'CANCELED';
+  selected_at: string;
+};
+
+export type MatchingChatRoomResponse = {
+  chat_room_id: number;
+  match_connection_id: number;
+  chat_name: string;
+  status: ChatRoomStatus;
+  member_user_ids: number[];
+  created_at: string;
+};
+
 export type ChatRoomStatus = 'ACTIVE' | 'ENDED';
 
 export type ChatRoom = {

@@ -1,8 +1,11 @@
+import { matchingApi } from '@/api';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
+import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import { getJson, storage } from '@/storage';
 import type { MatchingCandidate, MatchingCandidatesResponse, TravelPaceType, TravelTheme } from '@/types';
+import { useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const themeLabels = new Map<TravelTheme, string>(travelThemeOptions.map((option) => [option.value, option.label]));
@@ -14,8 +17,10 @@ function candidateTags(candidate: MatchingCandidate) {
 
 export function MatchingResultPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const [preparingCandidateUserId, setPreparingCandidateUserId] = useState<number | null>(null);
   const isFailed = searchParams.get('status') === 'failed';
   const state = location.state as { candidatesResponse?: MatchingCandidatesResponse } | null;
   const candidatesResponse =
@@ -26,17 +31,19 @@ export function MatchingResultPage() {
     navigate('/matching');
   };
 
-  const openChatEntry = (candidate: MatchingCandidate) => {
-    navigate(`/chat?matchedUserId=${candidate.user_id}`, {
-      state: {
-        fromMatching: true,
-        matchedUser: {
-          user_id: candidate.user_id,
-          nickname: candidate.nickname,
-          match_rate: candidate.match_rate,
-        },
-      },
-    });
+  const openChatEntry = async (candidate: MatchingCandidate) => {
+    if (preparingCandidateUserId !== null) return;
+
+    setPreparingCandidateUserId(candidate.user_id);
+    try {
+      const connection = await matchingApi.respondCandidate(candidate.user_id);
+      const chatRoom = await matchingApi.prepareChatRoom(connection.match_connection_id);
+      navigate(`/chat/${chatRoom.chat_room_id}`);
+    } catch {
+      toast.show('채팅방을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setPreparingCandidateUserId(null);
+    }
   };
 
   if (isFailed || candidates.length === 0) {
@@ -87,8 +94,10 @@ export function MatchingResultPage() {
                 type="button"
                 className="matching-candidate-send"
                 aria-label={`${candidate.nickname}에게 메시지 보내기`}
-                onClick={() => openChatEntry(candidate)}>
-                ➤
+                aria-busy={preparingCandidateUserId === candidate.user_id}
+                disabled={preparingCandidateUserId !== null}
+                onClick={() => void openChatEntry(candidate)}>
+                {preparingCandidateUserId === candidate.user_id ? '…' : '➤'}
               </button>
             </article>
           ))}

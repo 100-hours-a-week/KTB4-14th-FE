@@ -2,7 +2,9 @@ import { ApiError, USE_MOCK } from '@/api/client';
 import type { ChatRealtimeEvent } from '@/api/chatRealtime';
 import { chatApi, chatRoomDetailApi } from '@/api';
 import { Header } from '@/components/Header';
+import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import type { ChatRoomDetailMessage, ChatRoomDetailResponse } from '@/types/chat-detail';
 import type { ChatMessageSendResponse } from '@/types';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
@@ -84,6 +86,7 @@ export function ChatRoomMessagingPage() {
   const { roomId: rawRoomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const roomId = Number(rawRoomId);
   const validRoomId = Number.isSafeInteger(roomId) && roomId > 0;
   const [detail, setDetail] = useState<ChatRoomDetailResponse | null>(null);
@@ -94,6 +97,8 @@ export function ChatRoomMessagingPage() {
   const [olderError, setOlderError] = useState(false);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -107,6 +112,7 @@ export function ChatRoomMessagingPage() {
   const pendingSequencesRef = useRef(new Set<number>());
   const retryRequestRef = useRef<{ content: string; clientMessageId: string } | null>(null);
   const sendingRef = useRef(false);
+  const leavingRef = useRef(false);
 
   const mergeMessages = useCallback((incoming: ChatMessage[]) => {
     if (incoming.length === 0) return;
@@ -406,19 +412,59 @@ export function ChatRoomMessagingPage() {
     }
   };
 
+  const leaveRoom = async () => {
+    if (leavingRef.current || !detail || detail.status !== 'ACTIVE') return;
+
+    leavingRef.current = true;
+    setLeaving(true);
+    try {
+      await chatApi.leaveRoom(roomId);
+      setLeaveDialogOpen(false);
+      toast.show('채팅방에서 나왔어요.');
+      navigate('/chat', { replace: true });
+    } catch (error) {
+      setLeaveDialogOpen(false);
+      if (error instanceof ApiError && error.status === 404) {
+        toast.show('채팅방을 찾을 수 없거나 이미 나간 상태예요.');
+        navigate('/chat', { replace: true });
+      } else if (error instanceof ApiError && error.message === 'chat_room_ended') {
+        setDetail((current) => current ? { ...current, status: 'ENDED' } : current);
+        toast.show('이미 종료된 채팅방이에요.');
+      } else {
+        toast.show('채팅방에서 나가지 못했어요. 다시 시도해 주세요.');
+      }
+    } finally {
+      leavingRef.current = false;
+      setLeaving(false);
+    }
+  };
+
   const title = detail?.opponent.chat_name || '채팅방';
   const notFound = errorStatus === 404;
 
   return (
     <section className="screen chat-detail-screen">
       <Header
+        className="chat-detail-header"
         title={title}
         onBack={() => navigate('/chat')}
         right={detail ? (
-          <span className={`chat-detail-presence${detail.opponent.is_online ? ' online' : ''}`}>
-            <span aria-hidden="true" />
-            {detail.opponent.is_online ? '온라인' : '오프라인'}
-          </span>
+          <div className="chat-detail-header-actions">
+            <span className={`chat-detail-presence${detail.opponent.is_online ? ' online' : ''}`}>
+              <span aria-hidden="true" />
+              {detail.opponent.is_online ? '온라인' : '오프라인'}
+            </span>
+            {detail.status === 'ACTIVE' ? (
+              <button
+                type="button"
+                className="chat-detail-leave-button"
+                disabled={leaving || sending}
+                onClick={() => setLeaveDialogOpen(true)}
+              >
+                나가기
+              </button>
+            ) : null}
+          </div>
         ) : null}
       />
 
@@ -518,6 +564,19 @@ export function ChatRoomMessagingPage() {
           ) : null}
         </>
       ) : null}
+
+      <Modal
+        open={leaveDialogOpen}
+        title="채팅방에서 나가시겠어요?"
+        message="나가면 채팅방이 종료되어 더 이상 메시지를 주고받을 수 없어요."
+        confirmLabel="나가기"
+        cancelLabel="취소"
+        confirmBusy={leaving}
+        onClose={() => {
+          if (!leaving) setLeaveDialogOpen(false);
+        }}
+        onConfirm={leaveRoom}
+      />
     </section>
   );
 }

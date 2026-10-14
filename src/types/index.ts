@@ -411,3 +411,10 @@ export type ChatMessageCatchUpResponse = {
   next_after_message_seq: number;
   has_next: boolean;
 };
+
+export type ChatRoomReadResponse = {
+  chat_room_id: number;
+  last_read_chat_id: number;
+  read_count: number;
+  read_at: string | null;
+};

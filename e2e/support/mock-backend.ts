@@ -285,6 +285,16 @@ export class MockBackend {
       };
     });
 
+    // 채팅방 진입 시 마지막으로 조회한 메시지까지 읽음 처리
+    this.add('PATCH', '/api/v2/chat/rooms/:roomId/read', (req) => ({
+      body: {
+        chat_room_id: Number(req.params.roomId),
+        last_read_chat_id: Number(req.body?.last_read_chat_id),
+        read_count: 0,
+        read_at: null,
+      },
+    }));
+
     // 지역 · 장소 검색(카카오 중계)
     this.add('GET', '/api/regions', () => ({ body: this.regions }));
     this.add('GET', '/api/places/search', (req) => {

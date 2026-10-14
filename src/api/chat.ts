@@ -4,6 +4,7 @@ import type {
   ChatMessageSendRequest,
   ChatMessageSendResponse,
   ChatRoomListResponse,
+  ChatRoomReadResponse,
 } from '@/types';
 
 let mockMessageId = 0;
@@ -27,6 +28,22 @@ export const chatApi = {
       } satisfies ChatRoomListResponse;
     }
     return apiRequest<ChatRoomListResponse>('/api/v2/chat/rooms', { query: params });
+  },
+
+  /** 채팅방 읽음 처리 API: PATCH /api/v2/chat/rooms/{roomId}/read */
+  async markRoomRead(roomId: number, lastReadChatId: number) {
+    if (USE_MOCK) {
+      return {
+        chat_room_id: roomId,
+        last_read_chat_id: lastReadChatId,
+        read_count: 0,
+        read_at: null,
+      } satisfies ChatRoomReadResponse;
+    }
+    return apiRequest<ChatRoomReadResponse>(`/api/v2/chat/rooms/${roomId}/read`, {
+      method: 'PATCH',
+      body: { last_read_chat_id: lastReadChatId },
+    });
   },
 
   /** 채팅방 나가기 API: DELETE /api/v2/chat/rooms/{roomId} */

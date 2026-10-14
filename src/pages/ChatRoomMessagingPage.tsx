@@ -128,6 +128,10 @@ export function ChatRoomMessagingPage() {
     });
   }, []);
 
+  const markRoomReadThrough = useCallback((lastReadChatId: number) => {
+    void chatApi.markRoomRead(roomId, lastReadChatId).catch(() => undefined);
+  }, [roomId]);
+
   const loadDetail = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     setLoading(true);
@@ -159,6 +163,8 @@ export function ChatRoomMessagingPage() {
       initialPageLoadedRef.current = true;
       setDetail(response);
       setMessages(response.chats);
+      const lastMessage = response.chats.at(-1);
+      if (lastMessage) markRoomReadThrough(lastMessage.chat_id);
       sequenceCursorRef.current = response.chats.reduce(
         (latest, message) => Math.max(latest, message.message_seq ?? 0),
         0,
@@ -169,7 +175,7 @@ export function ChatRoomMessagingPage() {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [roomId, validRoomId]);
+  }, [markRoomReadThrough, roomId, validRoomId]);
 
   useEffect(() => {
     void loadDetail();
@@ -203,7 +209,15 @@ export function ChatRoomMessagingPage() {
   }, [messages]);
 
   useEffect(() => {
-    if (!detail || loading || detail.status === 'ENDED' || !validRoomId || USE_MOCK) return;
+    const opponentUserId = detail?.opponent.user_id;
+    const currentUserId = user?.user_id;
+    if (
+      opponentUserId === undefined ||
+      loading ||
+      detail?.status !== 'ACTIVE' ||
+      !validRoomId ||
+      USE_MOCK
+    ) return;
 
     let active = true;
     let catchingUp = false;
@@ -222,6 +236,22 @@ export function ChatRoomMessagingPage() {
         catchUpRetryTimer = null;
         void catchUp();
       }, 5_000);
+    };
+
+    const syncReadStates = async () => {
+      try {
+        const latestDetail = await chatRoomDetailApi.getRoomDetail(roomId, { size: PAGE_SIZE });
+        if (!active) return;
+        const readStates = new Map(
+          latestDetail.chats.map((message) => [message.chat_id, message.is_read]),
+        );
+        setMessages((current) => current.map((message) => {
+          const isRead = readStates.get(message.chat_id);
+          return isRead === undefined ? message : { ...message, is_read: message.is_read || isRead };
+        }));
+      } catch {
+        return;
+      }
     };
 
     const catchUp = async () => {
@@ -245,6 +275,14 @@ export function ChatRoomMessagingPage() {
             const page = await chatApi.getMessagesAfter(roomId, afterSequence, CATCH_UP_PAGE_SIZE);
             if (!active) return;
             mergeMessages(page.messages.map((message) => toChatMessage(message)));
+            const latestMessage = page.messages.at(-1);
+            if (
+              latestMessage &&
+              currentUserId !== undefined &&
+              page.messages.some((message) => message.sender_id !== currentUserId)
+            ) {
+              markRoomReadThrough(latestMessage.message_id);
+            }
             const nextSequence = Math.max(afterSequence, page.next_after_message_seq);
             pendingSequencesRef.current.forEach((sequence) => {
               if (sequence <= nextSequence) pendingSequencesRef.current.delete(sequence);
@@ -269,7 +307,22 @@ export function ChatRoomMessagingPage() {
     };
 
     const handleMessage = (event: ChatRealtimeEvent) => {
+      if (event.event_type === 'READ_RECEIPT_UPDATED') {
+        if (event.reader_id !== opponentUserId || currentUserId === undefined) return;
+        setMessages((current) => current.map((message) => (
+          message.sender_id === currentUserId &&
+          message.message_seq !== undefined &&
+          message.message_seq <= event.read_through_message_seq
+            ? { ...message, is_read: true }
+            : message
+        )));
+        return;
+      }
+
       mergeMessages([toChatMessage(event.data)]);
+      if (currentUserId !== undefined && event.data.sender_id !== currentUserId) {
+        markRoomReadThrough(event.data.message_id);
+      }
       const sequence = event.data.message_seq;
       if (sequence <= sequenceCursorRef.current) return;
       pendingSequencesRef.current.add(sequence);
@@ -286,7 +339,10 @@ export function ChatRoomMessagingPage() {
         (connected) => {
           if (active) setRealtimeConnected(connected);
         },
-        () => void catchUp(),
+        () => {
+          void catchUp();
+          void syncReadStates();
+        },
       );
     });
 
@@ -296,7 +352,16 @@ export function ChatRoomMessagingPage() {
       disconnect?.();
       setRealtimeConnected(false);
     };
-  }, [detail?.status, loading, mergeMessages, roomId, validRoomId]);
+  }, [
+    detail?.opponent.user_id,
+    detail?.status,
+    loading,
+    markRoomReadThrough,
+    mergeMessages,
+    roomId,
+    user?.user_id,
+    validRoomId,
+  ]);
 
   const loadOlderMessages = async () => {
     if (

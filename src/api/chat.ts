@@ -46,6 +46,12 @@ export const chatApi = {
     });
   },
 
+  /** 채팅방 나가기 API: DELETE /api/v2/chat/rooms/{roomId} */
+  async leaveRoom(roomId: number): Promise<void> {
+    if (USE_MOCK) return;
+    return apiRequest<void>(`/api/v2/chat/rooms/${roomId}`, { method: 'DELETE' });
+  },
+
   /** 메시지 전송 API: POST /api/v2/chat/rooms/{roomId}/messages */
   async sendMessage(roomId: number, request: ChatMessageSendRequest) {
     if (USE_MOCK) {

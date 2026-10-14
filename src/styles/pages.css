@@ -444,6 +444,44 @@
   background: var(--teal);
 }
 
+.chat-detail-header .header-side.right {
+  display: flex;
+  width: 112px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chat-detail-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chat-detail-leave-button {
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chat-detail-leave-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.chat-detail-leave-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .chat-detail-ended {
   padding: 10px 16px;
   background: var(--sand);

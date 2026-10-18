@@ -6,8 +6,9 @@ import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import type { ChatRoomDetailMessage, ChatRoomDetailResponse } from '@/types/chat-detail';
+import type { ChatMessageSearchResponse } from '@/types/chat-detail';
 import type { ChatMessageSendResponse } from '@/types';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
@@ -70,14 +71,35 @@ function createClientMessageId() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function MessageBubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
+function highlightedContent(content: string, keyword: string) {
+  if (!keyword) return content;
+  const parts: ReactNode[] = [];
+  const lowerContent = content.toLocaleLowerCase();
+  const lowerKeyword = keyword.toLocaleLowerCase();
+  let position = 0;
+  while (position < content.length) {
+    const match = lowerContent.indexOf(lowerKeyword, position);
+    if (match < 0) break;
+    if (match > position) parts.push(content.slice(position, match));
+    parts.push(<mark key={match} className="chat-search-highlight">{content.slice(match, match + keyword.length)}</mark>);
+    position = match + keyword.length;
+  }
+  parts.push(content.slice(position));
+  return parts;
+}
+
+function MessageBubble({ message, mine, keyword, selected }: {
+  message: ChatMessage; mine: boolean; keyword: string; selected: boolean;
+}) {
   return (
     <div className={`chat-message-row${mine ? ' mine' : ''}`}>
       <div className="chat-message-meta">
         <time dateTime={message.sent_at}>{formatMessageTime(message.sent_at)}</time>
         {mine ? <span>{message.is_read ? '읽음' : '안 읽음'}</span> : null}
       </div>
-      <p className="chat-message-bubble">{message.content}</p>
+      <p className={`chat-message-bubble${selected ? ' chat-search-selected' : ''}`}>
+        {highlightedContent(message.content, keyword)}
+      </p>
     </div>
   );
 }
@@ -91,6 +113,8 @@ export function ChatRoomMessagingPage() {
   const validRoomId = Number.isSafeInteger(roomId) && roomId > 0;
   const [detail, setDetail] = useState<ChatRoomDetailResponse | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  messagesRef.current = messages;
   const [loading, setLoading] = useState(true);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -102,6 +126,22 @@ export function ChatRoomMessagingPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResult, setSearchResult] = useState<ChatMessageSearchResponse | null>(null);
+  const [selectedHit, setSelectedHit] = useState<number | null>(null);
+  const [searchWindow, setSearchWindow] = useState<ChatMessage[] | null>(null);
+  const [contextHasOlder, setContextHasOlder] = useState(false);
+  const [contextHasNewer, setContextHasNewer] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
+  const pendingContextHeightRef = useRef<number | null>(null);
+  const skipTargetScrollRef = useRef(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const searchRequestRef = useRef(0);
+  const targetRequestRef = useRef(0);
+  const searchActiveRef = useRef(false);
+  const beforeSearchScrollRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingScrollHeightRef = useRef<number | null>(null);
   const shouldScrollToBottomRef = useRef(false);
@@ -117,7 +157,7 @@ export function ChatRoomMessagingPage() {
   const mergeMessages = useCallback((incoming: ChatMessage[]) => {
     if (incoming.length === 0) return;
     const container = scrollRef.current;
-    if (container && container.scrollHeight - container.scrollTop - container.clientHeight < 100) {
+    if (container && !searchActiveRef.current && container.scrollHeight - container.scrollTop - container.clientHeight < 100) {
       shouldScrollToBottomRef.current = true;
     }
     setMessages((current) => {
@@ -134,6 +174,153 @@ export function ChatRoomMessagingPage() {
     });
   }, []);
 
+  const clearSearch = useCallback(() => {
+    searchRequestRef.current += 1;
+    targetRequestRef.current += 1;
+    searchActiveRef.current = false;
+    setSearchInput('');
+    setSearchKeyword('');
+    setSearchResult(null);
+    setSelectedHit(null);
+    setSearchWindow(null);
+    setContextHasOlder(false);
+    setContextHasNewer(false);
+    setContextLoading(false);
+    pendingContextHeightRef.current = null;
+    skipTargetScrollRef.current = false;
+    setSearchLoading(false);
+    setSearchError(false);
+    const previousTop = beforeSearchScrollRef.current;
+    beforeSearchScrollRef.current = null;
+    if (previousTop !== null) requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = previousTop;
+    });
+  }, []);
+
+  useEffect(() => {
+    const keyword = searchInput.trim();
+    const requestId = ++searchRequestRef.current;
+    targetRequestRef.current += 1;
+    if (!keyword || Array.from(keyword).length < 2 || !detail?.chat_room_id) {
+      setSearchKeyword('');
+      setSearchResult(null);
+      setSelectedHit(null);
+      setSearchWindow(null);
+      setSearchLoading(false);
+      setSearchError(false);
+      return;
+    }
+    setSearchLoading(true);
+    setSearchError(false);
+    const timer = window.setTimeout(() => {
+      void chatRoomDetailApi.searchMessages(roomId, keyword).then((result) => {
+        if (requestId !== searchRequestRef.current) return;
+        setSearchKeyword(keyword);
+        setSearchResult(result);
+        setSelectedHit(result.matches.length > 0 ? 0 : null);
+        setSearchWindow(null);
+      }).catch(() => {
+        if (requestId === searchRequestRef.current) setSearchError(true);
+      }).finally(() => {
+        if (requestId === searchRequestRef.current) setSearchLoading(false);
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, detail?.chat_room_id, roomId]);
+
+  useEffect(() => {
+    if (selectedHit === null || !searchResult) return;
+    const hit = searchResult.matches[selectedHit];
+    if (!hit) return;
+    const requestId = ++targetRequestRef.current;
+    shouldScrollToBottomRef.current = false;
+    if (messagesRef.current.some((message) => message.chat_id === hit.chat_id)) {
+      setSearchWindow(null);
+      requestAnimationFrame(() => document.getElementById(`chat-message-${hit.chat_id}`)?.scrollIntoView({ block: 'center' }));
+      return;
+    }
+    void chatRoomDetailApi.getMessageContext(roomId, hit.chat_id).then((context) => {
+      if (requestId !== targetRequestRef.current) return;
+      setSearchWindow(context.chats);
+      setContextHasOlder(context.has_older);
+      setContextHasNewer(context.has_newer);
+    }).catch(() => {
+      if (requestId === targetRequestRef.current) setSearchError(true);
+    });
+  }, [selectedHit, searchResult, roomId]);
+
+  useLayoutEffect(() => {
+    if (pendingContextHeightRef.current !== null && scrollRef.current) {
+      scrollRef.current.scrollTop += scrollRef.current.scrollHeight - pendingContextHeightRef.current;
+      pendingContextHeightRef.current = null;
+      return;
+    }
+    if (skipTargetScrollRef.current) {
+      skipTargetScrollRef.current = false;
+      return;
+    }
+    if (selectedHit === null || !searchResult) return;
+    const chatId = searchResult.matches[selectedHit]?.chat_id;
+    if (chatId !== undefined) {
+      document.getElementById(`chat-message-${chatId}`)?.scrollIntoView({ block: 'center' });
+    }
+  }, [selectedHit, searchResult, searchWindow]);
+
+  const loadSearchContext = async (direction: 'older' | 'newer') => {
+    if (!searchWindow?.length || contextLoading) return;
+    const requestId = targetRequestRef.current;
+    const anchor = direction === 'older' ? searchWindow[0] : searchWindow.at(-1);
+    if (!anchor) return;
+    setContextLoading(true);
+    if (direction === 'older') pendingContextHeightRef.current = scrollRef.current?.scrollHeight ?? null;
+    else skipTargetScrollRef.current = true;
+    try {
+      const page = await chatRoomDetailApi.getMessageContext(roomId, anchor.chat_id);
+      if (requestId !== targetRequestRef.current) return;
+      setSearchWindow((current) => {
+        if (!current) return current;
+        const merged = new Map(current.map((message) => [message.chat_id, message]));
+        page.chats.forEach((message) => merged.set(message.chat_id, message));
+        return [...merged.values()].sort(compareMessages);
+      });
+      if (direction === 'older') setContextHasOlder(page.has_older);
+      else setContextHasNewer(page.has_newer);
+    } catch {
+      if (requestId !== targetRequestRef.current) return;
+      pendingContextHeightRef.current = null;
+      skipTargetScrollRef.current = false;
+      setSearchError(true);
+    } finally {
+      if (requestId === targetRequestRef.current) setContextLoading(false);
+    }
+  };
+
+  const moveSearch = async (direction: 1 | -1) => {
+    if (selectedHit === null || !searchResult) return;
+    const next = selectedHit + direction;
+    if (next < 0) return;
+    if (next < searchResult.matches.length) {
+      setSelectedHit(next);
+      return;
+    }
+    if (!searchResult.has_next || !searchResult.cursor_time || searchResult.cursor_id === null || searchLoading) return;
+    const requestId = searchRequestRef.current;
+    setSearchLoading(true);
+    try {
+      const page = await chatRoomDetailApi.searchMessages(roomId, searchKeyword, {
+        cursor_time: searchResult.cursor_time,
+        cursor_id: searchResult.cursor_id,
+      });
+      if (requestId !== searchRequestRef.current) return;
+      setSearchResult({ ...page, matches: [...searchResult.matches, ...page.matches] });
+      if (page.matches.length > 0) setSelectedHit(next);
+    } catch {
+      if (requestId === searchRequestRef.current) setSearchError(true);
+    } finally {
+      if (requestId === searchRequestRef.current) setSearchLoading(false);
+    }
+  };
+
   const markRoomReadThrough = useCallback((lastReadChatId: number) => {
     void chatApi.markRoomRead(roomId, lastReadChatId).catch(() => undefined);
   }, [roomId]);
@@ -148,6 +335,20 @@ export function ChatRoomMessagingPage() {
     setSendError(null);
     setSyncError(false);
     setRealtimeConnected(false);
+    searchRequestRef.current += 1;
+    targetRequestRef.current += 1;
+    searchActiveRef.current = false;
+    beforeSearchScrollRef.current = null;
+    setSearchInput('');
+    setSearchKeyword('');
+    setSearchResult(null);
+    setSelectedHit(null);
+    setSearchWindow(null);
+    setContextHasOlder(false);
+    setContextHasNewer(false);
+    setContextLoading(false);
+    pendingContextHeightRef.current = null;
+    skipTargetScrollRef.current = false;
     sequenceCursorRef.current = 0;
     pendingSequencesRef.current.clear();
     retryRequestRef.current = null;
@@ -533,6 +734,53 @@ export function ChatRoomMessagingPage() {
         ) : null}
       />
 
+      {!loading && detail ? (
+        <div className="chat-search" role="search" aria-label="대화 검색">
+          <div className="chat-search-row">
+            <input
+              type="search"
+              aria-label="대화 검색어"
+              placeholder="대화 검색"
+              value={searchInput}
+              maxLength={100}
+              onChange={(event) => {
+                searchRequestRef.current += 1;
+                targetRequestRef.current += 1;
+                setSearchResult(null);
+                setSelectedHit(null);
+                setSearchWindow(null);
+                setContextLoading(false);
+                pendingContextHeightRef.current = null;
+                skipTargetScrollRef.current = false;
+                setSearchKeyword('');
+                if (!event.target.value.trim()) {
+                  clearSearch();
+                  return;
+                }
+                if (!searchActiveRef.current && event.target.value.trim()) {
+                  beforeSearchScrollRef.current = scrollRef.current?.scrollTop ?? null;
+                }
+                searchActiveRef.current = Boolean(event.target.value.trim());
+                setSearchInput(event.target.value);
+              }}
+            />
+            {searchInput ? <button type="button" onClick={clearSearch} aria-label="검색 닫기">×</button> : null}
+            {searchResult && searchResult.matches.length > 0 ? (
+              <>
+                <span className="chat-search-count">{selectedHit === null ? 0 : selectedHit + 1}/{searchResult.matches.length}{searchResult.has_next ? '+' : ''}</span>
+                <button type="button" aria-label="이전 검색 결과" disabled={selectedHit === null || (selectedHit >= searchResult.matches.length - 1 && !searchResult.has_next) || searchLoading} onClick={() => void moveSearch(1)}>∧</button>
+                <button type="button" aria-label="다음 검색 결과" disabled={selectedHit === null || selectedHit === 0 || searchLoading} onClick={() => void moveSearch(-1)}>∨</button>
+              </>
+            ) : null}
+          </div>
+          {searchInput.trim() && Array.from(searchInput.trim()).length < 2 ? <p role="status">두글자 이상 입력해주세요.</p> : null}
+          {searchLoading ? <p role="status">검색 중...</p> : null}
+          {searchError ? <p role="alert">검색에 실패했어요. 검색어를 다시 입력해 주세요.</p> : null}
+          {!searchLoading && !searchError && searchResult && searchResult.matches.length === 0 ? <p role="status">검색 결과가 없습니다.</p> : null}
+          {searchWindow ? <p role="status">검색 결과 주변 대화</p> : null}
+        </div>
+      ) : null}
+
       {detail?.status === 'ENDED' ? (
         <div className="chat-detail-ended" role="status">종료된 채팅방입니다. 이전 대화만 확인할 수 있어요.</div>
       ) : null}
@@ -554,7 +802,12 @@ export function ChatRoomMessagingPage() {
       {!loading && !errorStatus && detail ? (
         <>
           <div className="chat-detail-scroll" ref={scrollRef}>
-            {detail.has_next ? (
+            {searchWindow && contextHasOlder ? (
+              <button type="button" className="chat-detail-older" disabled={contextLoading} onClick={() => void loadSearchContext('older')}>
+                이전 대화 더 보기
+              </button>
+            ) : null}
+            {!searchWindow && detail.has_next ? (
               <button
                 type="button"
                 className="chat-detail-older"
@@ -564,29 +817,34 @@ export function ChatRoomMessagingPage() {
               </button>
             ) : null}
 
-            {messages.length === 0 ? (
+            {(searchWindow ?? messages).length === 0 ? (
               <div className="chat-detail-empty">
                 <span aria-hidden="true">💬</span>
                 <p>아직 대화가 없습니다.</p>
               </div>
             ) : (
               <div className="chat-message-list">
-                {messages.map((message, index) => {
-                  const previous = messages[index - 1];
+                {(searchWindow ?? messages).map((message, index) => {
+                  const previous = (searchWindow ?? messages)[index - 1];
                   const startsNewDay = !previous || messageDay(previous.sent_at) !== messageDay(message.sent_at);
                   const mine = message.sender_id === user?.user_id;
 
                   return (
-                    <div className="chat-message-item" key={message.chat_id}>
+                    <div className="chat-message-item" id={`chat-message-${message.chat_id}`} key={message.chat_id}>
                       {startsNewDay ? (
                         <div className="chat-detail-date"><span>{formatMessageDate(message.sent_at)}</span></div>
                       ) : null}
-                      <MessageBubble message={message} mine={mine} />
+                      <MessageBubble message={message} mine={mine} keyword={searchKeyword} selected={message.chat_id === (selectedHit === null ? null : searchResult?.matches[selectedHit]?.chat_id)} />
                     </div>
                   );
                 })}
               </div>
             )}
+            {searchWindow && contextHasNewer ? (
+              <button type="button" className="chat-detail-older" disabled={contextLoading} onClick={() => void loadSearchContext('newer')}>
+                다음 대화 더 보기
+              </button>
+            ) : null}
           </div>
 
           {detail.status === 'ACTIVE' ? (

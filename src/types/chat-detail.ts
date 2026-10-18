@@ -29,3 +29,16 @@ export type ChatRoomDetailResponse = {
   chat_cursor_id: number | null;
   has_next: boolean;
 };
+
+export type ChatMessageSearchResponse = {
+  matches: { chat_id: number; sent_at: string }[];
+  cursor_time: string | null;
+  cursor_id: number | null;
+  has_next: boolean;
+};
+
+export type ChatMessageContextResponse = {
+  chats: ChatRoomDetailMessage[];
+  has_older: boolean;
+  has_newer: boolean;
+};

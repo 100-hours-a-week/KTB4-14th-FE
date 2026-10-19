@@ -87,6 +87,20 @@ export function ChatPage() {
   const [activeChatName, setActiveChatName] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  // Keep the newest list available to async refreshes without relying on a stale render closure.
+  const roomsRef = useRef<ChatRoom[]>([]);
+  const pageRef = useRef<ChatRoomListResponse | null>(null);
+  const refreshRoomsRef = useRef<() => void>(() => undefined);
+
+  const updateRooms = useCallback((nextRooms: ChatRoom[]) => {
+    roomsRef.current = nextRooms;
+    setRooms(nextRooms);
+  }, []);
+
+  const updatePage = useCallback((nextPage: ChatRoomListResponse | null) => {
+    pageRef.current = nextPage;
+    setPage(nextPage);
+  }, []);
 
   const loadPage = useCallback(async (cursor?: ChatRoomCursor, chatName = activeChatName) => {
     const requestId = ++requestIdRef.current;
@@ -106,8 +120,8 @@ export function ChatPage() {
         ...cursor,
       });
       if (requestId !== requestIdRef.current) return;
-      setRooms((current) => (isNextPage ? [...current, ...nextPage.rooms] : nextPage.rooms));
-      setPage(nextPage);
+      updateRooms(isNextPage ? [...roomsRef.current, ...nextPage.rooms] : nextPage.rooms);
+      updatePage(nextPage);
     } catch {
       if (requestId !== requestIdRef.current) return;
       if (isNextPage) setLoadMoreError(true);
@@ -118,11 +132,93 @@ export function ChatPage() {
         setLoadingMore(false);
       }
     }
+  }, [activeChatName, updatePage, updateRooms]);
+
+  const refreshRooms = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+
+    try {
+      const latestPage = await chatApi.listRooms({
+        chat_name: activeChatName ?? undefined,
+        size: PAGE_SIZE,
+      });
+      if (requestId !== requestIdRef.current) return;
+
+      const latestRoomIds = new Set(latestPage.rooms.map((room) => room.room_id));
+      const mergedRooms = [
+        ...latestPage.rooms,
+        ...roomsRef.current.filter((room) => !latestRoomIds.has(room.room_id)),
+      ];
+      const lastRoom = mergedRooms[mergedRooms.length - 1];
+      const previousPage = pageRef.current;
+
+      updateRooms(mergedRooms);
+      updatePage({
+        ...latestPage,
+        cursor_time: lastRoom?.last_message_at ?? latestPage.cursor_time,
+        cursor_id: lastRoom?.room_id ?? latestPage.cursor_id,
+        has_next: latestPage.has_next || Boolean(previousPage?.has_next),
+      });
+      setError(false);
+      setLoadMoreError(false);
+    } catch {
+      if (requestId === requestIdRef.current && !pageRef.current && roomsRef.current.length === 0) {
+        setError(true);
+      }
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  }, [activeChatName, updatePage, updateRooms]);
+
+  refreshRoomsRef.current = () => {
+    void refreshRooms();
+  };
+
+  useEffect(() => {
+    roomsRef.current = [];
+    pageRef.current = null;
   }, [activeChatName]);
 
   useEffect(() => {
     if (!matchedUserId) void loadPage();
   }, [loadPage, matchedUserId]);
+
+  useEffect(() => {
+    if (matchedUserId) return;
+
+    let active = true;
+    let disconnect: (() => void) | null = null;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        refreshRoomsRef.current();
+      }, 150);
+    };
+
+    void import('@/api/chatRealtime').then(({ connectChatRealtime }) => {
+      if (!active) return;
+      disconnect = connectChatRealtime(
+        null,
+        (event) => {
+          if (event.event_type === 'MESSAGE_CREATED') scheduleRefresh();
+        },
+        () => undefined,
+        () => refreshRoomsRef.current(),
+      );
+    });
+
+    return () => {
+      active = false;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      disconnect?.();
+    };
+  }, [matchedUserId]);
 
   const loadNextPage = () => {
     if (page?.has_next && page.cursor_time && page.cursor_id !== null) {

@@ -348,6 +348,9 @@ export type MatchingCandidate = {
 export type MatchingCandidatesResponse = {
   candidates: MatchingCandidate[];
   count: number;
+  retry_count: number;
+  remaining_retry_count: number;
+  can_rematch: boolean;
 };
 
 export type MatchConnectionResponse = {

@@ -112,6 +112,7 @@ export function MatchingPage() {
     try {
       setJson(storage.keys.matchingConditionDraft, condition);
       await matchingApi.createRequest(condition);
+      storage.clearMatchingCandidates();
       navigate('/matching/progress');
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {

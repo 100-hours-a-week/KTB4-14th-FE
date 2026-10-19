@@ -45,8 +45,12 @@ const mockMatchingCandidates: MatchingCandidatesResponse = {
     },
   ],
   count: 3,
+  retry_count: 0,
+  remaining_retry_count: 3,
+  can_rematch: true,
 };
 
+let localMatchingRetryCount = 0;
 let nextMockMatchConnectionId = 300;
 let nextMockChatRoomId = 400;
 const mockMatchConnections = new Map<number, number>();
@@ -163,6 +167,7 @@ export const matchingApi = {
   async createRequest(condition: MatchingConditionDraft) {
     const body = toCreateMatchingRequest(condition);
     if (USE_MOCK) {
+      localMatchingRetryCount = 0;
       return {
         matching_request_id: Date.now(),
         user_id: 0,
@@ -187,8 +192,37 @@ export const matchingApi = {
 
   /** GET /api/v2/matches/candidates */
   async getCandidates() {
-    if (USE_MOCK) return mockMatchingCandidates;
+    if (USE_MOCK) {
+      return {
+        ...mockMatchingCandidates,
+        retry_count: localMatchingRetryCount,
+        remaining_retry_count: Math.max(0, 3 - localMatchingRetryCount),
+        can_rematch: localMatchingRetryCount < 3,
+      };
+    }
     return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates');
+  },
+
+  /** POST /api/v2/matches/candidates/rematch */
+  async rematchCandidates() {
+    if (USE_MOCK) {
+      localMatchingRetryCount = Math.min(3, localMatchingRetryCount + 1);
+      const offset = localMatchingRetryCount % mockMatchingCandidates.candidates.length;
+      const candidates = [
+        ...mockMatchingCandidates.candidates.slice(offset),
+        ...mockMatchingCandidates.candidates.slice(0, offset),
+      ];
+      return {
+        candidates,
+        count: candidates.length,
+        retry_count: localMatchingRetryCount,
+        remaining_retry_count: Math.max(0, 3 - localMatchingRetryCount),
+        can_rematch: localMatchingRetryCount < 3,
+      } satisfies MatchingCandidatesResponse;
+    }
+    return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates/rematch', {
+      method: 'POST',
+    });
   },
 
   /** POST /api/v2/matches/responses */

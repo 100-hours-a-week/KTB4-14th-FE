@@ -51,6 +51,9 @@ export function getTravelGenerationRequest(travelPlanId: number) {
 
 export const storage = {
   keys: KEYS,
+  clearMatchingCandidates() {
+    write(KEYS.matchingCandidatesResult, null);
+  },
   clearSession() {
     write(KEYS.user, null);
     write('audigo.access_token', null);

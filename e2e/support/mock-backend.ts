@@ -96,6 +96,12 @@ export class MockBackend {
   myTrips: data.TravelSummary[] = [];
   itineraries = new Map<number, data.BackendItinerary>();
   notifications: data.AppNotification[] = [];
+  notificationSettings = {
+    match_success_enabled: true,
+    chat_enabled: true,
+    travel_complete_enabled: true,
+    notification_enabled: true,
+  };
   generation: GenerationFrame[] = DEFAULT_GENERATION;
   /** 생성 완료/실패 시 알림을 자동으로 만든다 */
   notifyOnGeneration = true;
@@ -358,6 +364,11 @@ export class MockBackend {
     this.add('POST', '/api/notifications/read-all', () => {
       this.notifications = this.notifications.map((n) => ({ ...n, is_read: true }));
       return { status: 204 };
+    });
+    this.add('GET', '/api/v2/notification-settings', () => ({ body: this.notificationSettings }));
+    this.add('PATCH', '/api/v2/notification-settings', (req) => {
+      this.notificationSettings = { ...this.notificationSettings, ...req.body };
+      return { body: this.notificationSettings };
     });
     this.add('GET', '/api/notifications/subscribe', () => {
       // 큐에 쌓인 알림을 흘려보내고 스트림을 닫는다. retry 값으로 EventSource 가 곧바로 재연결한다.

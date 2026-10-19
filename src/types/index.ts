@@ -289,7 +289,6 @@ export type AppNotification = {
 export type NotificationSettings = {
   match_success_enabled: boolean;
   chat_enabled: boolean;
-  travel_before_enabled: boolean;
   travel_complete_enabled: boolean;
   notification_enabled: boolean;
 };

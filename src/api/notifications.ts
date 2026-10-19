@@ -98,19 +98,19 @@ export const notificationsApi = {
     await apiRequest<void>('/api/notifications/read-all', { method: 'POST' });
   },
 
-  /** GET /api/notification-settings */
+  /** GET /api/v2/notification-settings */
   async getSettings() {
     if (USE_MOCK) return localNotiSettings;
-    return apiRequest<NotificationSettings>('/api/notification-settings');
+    return apiRequest<NotificationSettings>('/api/v2/notification-settings');
   },
 
-  /** PATCH /api/notification-settings */
+  /** PATCH /api/v2/notification-settings */
   async updateSettings(settings: NotificationSettings) {
     if (USE_MOCK) {
       localNotiSettings = settings;
       return settings;
     }
-    return apiRequest<NotificationSettings>('/api/notification-settings', {
+    return apiRequest<NotificationSettings>('/api/v2/notification-settings', {
       method: 'PATCH',
       body: settings,
     });

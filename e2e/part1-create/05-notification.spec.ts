@@ -1,4 +1,4 @@
-import { test, expect, knownGap } from '../support/fixtures';
+import { test, expect } from '../support/fixtures';
 import { notification } from '../support/data';
 import { generationScript } from '../support/mock-backend';
 
@@ -37,7 +37,6 @@ test.describe('5. 생성 완료 알림', () => {
   });
 
   test('NOTI-03 "모두 읽음" 시 모든 알림이 읽음 처리(투명도 60%)되고 뱃지 제거', { tag: '@P1' }, async ({ page, api }) => {
-    knownGap('읽은 알림 투명도 60% 스타일 없음 (pages.css)');
     api.notifications = [
       notification({ notification_id: 2, title: '알림 A' }),
       notification({ notification_id: 1, title: '알림 B' }),
@@ -70,5 +69,27 @@ test.describe('5. 생성 완료 알림', () => {
 
     await page.goto('/notifications');
     await expect(page.locator('.noti-row').first()).toContainText('여행 생성에 실패했어요');
+  });
+});
+
+test.describe('5-1. v2 알림 설정', () => {
+  test('NOTI-06 D-1 항목을 제외하고 변경한 설정을 유지한다', { tag: '@P1' }, async ({ page }) => {
+    await page.goto('/my');
+    await page.getByRole('button', { name: /알림 설정/ }).click();
+
+    await expect(page.getByText('여행 D-1')).toHaveCount(0);
+    await expect(page.getByRole('checkbox')).toHaveCount(4);
+
+    await page.getByRole('checkbox', { name: '새 채팅 설정' }).uncheck();
+    await page.getByRole('checkbox', { name: '전체 알림 설정' }).uncheck();
+    await page.getByRole('button', { name: '저장' }).click();
+
+    await expect(page).toHaveURL(/\/my$/);
+    await page.getByRole('button', { name: /알림 설정/ }).click();
+
+    await expect(page.getByRole('checkbox', { name: '매칭 성공 설정' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: '새 채팅 설정' })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: '여행 생성 결과 설정' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: '전체 알림 설정' })).not.toBeChecked();
   });
 });

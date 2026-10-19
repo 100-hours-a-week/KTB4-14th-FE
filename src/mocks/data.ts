@@ -403,7 +403,6 @@ export const mockNotifications: AppNotification[] = [
 export const mockNotificationSettings: NotificationSettings = {
   match_success_enabled: true,
   chat_enabled: true,
-  travel_before_enabled: true,
   travel_complete_enabled: true,
   notification_enabled: true,
 };

@@ -23,13 +23,39 @@ export function MatchingResultPage() {
   const [preparingCandidateUserId, setPreparingCandidateUserId] = useState<number | null>(null);
   const preparingCandidateUserIdRef = useRef<number | null>(null);
   const isFailed = searchParams.get('status') === 'failed';
-  const state = location.state as { candidatesResponse?: MatchingCandidatesResponse } | null;
+  const state = location.state as {
+    candidatesResponse?: MatchingCandidatesResponse;
+    notificationBody?: string;
+  } | null;
+  const rawMatchConnectionId = searchParams.get('matchConnectionId');
+  const matchConnectionId = Number(rawMatchConnectionId);
+  const openedFromNotification = rawMatchConnectionId !== null;
+  const validMatchConnectionId = Number.isSafeInteger(matchConnectionId) && matchConnectionId > 0;
   const candidatesResponse =
     state?.candidatesResponse ?? getJson<MatchingCandidatesResponse>(storage.keys.matchingCandidatesResult);
   const candidates = candidatesResponse?.candidates ?? [];
 
   const retryMatching = () => {
     navigate('/matching');
+  };
+
+  const openMatchedChat = async () => {
+    if (!validMatchConnectionId || preparingCandidateUserIdRef.current !== null) return;
+
+    preparingCandidateUserIdRef.current = matchConnectionId;
+    setPreparingCandidateUserId(matchConnectionId);
+    try {
+      const chatRoom = await matchingApi.prepareChatRoom(matchConnectionId);
+      if (!Number.isSafeInteger(chatRoom.chat_room_id) || chatRoom.chat_room_id < 1) {
+        throw new Error('채팅방 ID가 올바르지 않습니다.');
+      }
+      navigate(`/chat/${chatRoom.chat_room_id}`);
+    } catch {
+      toast.show('매칭 정보를 확인하지 못했어요. 다시 시도해 주세요.');
+    } finally {
+      preparingCandidateUserIdRef.current = null;
+      setPreparingCandidateUserId(null);
+    }
   };
 
   const openChatEntry = async (candidate: MatchingCandidate) => {
@@ -51,6 +77,41 @@ export function MatchingResultPage() {
       setPreparingCandidateUserId(null);
     }
   };
+
+  if (openedFromNotification) {
+    if (!validMatchConnectionId) {
+      return (
+        <section className="screen matching-result-screen">
+          <Header title="매칭 결과" onBack={() => navigate('/notifications')} showBell />
+          <div className="scroll matching-result-fail" role="alert">
+            <div className="matching-result-icon fail" aria-hidden="true">!</div>
+            <h2>매칭 정보를 확인할 수 없어요</h2>
+            <p>알림에 연결된 매칭 정보가 올바르지 않습니다.</p>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="screen matching-result-screen">
+        <Header title="매칭 완료" onBack={() => navigate('/notifications')} showBell />
+        <div className="scroll matching-result-scroll">
+          <div className="matching-result-icon" aria-hidden="true">✓</div>
+          <h2 className="matching-result-title">매칭이 완료됐어요!</h2>
+          <p className="matching-result-subtitle">
+            {state?.notificationBody ?? '매칭된 여행 메이트와 대화를 시작해 보세요.'}
+          </p>
+        </div>
+        <div className="footer-bar matching-footer">
+          <Button
+            label="메시지 보내기"
+            loading={preparingCandidateUserId === matchConnectionId}
+            onClick={() => void openMatchedChat()}
+          />
+        </div>
+      </section>
+    );
+  }
 
   if (isFailed || candidates.length === 0) {
     return (

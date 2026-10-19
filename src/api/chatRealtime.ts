@@ -59,7 +59,7 @@ function parseMessage(frame: IMessage): ChatRealtimeEvent | null {
 }
 
 export function connectChatRealtime(
-  roomId: number,
+  roomId: number | null,
   onMessage: (event: ChatRealtimeEvent) => void,
   onConnectionChange: (connected: boolean) => void,
   onConnected: () => void,
@@ -76,7 +76,7 @@ export function connectChatRealtime(
         const eventRoomId = event?.event_type === 'MESSAGE_CREATED'
           ? event.data.room_id
           : event?.room_id;
-        if (event && eventRoomId === roomId) onMessage(event);
+        if (event && (roomId === null || eventRoomId === roomId)) onMessage(event);
       });
       onConnected();
     },

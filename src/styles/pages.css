@@ -3020,6 +3020,19 @@
   background: var(--cream);
 }
 
+.matching-rematch-footer {
+  display: grid;
+  gap: 8px;
+}
+
+.matching-rematch-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .matching-progress-screen {
   background: var(--cream);
 }

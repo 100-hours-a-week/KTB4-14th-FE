@@ -1,9 +1,10 @@
 import { matchingApi } from '@/api';
+import { ApiError } from '@/api/client';
 import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
-import { getJson, storage } from '@/storage';
+import { getJson, setJson, storage } from '@/storage';
 import type { MatchingCandidate, MatchingCandidatesResponse, TravelPaceType, TravelTheme } from '@/types';
 import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -21,7 +22,9 @@ export function MatchingResultPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [preparingCandidateUserId, setPreparingCandidateUserId] = useState<number | null>(null);
+  const [rematching, setRematching] = useState(false);
   const preparingCandidateUserIdRef = useRef<number | null>(null);
+  const rematchingRef = useRef(false);
   const isFailed = searchParams.get('status') === 'failed';
   const state = location.state as {
     candidatesResponse?: MatchingCandidatesResponse;
@@ -31,13 +34,60 @@ export function MatchingResultPage() {
   const matchConnectionId = Number(rawMatchConnectionId);
   const openedFromNotification = rawMatchConnectionId !== null;
   const validMatchConnectionId = Number.isSafeInteger(matchConnectionId) && matchConnectionId > 0;
-  const candidatesResponse =
-    state?.candidatesResponse ?? getJson<MatchingCandidatesResponse>(storage.keys.matchingCandidatesResult);
+  const [candidatesResponse, setCandidatesResponse] = useState<MatchingCandidatesResponse | null>(() =>
+    state?.candidatesResponse ?? getJson<MatchingCandidatesResponse>(storage.keys.matchingCandidatesResult),
+  );
   const candidates = candidatesResponse?.candidates ?? [];
+  const canRematch = candidatesResponse?.can_rematch ?? false;
+  const remainingRetryCount = candidatesResponse?.remaining_retry_count ?? 0;
 
-  const retryMatching = () => {
-    navigate('/matching');
+  const retryMatching = async () => {
+    if (rematchingRef.current) return;
+    if (!candidatesResponse) {
+      storage.clearMatchingCandidates();
+      navigate('/matching');
+      return;
+    }
+    if (!canRematch) return;
+
+    rematchingRef.current = true;
+    setRematching(true);
+    try {
+      const response = await matchingApi.rematchCandidates();
+      setJson(storage.keys.matchingCandidatesResult, response);
+      setCandidatesResponse(response);
+      navigate(response.count > 0 ? '/matching/result' : '/matching/result?status=failed', {
+        replace: true,
+        state: { candidatesResponse: response },
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.show('재매칭을 처리 중이거나 사용 가능한 횟수를 모두 사용했어요.');
+      } else {
+        toast.show('재매칭에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      }
+    } finally {
+      rematchingRef.current = false;
+      setRematching(false);
+    }
   };
+
+  const renderRematchFooter = () => (
+    <div className="footer-bar matching-footer matching-rematch-footer">
+      {candidatesResponse ? (
+        <p className="matching-rematch-status" aria-live="polite">
+          {canRematch ? `재매칭 ${remainingRetryCount}회 남음` : '재매칭 기회를 모두 사용했어요'}
+        </p>
+      ) : null}
+      <Button
+        label="매칭 다시하기"
+        variant="ghost"
+        loading={rematching}
+        disabled={Boolean(candidatesResponse) && !canRematch}
+        onClick={() => void retryMatching()}
+      />
+    </div>
+  );
 
   const openMatchedChat = async () => {
     if (!validMatchConnectionId || preparingCandidateUserIdRef.current !== null) return;
@@ -113,7 +163,7 @@ export function MatchingResultPage() {
     );
   }
 
-  if (isFailed || candidates.length === 0) {
+  if ((isFailed && !candidatesResponse) || candidates.length === 0) {
     return (
       <section className="screen matching-result-screen">
         <Header title="매칭 실패" onBack={() => navigate('/matching')} showBell />
@@ -124,9 +174,7 @@ export function MatchingResultPage() {
           <h2>매칭에 실패했습니다...</h2>
           <p>조건에 맞는 여행 메이트를 찾지 못했어요.</p>
         </div>
-        <div className="footer-bar matching-footer">
-          <Button label="매칭 다시하기" variant="ghost" onClick={retryMatching} />
-        </div>
+        {renderRematchFooter()}
       </section>
     );
   }
@@ -170,9 +218,7 @@ export function MatchingResultPage() {
           ))}
         </div>
       </div>
-      <div className="footer-bar matching-footer">
-        <Button label="매칭 다시하기" variant="ghost" onClick={retryMatching} />
-      </div>
+      {renderRematchFooter()}
     </section>
   );
 }

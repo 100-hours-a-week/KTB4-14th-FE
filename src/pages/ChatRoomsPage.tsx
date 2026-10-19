@@ -5,8 +5,6 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
-const MIN_CHAT_NAME_LENGTH = 2;
-const MAX_CHAT_NAME_LENGTH = 5;
 
 type ChatRoomCursor = {
   cursor_time: string;
@@ -134,11 +132,7 @@ export function ChatPage() {
       setSearchError('검색어를 입력해 주세요.');
       return;
     }
-    if (chatName.length < MIN_CHAT_NAME_LENGTH && chatName.length > 0) {
-      setSearchError('검색어는 2자 이상 입력해 주세요.');
-      return;
-    }
-    if (chatName.length > MAX_CHAT_NAME_LENGTH) {
+    if (chatName.length > 5) {
       setSearchError('검색어는 5자 이내로 입력해 주세요.');
       return;
     }

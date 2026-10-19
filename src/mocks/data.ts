@@ -375,6 +375,7 @@ export const mockNotifications: AppNotification[] = [
     title: '새 채팅',
     body: '한지승이 메시지를 보냈어요.',
     target_type: 'CHAT_ROOM',
+    target_id: 401,
     is_read: false,
     created_at: '2026-09-13T18:40:00',
   },

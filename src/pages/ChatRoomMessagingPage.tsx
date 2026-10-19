@@ -663,7 +663,7 @@ export function ChatRoomMessagingPage() {
       } else if (error instanceof ApiError && error.message === 'idempotency_key_conflict') {
         setSendError('전송 요청을 확인할 수 없어요. 내용을 수정한 뒤 다시 시도해 주세요.');
       } else {
-        setSendError('메시지를 전송하지 못했어요. 같은 내용을 다시 보내면 중복 전송을 방지할 수 있어요.');
+        setSendError('메시지를 전송하지 못했어요. 다시 시도해 주세요.');
       }
     } finally {
       sendingRef.current = false;

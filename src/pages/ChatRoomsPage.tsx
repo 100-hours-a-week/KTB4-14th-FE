@@ -5,6 +5,7 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
+const REALTIME_REFRESH_TOP_THRESHOLD = 80;
 
 type ChatRoomCursor = {
   cursor_time: string;
@@ -87,6 +88,10 @@ export function ChatPage() {
   const [activeChatName, setActiveChatName] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const pendingRealtimeRefreshRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   // Keep the newest list available to async refreshes without relying on a stale render closure.
   const roomsRef = useRef<ChatRoom[]>([]);
   const pageRef = useRef<ChatRoomListResponse | null>(null);
@@ -107,6 +112,7 @@ export function ChatPage() {
     const isNextPage = Boolean(cursor);
     if (isNextPage) setLoadingMore(true);
     else {
+      loadingMoreRef.current = false;
       setLoading(true);
       setLoadingMore(false);
     }
@@ -128,6 +134,7 @@ export function ChatPage() {
       else setError(true);
     } finally {
       if (requestId === requestIdRef.current) {
+        if (isNextPage) loadingMoreRef.current = false;
         setLoading(false);
         setLoadingMore(false);
       }
@@ -167,6 +174,7 @@ export function ChatPage() {
       }
     } finally {
       if (requestId === requestIdRef.current) {
+        loadingMoreRef.current = false;
         setLoading(false);
         setLoadingMore(false);
       }
@@ -176,6 +184,20 @@ export function ChatPage() {
   refreshRoomsRef.current = () => {
     void refreshRooms();
   };
+
+  const handleListScroll = useCallback(() => {
+    const scrollContainer = scrollRef.current;
+    if (
+      !pendingRealtimeRefreshRef.current ||
+      !scrollContainer ||
+      scrollContainer.scrollTop > REALTIME_REFRESH_TOP_THRESHOLD
+    ) {
+      return;
+    }
+
+    pendingRealtimeRefreshRef.current = false;
+    refreshRoomsRef.current();
+  }, []);
 
   useEffect(() => {
     roomsRef.current = [];
@@ -195,8 +217,27 @@ export function ChatPage() {
 
     const scheduleRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
+
+      const scrollContainer = scrollRef.current;
+      if (scrollContainer && scrollContainer.scrollTop > REALTIME_REFRESH_TOP_THRESHOLD) {
+        refreshTimer = null;
+        pendingRealtimeRefreshRef.current = true;
+        return;
+      }
+
+      pendingRealtimeRefreshRef.current = false;
       refreshTimer = setTimeout(() => {
         refreshTimer = null;
+        const currentScrollContainer = scrollRef.current;
+        if (
+          currentScrollContainer &&
+          currentScrollContainer.scrollTop > REALTIME_REFRESH_TOP_THRESHOLD
+        ) {
+          pendingRealtimeRefreshRef.current = true;
+          return;
+        }
+
+        pendingRealtimeRefreshRef.current = false;
         refreshRoomsRef.current();
       }, 150);
     };
@@ -209,7 +250,7 @@ export function ChatPage() {
           if (event.event_type === 'MESSAGE_CREATED') scheduleRefresh();
         },
         () => undefined,
-        () => refreshRoomsRef.current(),
+        scheduleRefresh,
       );
     });
 
@@ -220,11 +261,30 @@ export function ChatPage() {
     };
   }, [matchedUserId]);
 
-  const loadNextPage = () => {
-    if (page?.has_next && page.cursor_time && page.cursor_id !== null) {
-      void loadPage({ cursor_time: page.cursor_time, cursor_id: page.cursor_id });
+  const loadNextPage = useCallback(() => {
+    if (loadingMoreRef.current) return;
+
+    const currentPage = pageRef.current;
+    if (currentPage?.has_next && currentPage.cursor_time && currentPage.cursor_id !== null) {
+      loadingMoreRef.current = true;
+      void loadPage({ cursor_time: currentPage.cursor_time, cursor_id: currentPage.cursor_id });
     }
-  };
+  }, [loadPage]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const trigger = loadMoreTriggerRef.current;
+    if (!root || !trigger || loading || loadingMore || loadMoreError || !page?.has_next) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadNextPage();
+      },
+      { root, rootMargin: '0px 0px 120px 0px' },
+    );
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [loadMoreError, loadNextPage, loading, loadingMore, page?.has_next, rooms.length]);
 
   const searchRooms = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -273,7 +333,7 @@ export function ChatPage() {
   return (
     <section className="screen">
       <Header title="채팅" showBell />
-      <div className="scroll chat-room-scroll">
+      <div className="scroll chat-room-scroll" ref={scrollRef} onScroll={handleListScroll}>
         <div className="chat-room-list-heading">
           <strong>채팅방</strong>
           {!loading && !error ? <span>{rooms.length}개</span> : null}
@@ -338,13 +398,17 @@ export function ChatPage() {
               {rooms.map((room) => <ChatRoomRow key={room.room_id} room={room} />)}
             </div>
             {page?.has_next ? (
-              <button
-                type="button"
-                className="chat-room-more"
-                disabled={loadingMore}
-                onClick={loadNextPage}>
-                {loadingMore ? '불러오는 중...' : loadMoreError ? '다시 시도' : '이전 채팅방 더 보기'}
-              </button>
+              <div ref={loadMoreTriggerRef} className="chat-room-load-more" aria-live="polite">
+                {loadingMore ? <span role="status">채팅방을 불러오고 있어요.</span> : null}
+                {loadMoreError ? (
+                  <div role="alert">
+                    <span>채팅방을 더 불러오지 못했어요.</span>
+                    <button type="button" className="chat-room-retry" onClick={loadNextPage}>
+                      다시 시도
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </>
         ) : null}

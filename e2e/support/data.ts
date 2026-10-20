@@ -103,7 +103,7 @@ export type AppNotification = {
   is_read: boolean;
   created_at: string;
   travel_plan_id?: number;
-  target_type?: 'TRAVEL_PLAN';
+  target_type?: 'MATCH_CONNECTION' | 'CHAT_ROOM' | 'TRAVEL_PLAN';
   target_id?: number;
 };
 

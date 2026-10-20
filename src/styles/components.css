@@ -390,6 +390,25 @@
   font-size: 28px;
 }
 
+.matching-chat-entry {
+  padding: 24px;
+}
+
+.matching-chat-entry h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.matching-chat-entry p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .field {
   margin-bottom: 22px;
 }

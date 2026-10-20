@@ -110,9 +110,7 @@ export function MyPage() {
         <button
           type="button"
           className="menu-row"
-          onClick={() => {
-            toast.show('매칭 설정은 준비 중입니다.');
-          }}>
+          onClick={() => navigate('/matching-settings')}>
           매칭 설정 <span>›</span>
         </button>
         <button type="button" className="menu-row" onClick={() => navigate('/notification-settings')}>

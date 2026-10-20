@@ -375,6 +375,7 @@ export const mockNotifications: AppNotification[] = [
     title: '새 채팅',
     body: '한지승이 메시지를 보냈어요.',
     target_type: 'CHAT_ROOM',
+    target_id: 401,
     is_read: false,
     created_at: '2026-09-13T18:40:00',
   },
@@ -403,16 +404,18 @@ export const mockNotifications: AppNotification[] = [
 export const mockNotificationSettings: NotificationSettings = {
   match_success_enabled: true,
   chat_enabled: true,
-  travel_before_enabled: true,
   travel_complete_enabled: true,
   notification_enabled: true,
 };
 
 export const mockMatchingSettings: MatchingSettings = {
-  enabled: false,
-  style: 'BALANCED',
-  region_preference: 'NATURE',
-  companion: 'FRIEND',
+  exists: true,
+  is_active: false,
+  gender: 'FEMALE',
+  pace: 'BALANCED',
+  themes: ['NATURE', 'FOOD'],
+  is_complete: true,
+  can_match: false,
 };
 
 export const destinations = [

@@ -36,6 +36,8 @@ export type TransportType = 'PUBLIC' | 'CAR' | 'WALK' | 'ETC';
 export type TravelPaceType = 'RELAXED' | 'BALANCED' | 'PACKED';
 export type TravelTransportType = 'WALK' | 'CAR' | 'PUBLIC_TRANSPORT';
 export type TravelTheme = 'NATURE' | 'FOOD' | 'CULTURE' | 'REST' | 'SNS' | 'ACTIVITY';
+export type MatchingGender = 'MALE' | 'FEMALE';
+export type MatchingCompanionGender = 'ANY' | 'MALE' | 'FEMALE';
 export type TripStyle = TravelPaceType;
 export type RegionPreference = 'HOTPLACE' | 'NATURE' | 'LOCAL';
 export type FoodPreference = 'KOREAN' | 'JAPANESE' | 'CHINESE' | 'WESTERN';
@@ -287,22 +289,140 @@ export type AppNotification = {
 export type NotificationSettings = {
   match_success_enabled: boolean;
   chat_enabled: boolean;
-  travel_before_enabled: boolean;
   travel_complete_enabled: boolean;
   notification_enabled: boolean;
 };
 
 export type MatchingSettings = {
-  enabled: boolean;
-  style?: TripStyle;
-  region_preference?: RegionPreference;
-  companion?: CompanionType;
+  exists: boolean;
+  is_active: boolean;
+  gender: MatchingGender | null;
+  pace: TravelPaceType | null;
+  themes: TravelTheme[];
+  is_complete: boolean;
+  can_match: boolean;
 };
 
-export type ChatRoom = {
+export type UpdateMatchingSettingsRequest = {
+  is_active: boolean;
+  gender: MatchingGender;
+  pace: TravelPaceType;
+  themes: TravelTheme[];
+};
+
+export type MatchingConditionDraft = {
+  preferred_companion_gender: MatchingCompanionGender | null;
+  themes: TravelTheme[];
+  pace: TravelPaceType | null;
+  budget_min: number;
+  budget_max: number;
+};
+
+export type CreateMatchingRequestRequest = {
+  preferred_companion_gender: MatchingCompanionGender;
+  theme: TravelTheme[];
+  pace: TravelPaceType;
+  budget_min: number;
+  budget_max: number;
+};
+
+export type MatchingRequestResponse = {
+  matching_request_id: number;
+  user_id: number;
+  preferred_companion_gender: MatchingCompanionGender;
+  theme: TravelTheme[];
+  pace: TravelPaceType;
+  budget_min: number;
+  budget_max: number;
+  status: 'ACTIVE' | 'CONNECTED' | 'EXHAUSTED' | 'CANCELLED';
+  latest_attempt_status: 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | null;
+  retry_count: number;
+  remaining_retry_count: number;
+  can_rematch: boolean;
+  has_result: boolean;
+};
+
+export type MatchingCandidate = {
+  user_id: number;
+  nickname: string;
+  profile_image_url: string | null;
+  theme: TravelTheme[];
+  pace: TravelPaceType;
+  match_rate: number;
+};
+
+export type MatchingCandidatesResponse = {
+  candidates: MatchingCandidate[];
+  count: number;
+  retry_count: number;
+  remaining_retry_count: number;
+  can_rematch: boolean;
+};
+
+export type MatchConnectionResponse = {
+  match_connection_id: number;
+  matching_request_id: number;
+  target_user_id: number;
+  status: 'ACTIVE' | 'ENDED' | 'CANCELED';
+  selected_at: string;
+};
+
+export type MatchingChatRoomResponse = {
   chat_room_id: number;
+  match_connection_id: number;
   chat_name: string;
+  status: ChatRoomStatus;
+  member_user_ids: number[];
+  created_at: string;
+};
+
+export type ChatRoomStatus = 'ACTIVE' | 'ENDED';
+
+export type ChatRoom = {
+  room_id: number;
+  chat_name: string;
+  status: ChatRoomStatus;
+  is_online: boolean;
   last_message: string;
   last_message_at: string;
+  profile_image_url: string | null;
   unread_count: number;
+};
+
+export type ChatRoomListResponse = {
+  rooms: ChatRoom[];
+  size: number;
+  cursor_time: string | null;
+  cursor_id: number | null;
+  has_next: boolean;
+};
+
+export type ChatMessageSendRequest = {
+  client_message_id: string;
+  content: string;
+};
+
+/** POST 전송 및 실시간 이벤트에서 공통으로 사용하는 백엔드 메시지 형식 */
+export type ChatMessageSendResponse = {
+  message_id: number;
+  room_id: number;
+  sender_id: number;
+  client_message_id: string;
+  message_seq: number;
+  content: string;
+  sent_at: string;
+};
+
+export type ChatMessageCatchUpResponse = {
+  messages: ChatMessageSendResponse[];
+  size: number;
+  next_after_message_seq: number;
+  has_next: boolean;
+};
+
+export type ChatRoomReadResponse = {
+  chat_room_id: number;
+  last_read_chat_id: number;
+  read_count: number;
+  read_at: string | null;
 };

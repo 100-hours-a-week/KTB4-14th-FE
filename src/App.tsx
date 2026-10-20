@@ -3,7 +3,8 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { TravelDraftProvider } from '@/context/TravelDraftContext';
 import { TabLayout } from '@/components/Layout';
-import { ChatPage, MatchingPage } from '@/pages/ComingSoonPages';
+import { ChatPage } from '@/pages/ChatRoomsPage';
+import { ChatRoomMessagingPage } from '@/pages/ChatRoomMessagingPage';
 import { ChecklistPage } from '@/pages/ChecklistPage';
 import { CreateTravelPage } from '@/pages/CreateTravelPage';
 import { GeneratingPage } from '@/pages/GeneratingPage';
@@ -12,6 +13,9 @@ import { ItineraryPage, OutputPlacesPage, OutputRoutesPage } from '@/pages/Outpu
 import { KakaoCallbackPage } from '@/pages/KakaoCallbackPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { MapSearchPage } from '@/pages/MapSearchPage';
+import { MatchingPage } from '@/pages/MatchingPage';
+import { MatchingProgressPage } from '@/pages/MatchingProgressPage';
+import { MatchingResultPage } from '@/pages/MatchingResultPage';
 import { MatchingSettingsPage } from '@/pages/MatchingSettingsPage';
 import { MyPage } from '@/pages/MyPage';
 import { MyTripsPage } from '@/pages/MyTripsPage';
@@ -72,9 +76,12 @@ export default function App() {
                       <Route element={<TabLayout />}>
                         <Route path="/home" element={<HomePage />} />
                         <Route path="/matching" element={<MatchingPage />} />
+                        <Route path="/matching/progress" element={<MatchingProgressPage />} />
+                        <Route path="/matching/result" element={<MatchingResultPage />} />
                         <Route path="/chat" element={<ChatPage />} />
                         <Route path="/my" element={<MyPage />} />
                       </Route>
+                      <Route path="/chat/:roomId" element={<ChatRoomMessagingPage />} />
                       <Route path="/notifications" element={<NotificationsPage />} />
                       <Route path="/create-travel" element={<CreateTravelPage />} />
                       <Route path="/create-travel/preference" element={<PreferencePage />} />

@@ -1,5 +1,5 @@
 ﻿import { mockMatchingSettings, mockNotifications, mockNotificationSettings } from '@/mocks/data';
-import { API_BASE_URL, apiRequest, USE_MOCK } from '@/api/client';
+import { API_BASE_URL, ApiError, apiRequest, USE_MOCK } from '@/api/client';
 import type {
   AppNotification,
   CreateMatchingRequestRequest,
@@ -16,6 +16,7 @@ import type {
 let localNotifications = mockNotifications.map((item) => ({ ...item }));
 let localNotiSettings = { ...mockNotificationSettings };
 let localMatching = { ...mockMatchingSettings };
+let localMatchingRequest: MatchingRequestResponse | null = null;
 
 const mockMatchingCandidates: MatchingCandidatesResponse = {
   candidates: [
@@ -168,7 +169,7 @@ export const matchingApi = {
     const body = toCreateMatchingRequest(condition);
     if (USE_MOCK) {
       localMatchingRetryCount = 0;
-      return {
+      localMatchingRequest = {
         matching_request_id: Date.now(),
         user_id: 0,
         preferred_companion_gender: body.preferred_companion_gender,
@@ -176,7 +177,14 @@ export const matchingApi = {
         pace: body.pace,
         budget_min: body.budget_min,
         budget_max: body.budget_max,
+        status: 'ACTIVE',
+        latest_attempt_status: null,
+        retry_count: 0,
+        remaining_retry_count: 3,
+        can_rematch: true,
+        has_result: false,
       } satisfies MatchingRequestResponse;
+      return localMatchingRequest;
     }
     return apiRequest<MatchingRequestResponse>('/api/v2/matching-requests', {
       method: 'POST',
@@ -184,21 +192,49 @@ export const matchingApi = {
     });
   },
 
+  /** GET /api/v2/matching-requests/me */
+  async getCurrentRequest() {
+    if (USE_MOCK) {
+      if (!localMatchingRequest) {
+        throw new ApiError(404, 'matching_request_not_found');
+      }
+      return localMatchingRequest;
+    }
+    return apiRequest<MatchingRequestResponse>('/api/v2/matching-requests/me');
+  },
+
   /** DELETE /api/v2/matching-requests/me */
   async cancelRequest() {
-    if (USE_MOCK) return;
+    if (USE_MOCK) {
+      if (!localMatchingRequest || localMatchingRequest.status !== 'ACTIVE') {
+        throw new ApiError(404, 'matching_request_not_found');
+      }
+      localMatchingRequest = null;
+      return;
+    }
     await apiRequest<void>('/api/v2/matching-requests/me', { method: 'DELETE' });
   },
 
   /** GET /api/v2/matches/candidates */
   async getCandidates() {
     if (USE_MOCK) {
-      return {
+      const response = {
         ...mockMatchingCandidates,
         retry_count: localMatchingRetryCount,
         remaining_retry_count: Math.max(0, 3 - localMatchingRetryCount),
         can_rematch: localMatchingRetryCount < 3,
       };
+      if (localMatchingRequest) {
+        localMatchingRequest = {
+          ...localMatchingRequest,
+          latest_attempt_status: 'SUCCEEDED',
+          retry_count: response.retry_count,
+          remaining_retry_count: response.remaining_retry_count,
+          can_rematch: response.can_rematch,
+          has_result: true,
+        };
+      }
+      return response;
     }
     return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates');
   },
@@ -212,13 +248,25 @@ export const matchingApi = {
         ...mockMatchingCandidates.candidates.slice(offset),
         ...mockMatchingCandidates.candidates.slice(0, offset),
       ];
-      return {
+      const response = {
         candidates,
         count: candidates.length,
         retry_count: localMatchingRetryCount,
         remaining_retry_count: Math.max(0, 3 - localMatchingRetryCount),
         can_rematch: localMatchingRetryCount < 3,
       } satisfies MatchingCandidatesResponse;
+      if (localMatchingRequest) {
+        localMatchingRequest = {
+          ...localMatchingRequest,
+          status: response.can_rematch ? 'ACTIVE' : 'EXHAUSTED',
+          latest_attempt_status: 'SUCCEEDED',
+          retry_count: response.retry_count,
+          remaining_retry_count: response.remaining_retry_count,
+          can_rematch: response.can_rematch,
+          has_result: true,
+        };
+      }
+      return response;
     }
     return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates/rematch', {
       method: 'POST',
@@ -233,13 +281,15 @@ export const matchingApi = {
         matchConnectionId = nextMockMatchConnectionId++;
         mockMatchConnections.set(targetUserId, matchConnectionId);
       }
-      return {
+      const response = {
         match_connection_id: matchConnectionId,
         matching_request_id: 1,
         target_user_id: targetUserId,
         status: 'ACTIVE',
         selected_at: new Date().toISOString(),
       } satisfies MatchConnectionResponse;
+      localMatchingRequest = null;
+      return response;
     }
     return apiRequest<MatchConnectionResponse>('/api/v2/matches/responses', {
       method: 'POST',

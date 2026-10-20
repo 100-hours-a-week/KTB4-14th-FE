@@ -5,9 +5,15 @@ import { Header } from '@/components/Header';
 import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import { getJson, setJson, storage } from '@/storage';
-import type { MatchingCompanionGender, MatchingConditionDraft, TravelPaceType, TravelTheme } from '@/types';
+import type {
+  MatchingCompanionGender,
+  MatchingConditionDraft,
+  MatchingRequestResponse,
+  TravelPaceType,
+  TravelTheme,
+} from '@/types';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const BUDGET_MIN = 300000;
 const BUDGET_MAX = 800000;
@@ -47,17 +53,76 @@ function formatBudget(value: number) {
   return `${Math.round(value / 10000)}만원`;
 }
 
+function conditionFromRequest(request: MatchingRequestResponse): MatchingConditionDraft {
+  return {
+    preferred_companion_gender: request.preferred_companion_gender,
+    themes: request.theme,
+    pace: request.pace,
+    budget_min: request.budget_min,
+    budget_max: request.budget_max,
+  };
+}
+
+async function restoreCurrentSession() {
+  const request = await matchingApi.getCurrentRequest();
+  setJson(storage.keys.matchingConditionDraft, conditionFromRequest(request));
+
+  if (request.latest_attempt_status === 'PROCESSING' || !request.has_result) {
+    if (!request.has_result) storage.clearMatchingCandidates();
+    return { to: '/matching/progress', state: undefined };
+  }
+
+  const candidatesResponse = await matchingApi.getCandidates();
+  setJson(storage.keys.matchingCandidatesResult, candidatesResponse);
+  return {
+    to: candidatesResponse.count > 0 ? '/matching/result' : '/matching/result?status=failed',
+    state: { candidatesResponse },
+  };
+}
+
 export function MatchingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const [condition, setCondition] = useState<MatchingConditionDraft>(DEFAULT_CONDITION);
   const [hydrated, setHydrated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const startNew = Boolean((location.state as { startNew?: boolean } | null)?.startNew);
 
   useEffect(() => {
-    setCondition(normalizeCondition(getJson<MatchingConditionDraft>(storage.keys.matchingConditionDraft)));
-    setHydrated(true);
-  }, []);
+    let alive = true;
+
+    if (startNew) {
+      storage.clearMatchingState();
+      setCondition(DEFAULT_CONDITION);
+      setHydrated(true);
+      setCheckingSession(false);
+      return () => {
+        alive = false;
+      };
+    }
+
+    restoreCurrentSession()
+      .then((destination) => {
+        if (!alive) return;
+        navigate(destination.to, { replace: true, state: destination.state });
+      })
+      .catch((error) => {
+        if (!alive) return;
+        if (!(error instanceof ApiError && error.status === 404)) {
+          toast.show('진행 중인 매칭 정보를 확인하지 못했습니다.');
+        }
+        storage.clearMatchingCandidates();
+        setCondition(normalizeCondition(getJson<MatchingConditionDraft>(storage.keys.matchingConditionDraft)));
+        setHydrated(true);
+        setCheckingSession(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [navigate, startNew, toast]);
 
   useEffect(() => {
     if (hydrated) setJson(storage.keys.matchingConditionDraft, condition);
@@ -117,6 +182,17 @@ export function MatchingPage() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
         toast.show('마이페이지에서 매칭 설정을 켜주세요.');
+      } else if (
+        error instanceof ApiError
+        && error.status === 409
+        && error.message === 'matching_request_already_active'
+      ) {
+        try {
+          const destination = await restoreCurrentSession();
+          navigate(destination.to, { replace: true, state: destination.state });
+        } catch {
+          toast.show('기존 매칭 정보를 불러오지 못했습니다.');
+        }
       } else {
         toast.show('매칭 요청을 생성하지 못했습니다.');
       }
@@ -124,6 +200,20 @@ export function MatchingPage() {
       setSubmitting(false);
     }
   };
+
+  if (checkingSession) {
+    return (
+      <section className="screen matching-progress-screen" aria-busy="true">
+        <Header title="여행 매칭" onBack={() => navigate('/home')} showBell />
+        <div className="scroll matching-progress-scroll">
+          <div className="matching-progress-hero" aria-hidden="true">
+            <span />
+          </div>
+          <h2 className="matching-progress-title">매칭 정보를 확인하고 있어요</h2>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="screen matching-screen">

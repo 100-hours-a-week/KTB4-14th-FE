@@ -57,8 +57,9 @@ export function MatchingProgressPage() {
     setCanceling(true);
     try {
       await matchingApi.cancelRequest();
+      storage.clearMatchingState();
       toast.show('매칭이 취소되었습니다.');
-      navigate('/matching');
+      navigate('/matching', { replace: true, state: { startNew: true } });
     } catch {
       toast.show('매칭을 취소하지 못했습니다.');
     } finally {
@@ -68,7 +69,7 @@ export function MatchingProgressPage() {
 
   return (
     <section className="screen matching-progress-screen">
-      <Header title="매칭 중" onBack={() => navigate('/matching')} showBell />
+      <Header title="매칭 중" onBack={() => navigate('/home')} showBell />
       <div className="scroll matching-progress-scroll">
         <div className="matching-progress-hero" aria-hidden="true">
           <span />

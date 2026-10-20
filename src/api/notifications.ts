@@ -183,6 +183,7 @@ export const matchingApi = {
         remaining_retry_count: 3,
         can_rematch: true,
         has_result: false,
+        can_retry: false,
       } satisfies MatchingRequestResponse;
       return localMatchingRequest;
     }
@@ -206,7 +207,7 @@ export const matchingApi = {
   /** DELETE /api/v2/matching-requests/me */
   async cancelRequest() {
     if (USE_MOCK) {
-      if (!localMatchingRequest || localMatchingRequest.status !== 'ACTIVE') {
+      if (!localMatchingRequest || !['ACTIVE', 'EXHAUSTED'].includes(localMatchingRequest.status)) {
         throw new ApiError(404, 'matching_request_not_found');
       }
       localMatchingRequest = null;
@@ -232,6 +233,7 @@ export const matchingApi = {
           remaining_retry_count: response.remaining_retry_count,
           can_rematch: response.can_rematch,
           has_result: true,
+          can_retry: false,
         };
       }
       return response;
@@ -264,11 +266,27 @@ export const matchingApi = {
           remaining_retry_count: response.remaining_retry_count,
           can_rematch: response.can_rematch,
           has_result: true,
+          can_retry: false,
         };
       }
       return response;
     }
     return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates/rematch', {
+      method: 'POST',
+    });
+  },
+
+  /** POST /api/v2/matches/candidates/retry */
+  async retryFailedCandidates(): Promise<MatchingCandidatesResponse> {
+    if (USE_MOCK) {
+      if (!localMatchingRequest?.can_retry) {
+        throw new ApiError(409, 'matching_retry_not_available');
+      }
+      return localMatchingRequest.has_result
+        ? matchingApi.rematchCandidates()
+        : matchingApi.getCandidates();
+    }
+    return apiRequest<MatchingCandidatesResponse>('/api/v2/matches/candidates/retry', {
       method: 'POST',
     });
   },

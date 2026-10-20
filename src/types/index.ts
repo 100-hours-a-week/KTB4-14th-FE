@@ -340,6 +340,7 @@ export type MatchingRequestResponse = {
   remaining_retry_count: number;
   can_rematch: boolean;
   has_result: boolean;
+  can_retry: boolean;
 };
 
 export type MatchingCandidate = {

@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Header } from '@/components/Header';
 import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
+import { restoreMatchingSession } from '@/lib/matchingSession';
 import { getJson, setJson, storage } from '@/storage';
 import type {
   MatchingCompanionGender,
@@ -63,23 +64,6 @@ function conditionFromRequest(request: MatchingRequestResponse): MatchingConditi
   };
 }
 
-async function restoreCurrentSession() {
-  const request = await matchingApi.getCurrentRequest();
-  setJson(storage.keys.matchingConditionDraft, conditionFromRequest(request));
-
-  if (request.latest_attempt_status === 'PROCESSING' || !request.has_result) {
-    if (!request.has_result) storage.clearMatchingCandidates();
-    return { to: '/matching/progress', state: undefined };
-  }
-
-  const candidatesResponse = await matchingApi.getCandidates();
-  setJson(storage.keys.matchingCandidatesResult, candidatesResponse);
-  return {
-    to: candidatesResponse.count > 0 ? '/matching/result' : '/matching/result?status=failed',
-    state: { candidatesResponse },
-  };
-}
-
 export function MatchingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,42 +71,69 @@ export function MatchingPage() {
   const [condition, setCondition] = useState<MatchingConditionDraft>(DEFAULT_CONDITION);
   const [hydrated, setHydrated] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [sessionError, setSessionError] = useState(false);
+  const [sessionCheckKey, setSessionCheckKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const startNew = Boolean((location.state as { startNew?: boolean } | null)?.startNew);
 
   useEffect(() => {
     let alive = true;
+    setCheckingSession(true);
+    setSessionError(false);
 
-    if (startNew) {
-      storage.clearMatchingState();
-      setCondition(DEFAULT_CONDITION);
+    const showConditions = (reset: boolean) => {
+      if (reset) storage.clearMatchingState();
+      else storage.clearMatchingCandidates();
+      setCondition(reset
+        ? DEFAULT_CONDITION
+        : normalizeCondition(getJson<MatchingConditionDraft>(storage.keys.matchingConditionDraft)));
       setHydrated(true);
       setCheckingSession(false);
+    };
+
+    if (startNew) {
+      showConditions(true);
       return () => {
         alive = false;
       };
     }
 
-    restoreCurrentSession()
-      .then((destination) => {
-        if (!alive) return;
-        navigate(destination.to, { replace: true, state: destination.state });
-      })
-      .catch((error) => {
-        if (!alive) return;
-        if (!(error instanceof ApiError && error.status === 404)) {
-          toast.show('진행 중인 매칭 정보를 확인하지 못했습니다.');
+    const restore = async () => {
+      let request: MatchingRequestResponse;
+      try {
+        request = await matchingApi.getCurrentRequest();
+      } catch (error) {
+        if (alive && error instanceof ApiError && error.status === 404) {
+          showConditions(false);
+          return;
         }
-        storage.clearMatchingCandidates();
-        setCondition(normalizeCondition(getJson<MatchingConditionDraft>(storage.keys.matchingConditionDraft)));
-        setHydrated(true);
-        setCheckingSession(false);
-      });
+        throw error;
+      }
+      if (!alive) return;
+      if (request.latest_attempt_status === 'FAILED' && !request.has_result) {
+        await matchingApi.cancelRequest();
+        if (alive) showConditions(true);
+        return;
+      }
+      const destination = await restoreMatchingSession(request);
+      if (!alive) return;
+      setJson(storage.keys.matchingConditionDraft, conditionFromRequest(request));
+      if (destination.state?.candidatesResponse) {
+        setJson(storage.keys.matchingCandidatesResult, destination.state.candidatesResponse);
+      }
+      navigate(destination.to, { replace: true, state: destination.state });
+    };
+
+    void restore().catch(() => {
+      if (!alive) return;
+      setSessionError(true);
+      setCheckingSession(false);
+    });
 
     return () => {
       alive = false;
     };
-  }, [navigate, startNew, toast]);
+  }, [navigate, startNew, sessionCheckKey]);
 
   useEffect(() => {
     if (hydrated) setJson(storage.keys.matchingConditionDraft, condition);
@@ -188,7 +199,11 @@ export function MatchingPage() {
         && error.message === 'matching_request_already_active'
       ) {
         try {
-          const destination = await restoreCurrentSession();
+          const request = await matchingApi.getCurrentRequest();
+          const destination = await restoreMatchingSession(request);
+          if (destination.state?.candidatesResponse) {
+            setJson(storage.keys.matchingCandidatesResult, destination.state.candidatesResponse);
+          }
           navigate(destination.to, { replace: true, state: destination.state });
         } catch {
           toast.show('기존 매칭 정보를 불러오지 못했습니다.');
@@ -201,16 +216,23 @@ export function MatchingPage() {
     }
   };
 
-  if (checkingSession) {
+  if (checkingSession || sessionError) {
     return (
-      <section className="screen matching-progress-screen" aria-busy="true">
+      <section className="screen matching-progress-screen" aria-busy={checkingSession}>
         <Header title="여행 매칭" onBack={() => navigate('/home')} showBell />
         <div className="scroll matching-progress-scroll">
           <div className="matching-progress-hero" aria-hidden="true">
             <span />
           </div>
-          <h2 className="matching-progress-title">매칭 정보를 확인하고 있어요</h2>
+          <h2 className="matching-progress-title" role={sessionError ? 'alert' : undefined}>
+            {sessionError ? '매칭 정보를 확인하지 못했어요' : '매칭 정보를 확인하고 있어요'}
+          </h2>
         </div>
+        {sessionError ? (
+          <div className="footer-bar matching-footer">
+            <Button label="다시 확인" onClick={() => setSessionCheckKey((value) => value + 1)} />
+          </div>
+        ) : null}
       </section>
     );
   }

@@ -23,6 +23,7 @@ export function MatchingResultPage() {
   const [searchParams] = useSearchParams();
   const [preparingCandidateUserId, setPreparingCandidateUserId] = useState<number | null>(null);
   const [rematching, setRematching] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const preparingCandidateUserIdRef = useRef<number | null>(null);
   const rematchingRef = useRef(false);
   const isFailed = searchParams.get('status') === 'failed';
@@ -40,6 +41,22 @@ export function MatchingResultPage() {
   const candidates = candidatesResponse?.candidates ?? [];
   const canRematch = candidatesResponse?.can_rematch ?? false;
   const remainingRetryCount = candidatesResponse?.remaining_retry_count ?? 0;
+
+  const startWithNewConditions = async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      await matchingApi.cancelRequest();
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 404)) {
+        toast.show('기존 매칭을 종료하지 못했습니다.');
+        setResetting(false);
+        return;
+      }
+    }
+    storage.clearMatchingState();
+    navigate('/matching', { replace: true, state: { startNew: true } });
+  };
 
   const retryMatching = async () => {
     if (rematchingRef.current) return;
@@ -86,6 +103,13 @@ export function MatchingResultPage() {
         disabled={Boolean(candidatesResponse) && !canRematch}
         onClick={() => void retryMatching()}
       />
+      <Button
+        label="새 조건으로 다시 찾기"
+        variant="soft"
+        loading={resetting}
+        disabled={rematching}
+        onClick={() => void startWithNewConditions()}
+      />
     </div>
   );
 
@@ -115,6 +139,7 @@ export function MatchingResultPage() {
     setPreparingCandidateUserId(candidate.user_id);
     try {
       const connection = await matchingApi.respondCandidate(candidate.user_id);
+      storage.clearMatchingState();
       const chatRoom = await matchingApi.prepareChatRoom(connection.match_connection_id);
       if (!Number.isSafeInteger(chatRoom.chat_room_id) || chatRoom.chat_room_id < 1) {
         throw new Error('채팅방 ID가 올바르지 않습니다.');
@@ -166,7 +191,7 @@ export function MatchingResultPage() {
   if ((isFailed && !candidatesResponse) || candidates.length === 0) {
     return (
       <section className="screen matching-result-screen">
-        <Header title="매칭 실패" onBack={() => navigate('/matching')} showBell />
+        <Header title="매칭 실패" onBack={() => navigate('/home')} showBell />
         <div className="scroll matching-result-fail">
           <div className="matching-result-icon fail" aria-hidden="true">
             !
@@ -181,7 +206,7 @@ export function MatchingResultPage() {
 
   return (
     <section className="screen matching-result-screen">
-      <Header title="매칭 완료" onBack={() => navigate('/matching')} showBell />
+      <Header title="매칭 완료" onBack={() => navigate('/home')} showBell />
       <div className="scroll matching-result-scroll">
         <div className="matching-result-icon" aria-hidden="true">
           ◷

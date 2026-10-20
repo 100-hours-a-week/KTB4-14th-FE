@@ -334,6 +334,12 @@ export type MatchingRequestResponse = {
   pace: TravelPaceType;
   budget_min: number;
   budget_max: number;
+  status: 'ACTIVE' | 'CONNECTED' | 'EXHAUSTED' | 'CANCELLED';
+  latest_attempt_status: 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | null;
+  retry_count: number;
+  remaining_retry_count: number;
+  can_rematch: boolean;
+  has_result: boolean;
 };
 
 export type MatchingCandidate = {

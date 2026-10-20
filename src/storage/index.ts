@@ -54,6 +54,10 @@ export const storage = {
   clearMatchingCandidates() {
     write(KEYS.matchingCandidatesResult, null);
   },
+  clearMatchingState() {
+    write(KEYS.matchingConditionDraft, null);
+    write(KEYS.matchingCandidatesResult, null);
+  },
   clearSession() {
     write(KEYS.user, null);
     write('audigo.access_token', null);

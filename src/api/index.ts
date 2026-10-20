@@ -10,5 +10,4 @@ export { checklistsApi } from '@/api/checklists';
 export { videosApi } from '@/api/videos';
 export { notificationsApi, matchingApi } from '@/api/notifications';
 export { chatApi } from '@/api/chat';
-export { chatRoomDetailApi } from '@/api/chat-detail';
 export { USE_MOCK, API_BASE_URL } from '@/api/client';

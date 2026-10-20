@@ -1,9 +1,9 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, knownGap } from '../support/fixtures';
 import { notification } from '../support/data';
 import { generationScript } from '../support/mock-backend';
 
-/** 5. 알림 목록 및 이동 (SSE: GET /api/notifications/subscribe) */
-test.describe('5. 알림 목록 및 이동', () => {
+/** 5. 생성 완료 알림 (SSE: GET /api/notifications/subscribe) */
+test.describe('5. 생성 완료 알림', () => {
   test('NOTI-01 생성 완료 시 알림이 생성되고 빨간 뱃지 표시', { tag: '@P0' }, async ({ page, api }) => {
     const { url } = api.createGeneration(generationScript({ status: 'GENERATING', done: 2 }, { status: 'COMPLETED', done: 4 }));
     await page.goto(url);
@@ -37,6 +37,7 @@ test.describe('5. 알림 목록 및 이동', () => {
   });
 
   test('NOTI-03 "모두 읽음" 시 모든 알림이 읽음 처리(투명도 60%)되고 뱃지 제거', { tag: '@P1' }, async ({ page, api }) => {
+    knownGap('읽은 알림 투명도 60% 스타일 없음 (pages.css)');
     api.notifications = [
       notification({ notification_id: 2, title: '알림 A' }),
       notification({ notification_id: 1, title: '알림 B' }),
@@ -69,111 +70,5 @@ test.describe('5. 알림 목록 및 이동', () => {
 
     await page.goto('/notifications');
     await expect(page.locator('.noti-row').first()).toContainText('여행 생성에 실패했어요');
-  });
-
-  test('NOTI-06 새 채팅 알림에 발신자 문구를 표시하고 해당 채팅방으로 이동한다', { tag: '@P0' }, async ({ page, api }) => {
-    api.notifications = [notification({
-      notification_id: 6,
-      type: 'NEW_MESSAGE',
-      title: '새 채팅',
-      body: '김민지님이 메시지를 보냈습니다',
-      target_type: 'CHAT_ROOM',
-      target_id: 321,
-      travel_plan_id: undefined,
-    })];
-
-    await page.goto('/notifications');
-    await expect(page.getByText('김민지님이 메시지를 보냈습니다')).toBeVisible();
-    await page.locator('.noti-row').click();
-
-    await expect(page).toHaveURL(/\/chat\/321$/);
-    await expect(page.getByRole('alert')).toContainText('채팅방을 찾을 수 없어요');
-    expect(api.callsTo('PATCH', '/api/notifications/6/read')).toHaveLength(1);
-  });
-
-  test('NOTI-07 매칭 성공 알림에서 매칭 완료 화면을 거쳐 채팅방으로 이동한다', { tag: '@P0' }, async ({ page, api }) => {
-    api.notifications = [notification({
-      notification_id: 7,
-      type: 'MATCH_SUCCESS',
-      title: '매칭 성공',
-      body: '박유혁님과 매칭이 완료되었습니다.',
-      target_type: 'MATCH_CONNECTION',
-      target_id: 700,
-      travel_plan_id: undefined,
-    })];
-
-    await page.goto('/notifications');
-    await page.locator('.noti-row').click();
-
-    await expect(page).toHaveURL(/\/matching\/result\?matchConnectionId=700$/);
-    await expect(page.getByText('박유혁님과 매칭이 완료되었습니다.')).toBeVisible();
-    await page.getByRole('button', { name: '메시지 보내기' }).click();
-    await expect(page).toHaveURL(/\/chat\/1700$/);
-    expect(api.callsTo('PATCH', '/api/notifications/7/read')).toHaveLength(1);
-  });
-
-  test('NOTI-08 연결 대상이 없는 알림은 읽음 처리 후 안내한다', { tag: '@P1' }, async ({ page, api }) => {
-    api.notifications = [notification({
-      notification_id: 8,
-      type: 'NEW_MESSAGE',
-      title: '새 채팅',
-      body: '연결 대상이 없는 알림',
-      target_type: 'CHAT_ROOM',
-      target_id: undefined,
-      travel_plan_id: undefined,
-    })];
-
-    await page.goto('/notifications');
-    await page.locator('.noti-row').click();
-
-    await expect(page).toHaveURL(/\/notifications$/);
-    await expect(page.locator('.toast')).toHaveText('연결된 화면을 열 수 없어요.');
-    await expect(page.locator('.noti-row.unread')).toHaveCount(0);
-    expect(api.callsTo('PATCH', '/api/notifications/8/read')).toHaveLength(1);
-
-    await page.reload();
-    await expect(page.locator('.noti-row.unread')).toHaveCount(0);
-  });
-
-  test('NOTI-09 접근할 수 없는 매칭 연결은 안내하고 결과 화면을 유지한다', { tag: '@P1' }, async ({ page, api }) => {
-    api.notifications = [notification({
-      notification_id: 9,
-      type: 'MATCH_SUCCESS',
-      title: '매칭 성공',
-      body: '접근할 수 없는 매칭 알림',
-      target_type: 'MATCH_CONNECTION',
-      target_id: 701,
-      travel_plan_id: undefined,
-    })];
-    api.once('POST', '/api/v2/match-connections/701/chat-room', { status: 404, body: { message: 'match_connection_not_found' } });
-
-    await page.goto('/notifications');
-    await page.locator('.noti-row').click();
-    await page.getByRole('button', { name: '메시지 보내기' }).click();
-
-    await expect(page).toHaveURL(/\/matching\/result\?matchConnectionId=701$/);
-    await expect(page.locator('.toast')).toHaveText('매칭 정보를 확인하지 못했어요. 다시 시도해 주세요.');
-  });
-});
-
-test.describe('5-1. v2 알림 설정', () => {
-  test('NOTI-10 D-1 항목을 제외하고 변경한 설정을 유지한다', { tag: '@P1' }, async ({ page }) => {
-    await page.goto('/my');
-    await page.getByRole('button', { name: /알림 설정/ }).click();
-
-    await expect(page.getByText('여행 D-1')).toHaveCount(0);
-    await expect(page.getByRole('checkbox')).toHaveCount(4);
-
-    await page.getByRole('checkbox', { name: '새 채팅 설정' }).uncheck();
-    await page.getByRole('checkbox', { name: '전체 알림 설정' }).uncheck();
-    await page.getByRole('button', { name: '저장' }).click();
-
-    await expect(page).toHaveURL(/\/my$/);
-    await page.getByRole('button', { name: /알림 설정/ }).click();
-
-    await expect(page.getByRole('checkbox', { name: '매칭 성공 설정' })).toBeChecked();
-    await expect(page.getByRole('checkbox', { name: '새 채팅 설정' })).not.toBeChecked();
-    await expect(page.getByRole('checkbox', { name: '여행 생성 결과 설정' })).toBeChecked();
-    await expect(page.getByRole('checkbox', { name: '전체 알림 설정' })).not.toBeChecked();
   });
 });

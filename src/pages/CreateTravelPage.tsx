@@ -4,13 +4,6 @@ import { Header } from '@/components/Header';
 import { Progress } from '@/components/Progress';
 import { toDateLabel } from '@/components/DateTime';
 import { useTravelDraft } from '@/context/TravelDraftContext';
-import {
-  addCalendarDays,
-  isTravelDateRangeValid,
-  isValidIsoDate,
-  MAX_TRAVEL_DAYS,
-  subtractCalendarDays,
-} from '@/lib/travelDates';
 import type { CompanionType, RegionSummary } from '@/types';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -172,25 +165,11 @@ export function CreateTravelPage() {
   const arrival = toComparableDateTime(draft.start_date, startTime);
   const departure = toComparableDateTime(draft.end_date, endTime);
   const now = currentComparableDateTime();
-  const durationError = draft.start_date && draft.end_date && !isTravelDateRangeValid(draft.start_date, draft.end_date)
-    ? `여행 기간은 최대 ${MAX_TRAVEL_DAYS}일까지 선택할 수 있어요.`
-    : '';
   const scheduleError = arrival && arrival < now
     ? '여행지 도착 시간은 현재 이후로 선택해 주세요.'
     : arrival && departure && arrival >= departure
       ? '여행지 출발 시간은 도착 시간보다 늦어야 해요.'
-      : durationError;
-  const today = todayIso();
-  const startDateForBounds = isValidIsoDate(draft.start_date) ? draft.start_date : undefined;
-  const endDateForBounds = isValidIsoDate(draft.end_date) ? draft.end_date : undefined;
-  const startDateMin = endDateForBounds && endDateForBounds >= today
-    ? laterIsoDate(today, subtractCalendarDays(endDateForBounds, MAX_TRAVEL_DAYS - 1))
-    : today;
-  const startDateMax = endDateForBounds && endDateForBounds >= today ? endDateForBounds : undefined;
-  const endDateMin = startDateForBounds ?? today;
-  const endDateMax = startDateForBounds
-    ? addCalendarDays(startDateForBounds, MAX_TRAVEL_DAYS - 1)
-    : undefined;
+      : '';
   const canContinue = Boolean(
     draft.region_id
       && draft.start_date
@@ -323,8 +302,7 @@ export function CreateTravelPage() {
               <CalendarPopover
                 value={picker === 'startDate' ? draft.start_date : draft.end_date}
                 placement={picker === 'startDate' ? 'start' : 'end'}
-                minDate={picker === 'startDate' ? startDateMin : endDateMin}
-                maxDate={picker === 'startDate' ? startDateMax : endDateMax}
+                minDate={picker === 'startDate' ? todayIso() : (draft.start_date ?? todayIso())}
                 onSelect={(value) => updateDate(picker === 'startDate' ? 'start_date' : 'end_date', value)}
               />
             ) : null}
@@ -421,13 +399,11 @@ function CalendarPopover({
   value,
   placement,
   minDate,
-  maxDate,
   onSelect,
 }: {
   value?: string;
   placement: 'start' | 'end';
   minDate: string;
-  maxDate?: string;
   onSelect: (value: string) => void;
 }) {
   const [month, setMonth] = useState(() => monthFromValue(value));
@@ -457,16 +433,13 @@ function CalendarPopover({
         {Array.from({ length: cellCount }, (_, index) => {
           const day = index < firstDay || index >= firstDay + daysInMonth ? null : index - firstDay + 1;
           const iso = day ? `${year}-${pad(monthIndex + 1)}-${pad(day)}` : '';
-          const isOutsideRange = Boolean(
-            day
-              && (iso < minDate || (maxDate && iso > maxDate)),
-          );
-          const disabled = !day || isOutsideRange;
+          const isPastDate = Boolean(day && iso < minDate);
+          const disabled = !day || isPastDate;
           return (
             <button
               key={`${iso}-${index}`}
               type="button"
-              className={`calendar-day${iso === value ? ' selected' : ''}${isOutsideRange ? ' disabled-date' : ''}`}
+              className={`calendar-day${iso === value ? ' selected' : ''}${isPastDate ? ' disabled-date' : ''}`}
               disabled={disabled}
               onClick={() => !disabled && onSelect(iso)}>
               {day ?? ''}
@@ -613,10 +586,6 @@ function toComparableDateTime(date?: string, time?: string) {
 function todayIso() {
   const now = new Date();
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-function laterIsoDate(first: string, second?: string) {
-  return second && second > first ? second : first;
 }
 
 function currentComparableDateTime() {

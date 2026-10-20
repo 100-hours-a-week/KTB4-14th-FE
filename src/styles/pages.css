@@ -3216,6 +3216,10 @@
   background: var(--cream);
 }
 
+.matching-result-screen > .footer-bar {
+  flex-shrink: 0;
+}
+
 .matching-result-scroll {
   padding-top: 28px;
   padding-bottom: 18px;
@@ -3263,6 +3267,14 @@
 .matching-candidate-list {
   display: grid;
   gap: 9px;
+}
+
+.matching-result-error {
+  margin: 0 0 16px;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .matching-candidate-card {
@@ -3338,7 +3350,7 @@
 
 .matching-result-fail {
   display: flex;
-  min-height: 100%;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;

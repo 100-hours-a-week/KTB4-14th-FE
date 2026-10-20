@@ -96,12 +96,6 @@ export class MockBackend {
   myTrips: data.TravelSummary[] = [];
   itineraries = new Map<number, data.BackendItinerary>();
   notifications: data.AppNotification[] = [];
-  notificationSettings = {
-    match_success_enabled: true,
-    chat_enabled: true,
-    travel_complete_enabled: true,
-    notification_enabled: true,
-  };
   generation: GenerationFrame[] = DEFAULT_GENERATION;
   /** 생성 완료/실패 시 알림을 자동으로 만든다 */
   notifyOnGeneration = true;
@@ -261,46 +255,6 @@ export class MockBackend {
       },
     }));
 
-    // 매칭 후보를 선택해 연결을 만들고, 해당 연결의 채팅방을 준비한다.
-    this.add('POST', '/api/v2/matches/responses', (req) => {
-      const targetUserId = Number(req.body?.target_user_id);
-      return {
-        status: 201,
-        body: {
-          match_connection_id: targetUserId + 1000,
-          matching_request_id: 1,
-          target_user_id: targetUserId,
-          status: 'ACTIVE',
-          selected_at: this.now.toISOString(),
-        },
-      };
-    });
-    this.add('POST', '/api/v2/match-connections/:matchConnectionId/chat-room', (req) => {
-      const matchConnectionId = Number(req.params.matchConnectionId);
-      const targetUserId = matchConnectionId - 1000;
-      return {
-        status: 201,
-        body: {
-          chat_room_id: matchConnectionId + 1000,
-          match_connection_id: matchConnectionId,
-          chat_name: '매칭 상대',
-          status: 'ACTIVE',
-          member_user_ids: [this.user.user_id, targetUserId],
-          created_at: this.now.toISOString(),
-        },
-      };
-    });
-
-    // 채팅방 진입 시 마지막으로 조회한 메시지까지 읽음 처리
-    this.add('PATCH', '/api/v2/chat/rooms/:roomId/read', (req) => ({
-      body: {
-        chat_room_id: Number(req.params.roomId),
-        last_read_chat_id: Number(req.body?.last_read_chat_id),
-        read_count: 0,
-        read_at: null,
-      },
-    }));
-
     // 지역 · 장소 검색(카카오 중계)
     this.add('GET', '/api/regions', () => ({ body: this.regions }));
     this.add('GET', '/api/places/search', (req) => {
@@ -364,11 +318,6 @@ export class MockBackend {
     this.add('POST', '/api/notifications/read-all', () => {
       this.notifications = this.notifications.map((n) => ({ ...n, is_read: true }));
       return { status: 204 };
-    });
-    this.add('GET', '/api/v2/notification-settings', () => ({ body: this.notificationSettings }));
-    this.add('PATCH', '/api/v2/notification-settings', (req) => {
-      this.notificationSettings = { ...this.notificationSettings, ...req.body };
-      return { body: this.notificationSettings };
     });
     this.add('GET', '/api/notifications/subscribe', () => {
       // 큐에 쌓인 알림을 흘려보내고 스트림을 닫는다. retry 값으로 EventSource 가 곧바로 재연결한다.

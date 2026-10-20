@@ -4,8 +4,6 @@ const KEYS = {
   user: 'audigo.user',
   travelDraft: 'audigo.travel_draft',
   travelGenerationRequests: 'audigo.travel_generation_requests',
-  matchingConditionDraft: 'audigo.matching_condition_draft',
-  matchingCandidatesResult: 'audigo.matching_candidates_result',
 } as const;
 
 function read(key: string) {
@@ -51,13 +49,6 @@ export function getTravelGenerationRequest(travelPlanId: number) {
 
 export const storage = {
   keys: KEYS,
-  clearMatchingCandidates() {
-    write(KEYS.matchingCandidatesResult, null);
-  },
-  clearMatchingState() {
-    write(KEYS.matchingConditionDraft, null);
-    write(KEYS.matchingCandidatesResult, null);
-  },
   clearSession() {
     write(KEYS.user, null);
     write('audigo.access_token', null);

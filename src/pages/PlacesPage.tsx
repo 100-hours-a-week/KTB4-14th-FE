@@ -7,7 +7,6 @@ import { Progress } from '@/components/Progress';
 import { useToast } from '@/context/ToastContext';
 import { MAX_REQUIRED_PLACES, useTravelDraft } from '@/context/TravelDraftContext';
 import { toDatetime } from '@/lib/options';
-import { isTravelDateRangeValid, MAX_TRAVEL_DAYS } from '@/lib/travelDates';
 import { saveTravelGenerationRequest } from '@/storage';
 import type { CreateTravelPlanRequest } from '@/types';
 import { useState } from 'react';
@@ -48,9 +47,6 @@ function validateDraftForGeneration(draft: ReturnType<typeof useTravelDraft>['dr
   if (!draft.region_id) return '여행 지역을 다시 선택해 주세요.';
   if (!draft.start_date || !draft.end_date) {
     return '여행 날짜를 모두 선택해 주세요.';
-  }
-  if (!isTravelDateRangeValid(draft.start_date, draft.end_date)) {
-    return `여행 기간은 최대 ${MAX_TRAVEL_DAYS}일까지 선택할 수 있어요.`;
   }
   if (!draft.companion || !draft.headcount) return '동행 유형과 인원을 확인해 주세요.';
   if (!draft.preference.pace_type || !draft.preference.transport_type) {

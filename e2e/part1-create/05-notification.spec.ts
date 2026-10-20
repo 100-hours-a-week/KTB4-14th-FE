@@ -156,6 +156,55 @@ test.describe('5. 알림 목록 및 이동', () => {
   });
 });
 
+test.describe('5-2. 알림 뒤로가기', () => {
+  test('NOTI-11 홈 이외의 화면에서 알림을 열어도 뒤로가기는 홈으로 이동한다', async ({ page }) => {
+    await page.goto('/matching/result?matchConnectionId=700');
+    await page.getByRole('button', { name: '알림', exact: true }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+
+    await page.getByRole('button', { name: '뒤로', exact: true }).click();
+
+    await expect(page).toHaveURL(/\/home$/);
+  });
+
+  test('NOTI-12 매칭 상세에서 알림으로 돌아온 뒤 브라우저 뒤로가기로 상세가 다시 열리지 않는다', { tag: '@P0' }, async ({ page, api }) => {
+    api.notifications = [notification({
+      notification_id: 12,
+      type: 'MATCH_SUCCESS',
+      title: '매칭 성공',
+      body: '여행 메이트와 매칭이 완료되었습니다.',
+      target_type: 'MATCH_CONNECTION',
+      target_id: 700,
+      travel_plan_id: undefined,
+    })];
+    await page.goto('/home');
+    await page.getByRole('button', { name: '알림', exact: true }).click();
+    await page.locator('.noti-row').click();
+    await expect(page).toHaveURL(/\/matching\/result\?matchConnectionId=700$/);
+
+    await page.getByRole('button', { name: '뒤로', exact: true }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+    await expect(page.locator('.noti-row.unread')).toHaveCount(0);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/notifications$/);
+    await page.getByRole('button', { name: '뒤로', exact: true }).click();
+
+    await expect(page).toHaveURL(/\/home$/);
+  });
+
+  test('NOTI-13 잘못된 매칭 알림 상세에서도 알림과 홈으로 순서대로 복귀한다', async ({ page }) => {
+    await page.goto('/home');
+    await page.goto('/matching/result?matchConnectionId=invalid');
+    await expect(page.getByRole('alert')).toContainText('매칭 정보를 확인할 수 없어요');
+
+    await page.getByRole('button', { name: '뒤로', exact: true }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/home$/);
+  });
+});
+
 test.describe('5-1. v2 알림 설정', () => {
   test('NOTI-10 D-1 항목을 제외하고 변경한 설정을 유지한다', { tag: '@P1' }, async ({ page }) => {
     await page.goto('/my');

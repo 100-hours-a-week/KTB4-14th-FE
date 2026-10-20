@@ -189,7 +189,7 @@ export function MatchingResultPage() {
     if (!validMatchConnectionId) {
       return (
         <section className="screen matching-result-screen">
-          <Header title="매칭 결과" onBack={() => navigate('/notifications')} showBell />
+          <Header title="매칭 결과" onBack={() => navigate('/notifications', { replace: true })} showBell />
           <div className="scroll matching-result-fail" role="alert">
             <div className="matching-result-icon fail" aria-hidden="true">!</div>
             <h2>매칭 정보를 확인할 수 없어요</h2>
@@ -201,7 +201,7 @@ export function MatchingResultPage() {
 
     return (
       <section className="screen matching-result-screen">
-        <Header title="매칭 완료" onBack={() => navigate('/notifications')} showBell />
+        <Header title="매칭 완료" onBack={() => navigate('/notifications', { replace: true })} showBell />
         <div className="scroll matching-result-scroll">
           <div className="matching-result-icon" aria-hidden="true">✓</div>
           <h2 className="matching-result-title">매칭이 완료됐어요!</h2>

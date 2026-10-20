@@ -62,7 +62,7 @@ export function NotificationsPage() {
     <section className="screen">
       <Header
         title="알림"
-        onBack={() => navigate(-1)}
+        onBack={() => navigate('/home', { replace: true })}
         right={
           <button
             type="button"

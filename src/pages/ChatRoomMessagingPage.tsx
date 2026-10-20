@@ -5,11 +5,12 @@ import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { getMatchingChatReturn } from '@/lib/matchingChatNavigation';
 import type { ChatRoomDetailMessage, ChatRoomDetailResponse } from '@/types/chat-detail';
 import type { ChatMessageSearchResponse } from '@/types/chat-detail';
 import type { ChatMessageSendResponse } from '@/types';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
 const CATCH_UP_PAGE_SIZE = 100;
@@ -107,6 +108,8 @@ function MessageBubble({ message, mine, keyword, selected }: {
 export function ChatRoomMessagingPage() {
   const { roomId: rawRoomId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const matchingReturn = getMatchingChatReturn(location.state);
   const { user } = useAuth();
   const toast = useToast();
   const roomId = Number(rawRoomId);
@@ -713,7 +716,12 @@ export function ChatRoomMessagingPage() {
       <Header
         className="chat-detail-header"
         title={title}
-        onBack={() => navigate('/chat')}
+        onBack={() => matchingReturn
+          ? navigate(`/matching/result?matchConnectionId=${matchingReturn.matchConnectionId}`, {
+            replace: true,
+            state: { origin: matchingReturn.origin, notificationBody: matchingReturn.notificationBody },
+          })
+          : navigate('/chat', { replace: true })}
         right={detail ? (
           <div className="chat-detail-header-actions">
             <span className={`chat-detail-presence${detail.opponent.is_online ? ' online' : ''}`}>

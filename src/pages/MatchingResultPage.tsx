@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { useToast } from '@/context/ToastContext';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import { matchingResultDestination, restoreMatchingSession } from '@/lib/matchingSession';
+import type { MatchingChatReturn } from '@/lib/matchingChatNavigation';
 import { getJson, setJson, storage } from '@/storage';
 import type { MatchingCandidate, MatchingCandidatesResponse, TravelPaceType, TravelTheme } from '@/types';
 import { useEffect, useRef, useState } from 'react';
@@ -33,10 +34,13 @@ export function MatchingResultPage() {
   const state = location.state as {
     candidatesResponse?: MatchingCandidatesResponse | null;
     notificationBody?: string;
+    origin?: MatchingChatReturn['origin'];
   } | null;
   const rawMatchConnectionId = searchParams.get('matchConnectionId');
   const matchConnectionId = Number(rawMatchConnectionId);
-  const openedFromNotification = rawMatchConnectionId !== null;
+  const showingConnection = rawMatchConnectionId !== null;
+  const connectionOrigin = state?.origin === 'matching' ? 'matching' : 'notification';
+  const connectionBackTo = connectionOrigin === 'matching' ? '/home' : '/notifications';
   const validMatchConnectionId = Number.isSafeInteger(matchConnectionId) && matchConnectionId > 0;
   const [candidatesResponse, setCandidatesResponse] = useState<MatchingCandidatesResponse | null>(() =>
     state && 'candidatesResponse' in state
@@ -155,7 +159,13 @@ export function MatchingResultPage() {
       if (!Number.isSafeInteger(chatRoom.chat_room_id) || chatRoom.chat_room_id < 1) {
         throw new Error('채팅방 ID가 올바르지 않습니다.');
       }
-      navigate(`/chat/${chatRoom.chat_room_id}`);
+      navigate(`/chat/${chatRoom.chat_room_id}`, {
+        state: { matchingReturn: {
+          matchConnectionId,
+          origin: connectionOrigin,
+          notificationBody: state?.notificationBody,
+        } satisfies MatchingChatReturn },
+      });
     } catch {
       toast.show('매칭 정보를 확인하지 못했어요. 다시 시도해 주세요.');
     } finally {
@@ -172,11 +182,21 @@ export function MatchingResultPage() {
     try {
       const connection = await matchingApi.respondCandidate(candidate.user_id);
       storage.clearMatchingState();
+      const matchingReturn: MatchingChatReturn = {
+        matchConnectionId: connection.match_connection_id,
+        origin: 'matching',
+        notificationBody: `${candidate.nickname}님과 매칭이 완료되었습니다.`,
+      };
+      // The selected session is closed; browser back must not reopen its candidate actions.
+      navigate(`/matching/result?matchConnectionId=${connection.match_connection_id}`, {
+        replace: true,
+        state: { origin: matchingReturn.origin, notificationBody: matchingReturn.notificationBody },
+      });
       const chatRoom = await matchingApi.prepareChatRoom(connection.match_connection_id);
       if (!Number.isSafeInteger(chatRoom.chat_room_id) || chatRoom.chat_room_id < 1) {
         throw new Error('채팅방 ID가 올바르지 않습니다.');
       }
-      navigate(`/chat/${chatRoom.chat_room_id}`);
+      navigate(`/chat/${chatRoom.chat_room_id}`, { state: { matchingReturn } });
     } catch {
       toast.show('채팅방을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -185,11 +205,11 @@ export function MatchingResultPage() {
     }
   };
 
-  if (openedFromNotification) {
+  if (showingConnection) {
     if (!validMatchConnectionId) {
       return (
         <section className="screen matching-result-screen">
-          <Header title="매칭 결과" onBack={() => navigate('/notifications', { replace: true })} showBell />
+          <Header title="매칭 결과" onBack={() => navigate(connectionBackTo, { replace: true })} showBell />
           <div className="scroll matching-result-fail" role="alert">
             <div className="matching-result-icon fail" aria-hidden="true">!</div>
             <h2>매칭 정보를 확인할 수 없어요</h2>
@@ -201,7 +221,7 @@ export function MatchingResultPage() {
 
     return (
       <section className="screen matching-result-screen">
-        <Header title="매칭 완료" onBack={() => navigate('/notifications', { replace: true })} showBell />
+        <Header title="매칭 완료" onBack={() => navigate(connectionBackTo, { replace: true })} showBell />
         <div className="scroll matching-result-scroll">
           <div className="matching-result-icon" aria-hidden="true">✓</div>
           <h2 className="matching-result-title">매칭이 완료됐어요!</h2>
@@ -211,7 +231,7 @@ export function MatchingResultPage() {
         </div>
         <div className="footer-bar matching-footer">
           <Button
-            label="메시지 보내기"
+            label="채팅 시작하기"
             loading={preparingCandidateUserId === matchConnectionId}
             onClick={() => void openMatchedChat()}
           />
@@ -246,7 +266,7 @@ export function MatchingResultPage() {
           ◷
         </div>
         <h2 className="matching-result-title">매칭이 완료됐어요!</h2>
-        <p className="matching-result-subtitle">마음에 드는 사람에게 메시지를 보내 인사해보세요.</p>
+        <p className="matching-result-subtitle">마음에 드는 사람과 채팅을 시작해보세요.</p>
 
         {isError ? (
           <p className="matching-result-error" role="alert">
@@ -273,7 +293,7 @@ export function MatchingResultPage() {
               <button
                 type="button"
                 className="matching-candidate-send"
-                aria-label={`${candidate.nickname}에게 메시지 보내기`}
+                aria-label={`${candidate.nickname}님과 채팅 시작하기`}
                 aria-busy={preparingCandidateUserId === candidate.user_id}
                 disabled={preparingCandidateUserId !== null || rematching || resetting}
                 onClick={() => void openChatEntry(candidate)}>

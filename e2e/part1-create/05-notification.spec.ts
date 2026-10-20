@@ -107,7 +107,7 @@ test.describe('5. 알림 목록 및 이동', () => {
 
     await expect(page).toHaveURL(/\/matching\/result\?matchConnectionId=700$/);
     await expect(page.getByText('박유혁님과 매칭이 완료되었습니다.')).toBeVisible();
-    await page.getByRole('button', { name: '메시지 보내기' }).click();
+    await page.getByRole('button', { name: '채팅 시작하기' }).click();
     await expect(page).toHaveURL(/\/chat\/1700$/);
     expect(api.callsTo('PATCH', '/api/notifications/7/read')).toHaveLength(1);
   });
@@ -149,7 +149,7 @@ test.describe('5. 알림 목록 및 이동', () => {
 
     await page.goto('/notifications');
     await page.locator('.noti-row').click();
-    await page.getByRole('button', { name: '메시지 보내기' }).click();
+    await page.getByRole('button', { name: '채팅 시작하기' }).click();
 
     await expect(page).toHaveURL(/\/matching\/result\?matchConnectionId=701$/);
     await expect(page.locator('.toast')).toHaveText('매칭 정보를 확인하지 못했어요. 다시 시도해 주세요.');

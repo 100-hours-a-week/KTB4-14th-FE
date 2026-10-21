@@ -96,7 +96,6 @@ export function ChatPage() {
   const pendingRealtimeRefreshRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
-  // Keep the newest list available to async refreshes without relying on a stale render closure.
   const roomsRef = useRef<ChatRoom[]>([]);
   const pageRef = useRef<ChatRoomListResponse | null>(null);
   const refreshRoomsRef = useRef<() => void>(() => undefined);
@@ -246,7 +245,9 @@ export function ChatPage() {
 
     const unsubscribe = subscribe({
       onEvent: (event) => {
-        if (event.event_type === 'MESSAGE_CREATED') scheduleRefresh();
+        if (event.event_type === 'MESSAGE_CREATED' || event.event_type === 'PRESENCE_UPDATED') {
+          scheduleRefresh();
+        }
       },
       onConnected: scheduleRefresh,
     });

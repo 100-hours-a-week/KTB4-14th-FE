@@ -446,6 +446,7 @@ export function ChatRoomMessagingPage() {
     let catchingUp = false;
     let catchUpAgain = false;
     let catchUpRetryTimer: number | null = null;
+    let presenceUpdateVersion = 0;
 
     const advancePendingSequences = () => {
       while (pendingSequencesRef.current.delete(sequenceCursorRef.current + 1)) {
@@ -462,9 +463,13 @@ export function ChatRoomMessagingPage() {
     };
 
     const syncReadStates = async () => {
+      const requestPresenceVersion = presenceUpdateVersion;
       try {
         const latestDetail = await chatRoomDetailApi.getRoomDetail(roomId, { size: PAGE_SIZE });
         if (!active) return;
+        if (requestPresenceVersion === presenceUpdateVersion) {
+          setDetail((current) => current ? { ...current, opponent: latestDetail.opponent } : current);
+        }
         const readStates = new Map(
           latestDetail.chats.map((message) => [message.chat_id, message.is_read]),
         );
@@ -530,6 +535,16 @@ export function ChatRoomMessagingPage() {
     };
 
     const handleMessage = (event: ChatRealtimeEvent) => {
+      if (event.event_type === 'PRESENCE_UPDATED') {
+        if (event.user_id !== opponentUserId) return;
+        presenceUpdateVersion += 1;
+        setDetail((current) => current ? {
+          ...current,
+          opponent: { ...current.opponent, is_online: event.is_online },
+        } : current);
+        return;
+      }
+
       if (event.event_type === 'READ_RECEIPT_UPDATED') {
         if (event.reader_id !== opponentUserId || currentUserId === undefined) return;
         setMessages((current) => current.map((message) => (
@@ -555,6 +570,11 @@ export function ChatRoomMessagingPage() {
 
     const unsubscribe = subscribe({
       onEvent: (event) => {
+        if (event.event_type === 'PRESENCE_UPDATED') {
+          handleMessage(event);
+          return;
+        }
+
         const eventRoomId = event.event_type === 'MESSAGE_CREATED'
           ? event.data.room_id
           : event.room_id;

@@ -13,11 +13,13 @@ export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false';
 export class ApiError extends Error {
   status: number;
   payload?: unknown;
+  retryAfterSeconds?: number;
 
-  constructor(status: number, message: string, payload?: unknown) {
+  constructor(status: number, message: string, payload?: unknown, retryAfterSeconds?: number) {
     super(message);
     this.status = status;
     this.payload = payload;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -79,7 +81,16 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     | null;
 
   if (!response.ok) {
-    throw new ApiError(response.status, json && 'message' in json && json.message ? json.message : '요청에 실패했습니다.', json);
+    const retryAfterHeader = response.headers.get('Retry-After');
+    const retryAfterSeconds = retryAfterHeader && /^\d+$/.test(retryAfterHeader)
+      ? Number(retryAfterHeader)
+      : undefined;
+    throw new ApiError(
+      response.status,
+      json && 'message' in json && json.message ? json.message : '요청에 실패했습니다.',
+      json,
+      retryAfterSeconds,
+    );
   }
 
   if (json && typeof json === 'object' && 'data' in json) {

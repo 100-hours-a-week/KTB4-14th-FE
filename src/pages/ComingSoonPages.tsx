@@ -9,12 +9,3 @@ export function MatchingPage() {
     </section>
   );
 }
-
-export function ChatPage() {
-  return (
-    <section className="screen">
-      <Header title="채팅" showBell />
-      <ComingSoon />
-    </section>
-  );
-}

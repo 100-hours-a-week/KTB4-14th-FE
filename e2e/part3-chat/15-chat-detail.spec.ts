@@ -180,4 +180,64 @@ test.describe('15. 채팅방 상세 조회', () => {
     await expect(composer).toHaveValue('나'.repeat(500));
     await expect(page.getByText('유니코드 문자 기준 (공백 포함) 500/500')).toBeVisible();
   });
+
+  test('CHAT-04 엔터로 전송한 뒤 입력창 포커스를 유지해 다음 메시지를 바로 입력한다', { tag: '@P1' }, async ({ page, api }) => {
+    const focusRoomId = 56;
+    const sentMessages: string[] = [];
+
+    api.on('GET', '/api/v2/chat/rooms/:roomId', {
+      body: {
+        chat_room_id: focusRoomId,
+        status: 'ACTIVE',
+        opponent: {
+          user_id: 2,
+          chat_name: '지민',
+          profile_image_url: null,
+          is_online: false,
+        },
+        chats: [],
+        size: 0,
+        chat_cursor_time: null,
+        chat_cursor_id: null,
+        has_next: false,
+      },
+    });
+    api.on('GET', '/api/v2/chat/rooms/:roomId/messages', {
+      body: { messages: [], size: 0, next_after_message_seq: 0, has_next: false },
+    });
+    api.on('POST', `/api/v2/chat/rooms/${focusRoomId}/messages`, (request) => {
+      const content = String(request.body?.content ?? '');
+      sentMessages.push(content);
+      return {
+        status: 201,
+        body: {
+          message_id: 800 + sentMessages.length,
+          room_id: focusRoomId,
+          sender_id: api.user.user_id,
+          client_message_id: request.body?.client_message_id,
+          message_seq: sentMessages.length,
+          content,
+          sent_at: '2026-10-01T09:00:00+09:00',
+        },
+      };
+    });
+
+    await page.goto(`/chat/${focusRoomId}`);
+
+    const composer = page.getByRole('textbox', { name: '메시지 입력' });
+    await expect(composer).toBeVisible();
+    await composer.fill('첫 번째 메시지');
+    await composer.press('Enter');
+
+    await expect(page.locator('.chat-message-bubble')).toHaveText(['첫 번째 메시지']);
+    await expect(composer).toBeFocused();
+
+    await page.keyboard.type('두 번째 메시지');
+    await expect(composer).toHaveValue('두 번째 메시지');
+    await composer.press('Enter');
+
+    await expect(page.locator('.chat-message-bubble')).toHaveText(['첫 번째 메시지', '두 번째 메시지']);
+    await expect(composer).toBeFocused();
+    expect(sentMessages).toEqual(['첫 번째 메시지', '두 번째 메시지']);
+  });
 });

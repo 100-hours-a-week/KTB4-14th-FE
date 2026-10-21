@@ -156,7 +156,19 @@ export function ChatRoomMessagingPage() {
   const pendingSequencesRef = useRef(new Set<number>());
   const retryRequestRef = useRef<{ content: string; clientMessageId: string } | null>(null);
   const sendingRef = useRef(false);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const restoreComposerFocusRoomRef = useRef<number | null>(null);
   const leavingRef = useRef(false);
+
+  useEffect(() => {
+    if (sending || restoreComposerFocusRoomRef.current === null) return;
+
+    const shouldRestoreFocus = restoreComposerFocusRoomRef.current === roomId;
+    restoreComposerFocusRoomRef.current = null;
+    const focusWasClearedByDisablingComposer =
+      document.activeElement === document.body || document.activeElement === composerRef.current;
+    if (shouldRestoreFocus && focusWasClearedByDisablingComposer) composerRef.current?.focus();
+  }, [roomId, sending]);
 
   const mergeMessages = useCallback((incoming: ChatMessage[]) => {
     if (incoming.length === 0) return;
@@ -635,6 +647,7 @@ export function ChatRoomMessagingPage() {
       return;
     }
 
+    restoreComposerFocusRoomRef.current = document.activeElement === composerRef.current ? roomId : null;
     const previousRequest = retryRequestRef.current;
     const clientMessageId = previousRequest?.content === content
       ? previousRequest.clientMessageId
@@ -869,6 +882,7 @@ export function ChatRoomMessagingPage() {
               {sendError ? <p className="chat-composer-error" role="alert">{sendError}</p> : null}
               <div className="chat-composer-row">
                 <textarea
+                  ref={composerRef}
                   aria-label="메시지 입력"
                   className="chat-composer-input"
                   rows={2}

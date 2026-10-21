@@ -14,6 +14,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
 const CATCH_UP_PAGE_SIZE = 100;
+const MAX_MESSAGE_CHARACTERS = 500;
 
 type ChatMessage = ChatRoomDetailMessage & { message_seq?: number };
 
@@ -629,7 +630,7 @@ export function ChatRoomMessagingPage() {
       setSendError('메시지를 입력해 주세요.');
       return;
     }
-    if (characterCount > 500) {
+    if (characterCount > MAX_MESSAGE_CHARACTERS) {
       setSendError('앞뒤 공백을 정리한 메시지는 유니코드 문자 기준 500자까지 보낼 수 있어요.');
       return;
     }
@@ -875,7 +876,11 @@ export function ChatRoomMessagingPage() {
                   disabled={sending}
                   placeholder="메시지를 입력하세요"
                   onChange={(event) => {
-                    setDraft(event.target.value);
+                    const input = event.currentTarget.value;
+                    const characters = Array.from(input);
+                    setDraft(characters.length > MAX_MESSAGE_CHARACTERS
+                      ? characters.slice(0, MAX_MESSAGE_CHARACTERS).join('')
+                      : input);
                     setSendError(null);
                   }}
                   onKeyDown={handleComposerKeyDown}
@@ -883,13 +888,13 @@ export function ChatRoomMessagingPage() {
                 <button
                   type="submit"
                   className="chat-composer-send"
-                  disabled={sending || Array.from(normalizeMessageContent(draft)).length === 0 || Array.from(normalizeMessageContent(draft)).length > 500}>
+                  disabled={sending || Array.from(normalizeMessageContent(draft)).length === 0 || Array.from(draft).length > MAX_MESSAGE_CHARACTERS}>
                   {sending ? '전송 중' : '전송'}
                 </button>
               </div>
               <div className="chat-composer-footer">
                 <span>{realtimeConnected ? '실시간 수신 연결됨' : USE_MOCK ? '목 데이터 모드' : '실시간 연결 중'}</span>
-                <span>유니코드 문자 기준 {Array.from(normalizeMessageContent(draft)).length}/500</span>
+                <span>유니코드 문자 기준 (공백 포함) {Array.from(draft).length}/{MAX_MESSAGE_CHARACTERS}</span>
               </div>
             </form>
           ) : null}

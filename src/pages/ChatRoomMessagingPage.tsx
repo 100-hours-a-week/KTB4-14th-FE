@@ -4,6 +4,7 @@ import { chatApi, chatRoomDetailApi } from '@/api';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
+import { useChatRealtime } from '@/context/ChatRealtimeContext';
 import { useToast } from '@/context/ToastContext';
 import { getMatchingChatReturn } from '@/lib/matchingChatNavigation';
 import type { ChatRoomDetailMessage, ChatRoomDetailResponse } from '@/types/chat-detail';
@@ -112,6 +113,7 @@ export function ChatRoomMessagingPage() {
   const location = useLocation();
   const matchingReturn = getMatchingChatReturn(location.state);
   const { user } = useAuth();
+  const { connected: realtimeConnected, subscribe } = useChatRealtime();
   const toast = useToast();
   const roomId = Number(rawRoomId);
   const validRoomId = Number.isSafeInteger(roomId) && roomId > 0;
@@ -129,7 +131,6 @@ export function ChatRoomMessagingPage() {
   const [leaving, setLeaving] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResult, setSearchResult] = useState<ChatMessageSearchResponse | null>(null);
@@ -350,7 +351,6 @@ export function ChatRoomMessagingPage() {
     setDraft('');
     setSendError(null);
     setSyncError(false);
-    setRealtimeConnected(false);
     searchRequestRef.current += 1;
     targetRequestRef.current += 1;
     searchActiveRef.current = false;
@@ -553,27 +553,23 @@ export function ChatRoomMessagingPage() {
       if (sequence > sequenceCursorRef.current) void catchUp();
     };
 
-    let disconnect: (() => void) | null = null;
-    void import('@/api/chatRealtime').then(({ connectChatRealtime }) => {
-      if (!active) return;
-      disconnect = connectChatRealtime(
-        roomId,
-        handleMessage,
-        (connected) => {
-          if (active) setRealtimeConnected(connected);
-        },
-        () => {
-          void catchUp();
-          void syncReadStates();
-        },
-      );
+    const unsubscribe = subscribe({
+      onEvent: (event) => {
+        const eventRoomId = event.event_type === 'MESSAGE_CREATED'
+          ? event.data.room_id
+          : event.room_id;
+        if (eventRoomId === roomId) handleMessage(event);
+      },
+      onConnected: () => {
+        void catchUp();
+        void syncReadStates();
+      },
     });
 
     return () => {
       active = false;
       if (catchUpRetryTimer !== null) window.clearTimeout(catchUpRetryTimer);
-      disconnect?.();
-      setRealtimeConnected(false);
+      unsubscribe();
     };
   }, [
     detail?.opponent.user_id,
@@ -582,6 +578,7 @@ export function ChatRoomMessagingPage() {
     markRoomReadThrough,
     mergeMessages,
     roomId,
+    subscribe,
     user?.user_id,
     validRoomId,
   ]);

@@ -1,6 +1,7 @@
 import { test, expect } from '../support/fixtures';
 
 const roomId = 54;
+const limitRoomId = 55;
 const olderCursorTime = '2026-10-01T08:30:00+09:00';
 const initialOldestTime = '2026-10-01T08:59:00+09:00';
 const initialSingleMessageTime = '2026-10-01T09:00:00+09:00';
@@ -136,5 +137,47 @@ test.describe('15. 채팅방 상세 조회', () => {
     expect(olderPageCall?.query.get('chat_cursor_time')).toBe(initialSingleMessageTime);
     expect(olderPageCall?.query.get('chat_cursor_id')).toBe('103');
     expect(detailCalls.every((call) => call.method === 'GET')).toBe(true);
+  });
+
+  test('CHAT-03 채팅 입력은 공백 포함 500자까지만 허용하고 초과 붙여넣기를 자른다', { tag: '@P1' }, async ({ page, api }) => {
+    api.on('GET', '/api/v2/chat/rooms/:roomId', {
+      body: {
+        chat_room_id: limitRoomId,
+        status: 'ACTIVE',
+        opponent: {
+          user_id: 2,
+          chat_name: '지민',
+          profile_image_url: null,
+          is_online: false,
+        },
+        chats: [],
+        size: 0,
+        chat_cursor_time: null,
+        chat_cursor_id: null,
+        has_next: false,
+      },
+    });
+    api.on('GET', '/api/v2/chat/rooms/:roomId/messages', {
+      body: { messages: [], size: 0, next_after_message_seq: 0, has_next: false },
+    });
+
+    await page.goto(`/chat/${limitRoomId}`);
+
+    const composer = page.getByRole('textbox', { name: '메시지 입력' });
+    await expect(composer).toBeVisible();
+
+    const atLimit = `${' '.repeat(499)}가`;
+    await composer.fill(atLimit);
+    await expect(composer).toHaveValue(atLimit);
+    await expect(page.getByText('유니코드 문자 기준 (공백 포함) 500/500')).toBeVisible();
+
+    await composer.press('End');
+    await page.keyboard.insertText('나');
+    await expect(composer).toHaveValue(atLimit);
+
+    await composer.fill('');
+    await page.keyboard.insertText('나'.repeat(510));
+    await expect(composer).toHaveValue('나'.repeat(500));
+    await expect(page.getByText('유니코드 문자 기준 (공백 포함) 500/500')).toBeVisible();
   });
 });

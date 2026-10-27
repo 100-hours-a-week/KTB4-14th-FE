@@ -34,7 +34,7 @@ test.describe('2. 여행 생성', () => {
     await expect(page).toHaveURL(/\/generating\/\d+\?job_id=\d+/);
     await expect(page.getByRole('heading', { name: '최적의 여행을 만드는 중입니다' })).toBeVisible();
 
-    const [request] = api.callsTo('POST', '/api/v2/travel-plans');
+    const [request] = api.callsTo('POST', '/api/travel-plans');
     expect(request.body).toMatchObject({
       region_id: 11,
       headcount: 2,
@@ -54,7 +54,7 @@ test.describe('2. 여행 생성', () => {
     await generateButton(page).click();
 
     await expect(page).toHaveURL(/\/generating\/\d+/);
-    const [request] = api.callsTo('POST', '/api/v2/travel-plans');
+    const [request] = api.callsTo('POST', '/api/travel-plans');
     expect(request.body.required_places).toEqual([]);
   });
 

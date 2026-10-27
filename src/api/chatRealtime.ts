@@ -15,16 +15,7 @@ export type ChatReadReceiptUpdatedEvent = {
   read_at: string | null;
 };
 
-export type ChatPresenceUpdatedEvent = {
-  event_type: 'PRESENCE_UPDATED';
-  user_id: number;
-  is_online: boolean;
-};
-
-export type ChatRealtimeEvent =
-  | ChatMessageCreatedEvent
-  | ChatReadReceiptUpdatedEvent
-  | ChatPresenceUpdatedEvent;
+export type ChatRealtimeEvent = ChatMessageCreatedEvent | ChatReadReceiptUpdatedEvent;
 
 function websocketUrl() {
   const baseUrl = API_BASE_URL.replace(/\/$/, '');
@@ -61,14 +52,6 @@ function parseMessage(frame: IMessage): ChatRealtimeEvent | null {
       return event as unknown as ChatReadReceiptUpdatedEvent;
     }
 
-    if (
-      event.event_type === 'PRESENCE_UPDATED' &&
-      typeof event.user_id === 'number' &&
-      typeof event.is_online === 'boolean'
-    ) {
-      return event as unknown as ChatPresenceUpdatedEvent;
-    }
-
     return null;
   } catch {
     return null;
@@ -92,13 +75,8 @@ export function connectChatRealtime(
         const event = parseMessage(frame);
         const eventRoomId = event?.event_type === 'MESSAGE_CREATED'
           ? event.data.room_id
-          : event?.event_type === 'READ_RECEIPT_UPDATED'
-            ? event.room_id
-            : null;
-        if (
-          event &&
-          (event.event_type === 'PRESENCE_UPDATED' || roomId === null || eventRoomId === roomId)
-        ) onMessage(event);
+          : event?.room_id;
+        if (event && (roomId === null || eventRoomId === roomId)) onMessage(event);
       });
       onConnected();
     },

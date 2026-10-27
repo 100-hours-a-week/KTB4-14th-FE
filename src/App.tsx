@@ -1,7 +1,6 @@
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { ToastProvider } from '@/context/ToastContext';
-import { ChatRealtimeProvider } from '@/context/ChatRealtimeContext';
 import { TravelDraftProvider } from '@/context/TravelDraftContext';
 import { TabLayout } from '@/components/Layout';
 import { ChatPage } from '@/pages/ChatRoomsPage';
@@ -64,49 +63,47 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <TravelDraftProvider>
-          <ChatRealtimeProvider>
-            <div className="app-shell">
-              <div className="phone">
-                <ToastProvider>
-                  <NotificationProvider>
-                    <Routes>
-                      <Route path="/" element={<Gate />} />
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/auth/kakao" element={<KakaoCallbackPage />} />
-                      <Route path="/policies" element={<PoliciesPage />} />
-                      <Route element={<ProtectedRoute />}>
-                        <Route element={<TabLayout />}>
-                          <Route path="/home" element={<HomePage />} />
-                          <Route path="/matching" element={<MatchingPage />} />
-                          <Route path="/matching/progress" element={<MatchingProgressPage />} />
-                          <Route path="/matching/result" element={<MatchingResultPage />} />
-                          <Route path="/chat" element={<ChatPage />} />
-                          <Route path="/my" element={<MyPage />} />
-                        </Route>
-                        <Route path="/chat/:roomId" element={<ChatRoomMessagingPage />} />
-                        <Route path="/notifications" element={<NotificationsPage />} />
-                        <Route path="/create-travel" element={<CreateTravelPage />} />
-                        <Route path="/create-travel/preference" element={<PreferencePage />} />
-                        <Route path="/create-travel/places" element={<PlacesPage />} />
-                        <Route path="/create-travel/map-search" element={<MapSearchPage />} />
-                        <Route path="/generating/:id" element={<GeneratingPage />} />
-                        <Route path="/output/:id/places" element={<OutputPlacesPage />} />
-                        <Route path="/output/:id/routes" element={<OutputRoutesPage />} />
-                        <Route path="/output/:id" element={<Navigate to="places" replace />} />
-                        <Route path="/itinerary/:id" element={<ItineraryPage />} />
-                        <Route path="/checklist/:id" element={<ChecklistPage />} />
-                        <Route path="/video/:id" element={<VideoPage />} />
-                        <Route path="/my-trips" element={<MyTripsPage />} />
-                        <Route path="/matching-settings" element={<MatchingSettingsPage />} />
-                        <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+          <div className="app-shell">
+            <div className="phone">
+              <ToastProvider>
+                <NotificationProvider>
+                  <Routes>
+                    <Route path="/" element={<Gate />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/auth/kakao" element={<KakaoCallbackPage />} />
+                    <Route path="/policies" element={<PoliciesPage />} />
+                    <Route element={<ProtectedRoute />}>
+                      <Route element={<TabLayout />}>
+                        <Route path="/home" element={<HomePage />} />
+                        <Route path="/matching" element={<MatchingPage />} />
+                        <Route path="/matching/progress" element={<MatchingProgressPage />} />
+                        <Route path="/matching/result" element={<MatchingResultPage />} />
+                        <Route path="/chat" element={<ChatPage />} />
+                        <Route path="/my" element={<MyPage />} />
                       </Route>
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </NotificationProvider>
-                </ToastProvider>
-              </div>
+                      <Route path="/chat/:roomId" element={<ChatRoomMessagingPage />} />
+                      <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/create-travel" element={<CreateTravelPage />} />
+                      <Route path="/create-travel/preference" element={<PreferencePage />} />
+                      <Route path="/create-travel/places" element={<PlacesPage />} />
+                      <Route path="/create-travel/map-search" element={<MapSearchPage />} />
+                      <Route path="/generating/:id" element={<GeneratingPage />} />
+                      <Route path="/output/:id/places" element={<OutputPlacesPage />} />
+                      <Route path="/output/:id/routes" element={<OutputRoutesPage />} />
+                      <Route path="/output/:id" element={<Navigate to="places" replace />} />
+                      <Route path="/itinerary/:id" element={<ItineraryPage />} />
+                      <Route path="/checklist/:id" element={<ChecklistPage />} />
+                      <Route path="/video/:id" element={<VideoPage />} />
+                      <Route path="/my-trips" element={<MyTripsPage />} />
+                      <Route path="/matching-settings" element={<MatchingSettingsPage />} />
+                      <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+                    </Route>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </NotificationProvider>
+              </ToastProvider>
             </div>
-          </ChatRealtimeProvider>
+          </div>
         </TravelDraftProvider>
       </AuthProvider>
     </BrowserRouter>

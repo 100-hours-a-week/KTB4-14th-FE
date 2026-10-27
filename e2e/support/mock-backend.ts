@@ -313,18 +313,18 @@ export class MockBackend {
     this.add('GET', '/api/travel-plans/upcoming', () => ({ body: this.upcoming }));
     this.add('GET', '/api/travel-plans/recent', () => ({ body: this.recent }));
     this.add('GET', '/api/travel-plans/me', () => ({ body: this.myTrips }));
-    this.add('POST', '/api/v2/travel-plans', () => {
+    this.add('POST', '/api/travel-plans', () => {
       if (this.blockConcurrentGeneration && this.hasRunningJob()) {
         return { status: 409, body: { message: 'travel_generation_in_progress' } };
       }
       const planId = this.nextPlanId++;
       const jobId = this.startJob(planId);
-      return { status: 202, body: { travel_plan_id: planId, generation_job_id: jobId, status: 'GENERATING' } };
+      return { status: 201, body: { travel_plan_id: planId, generation_job_id: jobId, status: 'GENERATING' } };
     });
-    this.add('POST', '/api/v2/travel-plans/:id/regeneration', (req) => {
+    this.add('POST', '/api/travel-plans/:id/regeneration', (req) => {
       const planId = Number(req.params.id);
       const jobId = this.startJob(planId);
-      return { status: 202, body: { travel_plan_id: planId, generation_job_id: jobId, status: 'GENERATING' } };
+      return { status: 201, body: { travel_plan_id: planId, generation_job_id: jobId, status: 'GENERATING' } };
     });
     this.add('GET', '/api/ai-generation-jobs/:id', (req) => {
       const job = this.jobs.get(Number(req.params.id));

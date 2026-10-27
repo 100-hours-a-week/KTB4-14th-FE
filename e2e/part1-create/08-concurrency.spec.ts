@@ -23,7 +23,7 @@ test.describe('8. 동시성 · 멱등성', () => {
     await expect(reopened.locator('.step')).toHaveCount(4);
     await expect(reopened.getByRole('heading', { name: '최적의 여행을 만드는 중입니다' })).toBeVisible();
     await expect(reopened.getByRole('button', { name: 'AI 여행 생성하기' })).toHaveCount(0);
-    expect(api.callsTo('POST', '/api/v2/travel-plans')).toHaveLength(1);
+    expect(api.callsTo('POST', '/api/travel-plans')).toHaveLength(1);
   });
 
   test.skip('CONC-03 LLM 성공 직후 DB 저장 실패 시 LLM 재호출 없이 저장만 재시도', { tag: ['@P1', '@BE'] }, async () => {
@@ -48,7 +48,7 @@ test.describe('8. 동시성 · 멱등성', () => {
     await expect(tabB.locator('.toast')).toBeVisible();
     await expect(tabB).toHaveURL(/\/create-travel\/places$/);
 
-    expect(api.callsTo('POST', '/api/v2/travel-plans')).toHaveLength(2);
+    expect(api.callsTo('POST', '/api/travel-plans')).toHaveLength(2);
     expect([...api.jobs.values()]).toHaveLength(1);
   });
 });

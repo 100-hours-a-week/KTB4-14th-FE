@@ -84,14 +84,14 @@ export const travelsApi = {
     });
   },
 
-  /** POST /api/v2/travel-plans — SQS 여행 생성 요청. GENERATING 상태로 접수 */
+  /** POST /api/travel-plans — 여행 생성 요청. GENERATING 상태로 생성 */
   async create(body: CreateTravelPlanRequest) {
     if (USE_MOCK) {
       const travel_plan_id = nextPlanId++;
       generationStore.set(travel_plan_id, { createdAt: Date.now() });
       return { travel_plan_id, generation_job_id: travel_plan_id, status: 'GENERATING' as const };
     }
-    return apiRequest<TravelPlanCreatedResponse>('/api/v2/travel-plans', {
+    return apiRequest<TravelPlanCreatedResponse>('/api/travel-plans', {
       method: 'POST',
       body,
     });
@@ -159,14 +159,14 @@ export const travelsApi = {
     };
   },
 
-  /** POST /api/v2/travel-plans/:id/regeneration — SQS 여행 재생성 요청 */
+  /** POST /api/travel-plans/:id/regeneration */
   async regenerate(travelPlanId: number, request?: CreateTravelPlanRequest | null) {
     if (USE_MOCK) {
       generationStore.set(travelPlanId, { createdAt: Date.now() });
       return { travel_plan_id: travelPlanId, generation_job_id: travelPlanId, status: 'GENERATING' as const };
     }
     return apiRequest<TravelPlanCreatedResponse>(
-      `/api/v2/travel-plans/${travelPlanId}/regeneration`,
+      `/api/travel-plans/${travelPlanId}/regeneration`,
       { method: 'POST', ...(request ? { body: request } : {}) },
     );
   },

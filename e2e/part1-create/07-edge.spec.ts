@@ -79,7 +79,7 @@ test.describe('7. 경계값 · 검증', () => {
       await generateButton(page).click();
       await expect(page).toHaveURL(/\/generating\/\d+/);
 
-      const [request] = api.callsTo('POST', '/api/travel-plans');
+      const [request] = api.callsTo('POST', '/api/v2/travel-plans');
       expect(request.body.preference).toMatchObject({ budget_min: 0, budget_max: 3_000_000, distance_preference: distance.expected });
     });
   }

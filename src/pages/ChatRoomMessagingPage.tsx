@@ -4,6 +4,7 @@ import { chatApi, chatRoomDetailApi } from '@/api';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
+import { useChatRealtime } from '@/context/ChatRealtimeContext';
 import { useToast } from '@/context/ToastContext';
 import { getMatchingChatReturn } from '@/lib/matchingChatNavigation';
 import type { ChatRoomDetailMessage, ChatRoomDetailResponse } from '@/types/chat-detail';
@@ -112,6 +113,7 @@ export function ChatRoomMessagingPage() {
   const location = useLocation();
   const matchingReturn = getMatchingChatReturn(location.state);
   const { user } = useAuth();
+  const { connected: realtimeConnected, subscribe } = useChatRealtime();
   const toast = useToast();
   const roomId = Number(rawRoomId);
   const validRoomId = Number.isSafeInteger(roomId) && roomId > 0;
@@ -129,7 +131,6 @@ export function ChatRoomMessagingPage() {
   const [leaving, setLeaving] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResult, setSearchResult] = useState<ChatMessageSearchResponse | null>(null);
@@ -350,7 +351,6 @@ export function ChatRoomMessagingPage() {
     setDraft('');
     setSendError(null);
     setSyncError(false);
-    setRealtimeConnected(false);
     searchRequestRef.current += 1;
     targetRequestRef.current += 1;
     searchActiveRef.current = false;
@@ -446,6 +446,7 @@ export function ChatRoomMessagingPage() {
     let catchingUp = false;
     let catchUpAgain = false;
     let catchUpRetryTimer: number | null = null;
+    let presenceUpdateVersion = 0;
 
     const advancePendingSequences = () => {
       while (pendingSequencesRef.current.delete(sequenceCursorRef.current + 1)) {
@@ -462,9 +463,13 @@ export function ChatRoomMessagingPage() {
     };
 
     const syncReadStates = async () => {
+      const requestPresenceVersion = presenceUpdateVersion;
       try {
         const latestDetail = await chatRoomDetailApi.getRoomDetail(roomId, { size: PAGE_SIZE });
         if (!active) return;
+        if (requestPresenceVersion === presenceUpdateVersion) {
+          setDetail((current) => current ? { ...current, opponent: latestDetail.opponent } : current);
+        }
         const readStates = new Map(
           latestDetail.chats.map((message) => [message.chat_id, message.is_read]),
         );
@@ -530,6 +535,16 @@ export function ChatRoomMessagingPage() {
     };
 
     const handleMessage = (event: ChatRealtimeEvent) => {
+      if (event.event_type === 'PRESENCE_UPDATED') {
+        if (event.user_id !== opponentUserId) return;
+        presenceUpdateVersion += 1;
+        setDetail((current) => current ? {
+          ...current,
+          opponent: { ...current.opponent, is_online: event.is_online },
+        } : current);
+        return;
+      }
+
       if (event.event_type === 'READ_RECEIPT_UPDATED') {
         if (event.reader_id !== opponentUserId || currentUserId === undefined) return;
         setMessages((current) => current.map((message) => (
@@ -553,27 +568,28 @@ export function ChatRoomMessagingPage() {
       if (sequence > sequenceCursorRef.current) void catchUp();
     };
 
-    let disconnect: (() => void) | null = null;
-    void import('@/api/chatRealtime').then(({ connectChatRealtime }) => {
-      if (!active) return;
-      disconnect = connectChatRealtime(
-        roomId,
-        handleMessage,
-        (connected) => {
-          if (active) setRealtimeConnected(connected);
-        },
-        () => {
-          void catchUp();
-          void syncReadStates();
-        },
-      );
+    const unsubscribe = subscribe({
+      onEvent: (event) => {
+        if (event.event_type === 'PRESENCE_UPDATED') {
+          handleMessage(event);
+          return;
+        }
+
+        const eventRoomId = event.event_type === 'MESSAGE_CREATED'
+          ? event.data.room_id
+          : event.room_id;
+        if (eventRoomId === roomId) handleMessage(event);
+      },
+      onConnected: () => {
+        void catchUp();
+        void syncReadStates();
+      },
     });
 
     return () => {
       active = false;
       if (catchUpRetryTimer !== null) window.clearTimeout(catchUpRetryTimer);
-      disconnect?.();
-      setRealtimeConnected(false);
+      unsubscribe();
     };
   }, [
     detail?.opponent.user_id,
@@ -582,6 +598,7 @@ export function ChatRoomMessagingPage() {
     markRoomReadThrough,
     mergeMessages,
     roomId,
+    subscribe,
     user?.user_id,
     validRoomId,
   ]);

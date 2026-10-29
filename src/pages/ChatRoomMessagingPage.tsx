@@ -12,6 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import { useNavigate, useParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
+const OLDER_MESSAGES_SCROLL_THRESHOLD = 96;
 const CATCH_UP_PAGE_SIZE = 100;
 
 type ChatMessage = ChatRoomDetailMessage & { message_seq?: number };
@@ -618,6 +619,15 @@ export function ChatRoomMessagingPage() {
     }
   };
 
+  const handleTimelineScroll = () => {
+    if (searchActiveRef.current || searchWindow) return;
+
+    const container = scrollRef.current;
+    if (!container || container.scrollTop > OLDER_MESSAGES_SCROLL_THRESHOLD) return;
+
+    void loadOlderMessages();
+  };
+
   const sendDraft = async () => {
     if (sendingRef.current || !detail || detail.status === 'ENDED') return;
     const content = normalizeMessageContent(draft);
@@ -801,19 +811,21 @@ export function ChatRoomMessagingPage() {
 
       {!loading && !errorStatus && detail ? (
         <>
-          <div className="chat-detail-scroll" ref={scrollRef}>
+          {!searchWindow && !searchInput.trim() && loadingOlder ? (
+            <div className="chat-history-page-status" role="status">
+              이전 메시지를 불러오는 중입니다.
+            </div>
+          ) : null}
+          {!searchWindow && !searchInput.trim() && olderError ? (
+            <div className="chat-history-page-status" role="alert">
+              이전 메시지를 불러오지 못했습니다.
+            </div>
+          ) : null}
+
+          <div className="chat-detail-scroll" ref={scrollRef} onScroll={handleTimelineScroll}>
             {searchWindow && contextHasOlder ? (
               <button type="button" className="chat-detail-older" disabled={contextLoading} onClick={() => void loadSearchContext('older')}>
                 이전 대화 더 보기
-              </button>
-            ) : null}
-            {!searchWindow && detail.has_next ? (
-              <button
-                type="button"
-                className="chat-detail-older"
-                disabled={loadingOlder}
-                onClick={() => void loadOlderMessages()}>
-                {loadingOlder ? '이전 대화를 불러오는 중...' : olderError ? '다시 시도' : '이전 대화 불러오기'}
               </button>
             ) : null}
 

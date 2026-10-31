@@ -1,8 +1,10 @@
 import { matchingApi } from '@/api';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import { CheckIcon, UsersIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
+import { CHOICE_ICONS } from '@/lib/choiceIcons';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import type { MatchingGender, TravelPaceType, TravelTheme, UpdateMatchingSettingsRequest } from '@/types';
 import { useEffect, useMemo, useState } from 'react';
@@ -141,10 +143,11 @@ export function MatchingSettingsPage() {
   };
 
   return (
-    <section className="screen matching-settings-screen">
-      <Header title="매칭 설정" onBack={handleBack} showBell />
+    <section className="screen matching-settings-screen jm-screen">
+      <PlannerHeader title="매칭 설정" onBack={handleBack} />
       <div className="scroll matching-settings-scroll">
         <div className="matching-settings-card">
+          <span className="jm-setting-icon ink" aria-hidden="true"><UsersIcon size={18} /></span>
           <div className="matching-settings-copy">
             <strong>매칭 대상으로 설정하기</strong>
             <p>끄면 다른 사용자에게 노출되지 않아요.</p>
@@ -174,6 +177,7 @@ export function MatchingSettingsPage() {
                 className={`matching-choice${settings.gender === option.value ? ' selected' : ''}`}
                 disabled={loading}
                 onClick={() => setSettings((prev) => ({ ...prev, gender: option.value }))}>
+                <span className="jm-choice-icon" aria-hidden="true">{CHOICE_ICONS[option.value]}</span>
                 {option.label}
               </button>
             ))}
@@ -190,6 +194,7 @@ export function MatchingSettingsPage() {
                 className={`matching-choice${settings.pace === option.value ? ' selected' : ''}`}
                 disabled={loading}
                 onClick={() => setSettings((prev) => ({ ...prev, pace: option.value as TravelPaceType }))}>
+                <span className="jm-choice-icon" aria-hidden="true">{CHOICE_ICONS[option.value]}</span>
                 {option.label}
               </button>
             ))}
@@ -209,6 +214,7 @@ export function MatchingSettingsPage() {
                 className={`matching-choice${settings.themes.includes(option.value) ? ' selected' : ''}`}
                 disabled={loading}
                 onClick={() => toggleTheme(option.value)}>
+                <span className="jm-choice-icon" aria-hidden="true">{CHOICE_ICONS[option.value]}</span>
                 {option.label}
               </button>
             ))}
@@ -223,7 +229,14 @@ export function MatchingSettingsPage() {
         {hasChanges ? <p className="matching-unsaved">저장하지 않은 변경사항이 있습니다.</p> : null}
       </div>
       <div className="footer-bar matching-settings-footer">
-        <Button label="설정 저장" variant="dark" loading={saving} disabled={!canSave} onClick={saveSettings} />
+        <Button
+          label="설정 저장"
+          icon={<CheckIcon size={16} />}
+          variant="dark"
+          loading={saving}
+          disabled={!canSave}
+          onClick={saveSettings}
+        />
       </div>
       <Modal
         open={leaveConfirmOpen}

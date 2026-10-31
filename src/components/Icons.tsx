@@ -382,6 +382,77 @@ export function SparkIcon(props: IconProps) {
   );
 }
 
+export function SendIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2.1} {...props}>
+      <path d="M4.5 12L20 4.5 13.5 20l-2.3-6.2z" />
+      <path d="M11.2 13.8L20 4.5" />
+    </Svg>
+  );
+}
+
+export function ChatBubbleIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M12 3.8c4.8 0 8.7 3.2 8.7 7.2s-3.9 7.2-8.7 7.2c-1 0-1.9-.1-2.8-.4L4.6 19.9l1.2-3.7C4.2 14.9 3.3 13 3.3 11c0-4 3.9-7.2 8.7-7.2z" />
+    </Svg>
+  );
+}
+
+export function DocIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z" />
+      <path d="M14 3.5V8h4M9 12h6M9 15.5h6" />
+    </Svg>
+  );
+}
+
+export function LogoutIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M14 4.5h3.5A1.5 1.5 0 0 1 19 6v12a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h9" />
+    </Svg>
+  );
+}
+
+export function SlidersIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
+    </Svg>
+  );
+}
+
+export function GenderAnyIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M8 12h8" />
+    </Svg>
+  );
+}
+
+export function MaleIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <circle cx="10" cy="14" r="5" />
+      <path d="M13.5 10.5L19 5M14.5 5H19v4.5" />
+    </Svg>
+  );
+}
+
+export function FemaleIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <circle cx="12" cy="9" r="5" />
+      <path d="M12 14v7M9 18h6" />
+    </Svg>
+  );
+}
+
 /** 카카오 로그인 버튼 심볼 (카카오 로그인 디자인 가이드의 말풍선 심볼) */
 export function KakaoSymbol({ size = 20, ...rest }: IconProps) {
   return (

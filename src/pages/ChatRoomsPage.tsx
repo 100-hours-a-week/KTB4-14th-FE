@@ -1,5 +1,6 @@
 import { chatApi } from '@/api';
-import { Header } from '@/components/Header';
+import { ChatBubbleIcon, SearchIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { useChatRealtime } from '@/context/ChatRealtimeContext';
 import type { ChatRoom, ChatRoomListResponse } from '@/types';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
@@ -317,10 +318,10 @@ export function ChatPage() {
 
   if (matchedUserId) {
     return (
-      <section className="screen">
-        <Header title="채팅" showBell />
+      <section className="screen jm-screen">
+        <PlannerHeader title="채팅" />
         <div className="coming-soon matching-chat-entry">
-          <div className="coming-icon">💬</div>
+          <div className="coming-icon"><ChatBubbleIcon size={30} /></div>
           <h2>{matchedUser?.nickname ?? '매칭 상대'}님과의 채팅</h2>
           <p>
             {matchedUser?.match_rate ? `취향 일치 ${matchedUser.match_rate}% · ` : ''}
@@ -332,8 +333,8 @@ export function ChatPage() {
   }
 
   return (
-    <section className="screen">
-      <Header title="채팅" showBell />
+    <section className="screen jm-screen chat-list-screen">
+      <PlannerHeader title="채팅" />
       <div className="scroll chat-room-scroll" ref={scrollRef} onScroll={handleListScroll}>
         <div className="chat-room-list-heading">
           <strong>채팅방</strong>
@@ -341,6 +342,7 @@ export function ChatPage() {
         </div>
 
         <form className="chat-room-search" onSubmit={searchRooms} role="search">
+          <span className="jm-search-icon" aria-hidden="true"><SearchIcon size={18} /></span>
           <input
             className="chat-room-search-input"
             type="search"
@@ -383,7 +385,7 @@ export function ChatPage() {
 
         {!loading && !error && rooms.length === 0 ? (
           <div className="empty-box chat-room-empty">
-            <span className="chat-room-empty-icon" aria-hidden="true">💬</span>
+            <span className="chat-room-empty-icon" aria-hidden="true"><ChatBubbleIcon size={26} /></span>
             <strong>{activeChatName ? '검색 결과가 없어요' : '아직 채팅방이 없어요'}</strong>
             <p>
               {activeChatName

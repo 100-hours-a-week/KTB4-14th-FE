@@ -1,7 +1,8 @@
 import { ApiError, USE_MOCK } from '@/api/client';
 import type { ChatRealtimeEvent } from '@/api/chatRealtime';
 import { chatApi, chatRoomDetailApi } from '@/api';
-import { Header } from '@/components/Header';
+import { ChatBubbleIcon, SearchIcon, SendIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useChatRealtime } from '@/context/ChatRealtimeContext';
@@ -753,8 +754,8 @@ export function ChatRoomMessagingPage() {
   const notFound = errorStatus === 404;
 
   return (
-    <section className="screen chat-detail-screen">
-      <Header
+    <section className="screen chat-detail-screen jm-screen">
+      <PlannerHeader
         className="chat-detail-header"
         title={title}
         onBack={() => matchingReturn
@@ -786,6 +787,7 @@ export function ChatRoomMessagingPage() {
       {!loading && detail ? (
         <div className="chat-search" role="search" aria-label="대화 검색">
           <div className="chat-search-row">
+            <span className="jm-search-icon" aria-hidden="true"><SearchIcon size={16} /></span>
             <input
               type="search"
               aria-label="대화 검색어"
@@ -870,7 +872,7 @@ export function ChatRoomMessagingPage() {
 
             {(searchWindow ?? messages).length === 0 ? (
               <div className="chat-detail-empty">
-                <span aria-hidden="true">💬</span>
+                <span aria-hidden="true"><ChatBubbleIcon size={28} /></span>
                 <p>아직 대화가 없습니다.</p>
               </div>
             ) : (
@@ -932,6 +934,7 @@ export function ChatRoomMessagingPage() {
                   type="submit"
                   className="chat-composer-send"
                   disabled={sending || Array.from(normalizeMessageContent(draft)).length === 0 || Array.from(draft).length > MAX_MESSAGE_CHARACTERS}>
+                  <SendIcon size={17} />
                   {sending ? '전송 중' : '전송'}
                 </button>
               </div>

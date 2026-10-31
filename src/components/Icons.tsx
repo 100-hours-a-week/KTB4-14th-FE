@@ -251,6 +251,137 @@ export function VideoIcon(props: IconProps) {
   );
 }
 
+export function ClockIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </Svg>
+  );
+}
+
+export function MinusIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2.4} {...props}>
+      <path d="M6 12h12" />
+    </Svg>
+  );
+}
+
+export function XIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2.4} {...props}>
+      <path d="M7 7l10 10M17 7L7 17" />
+    </Svg>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2.3} {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4 4" />
+    </Svg>
+  );
+}
+
+export function HeartIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M12 19.5s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 6.6a4.3 4.3 0 0 1 7.5 2.9c0 5.6-7.5 10-7.5 10z" />
+    </Svg>
+  );
+}
+
+export function UsersIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <circle cx="9" cy="8.5" r="3.2" />
+      <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5M15.5 5.6a3.2 3.2 0 0 1 0 6M17.5 14.7c2 .6 3.2 2.3 3.5 4.8" />
+    </Svg>
+  );
+}
+
+export function CoffeeIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z" />
+      <path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8.5 3.5v2.5M12 3.5v2.5" />
+    </Svg>
+  );
+}
+
+export function ScaleIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M12 4v16M6 20h12M6 8h12M6 8l-2.5 6h5zM18 8l-2.5 6h5z" />
+    </Svg>
+  );
+}
+
+export function RocketIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M12 3c3.5 2 5 5.5 5 9.5l-2 3.5H9l-2-3.5C7 8.5 8.5 5 12 3z" />
+      <circle cx="12" cy="10" r="1.8" />
+      <path d="M9.5 19.5h5" />
+    </Svg>
+  );
+}
+
+export function LeafIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" />
+      <path d="M5 19l7-7" />
+    </Svg>
+  );
+}
+
+export function MuseumIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M4 9.5L12 5l8 4.5M5.5 10v8M10 10v8M14 10v8M18.5 10v8M4 19.5h16" />
+    </Svg>
+  );
+}
+
+export function SofaIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M5 11V8.5A2.5 2.5 0 0 1 7.5 6h9A2.5 2.5 0 0 1 19 8.5V11" />
+      <path d="M3.5 12.5a1.5 1.5 0 0 1 3 0V14h11v-1.5a1.5 1.5 0 0 1 3 0V18h-17z" />
+    </Svg>
+  );
+}
+
+export function CameraIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </Svg>
+  );
+}
+
+export function BoltIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M13 3L5 13.5h6L10 21l8-10.5h-6z" />
+    </Svg>
+  );
+}
+
+/** AI 생성 버튼용 반짝이 */
+export function SparkIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={1.2} {...props}>
+      <path d="M11 3.5l1.9 4.9 4.9 1.9-4.9 1.9L11 17.1l-1.9-4.9-4.9-1.9 4.9-1.9z" fill="currentColor" />
+      <path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z" fill="currentColor" />
+    </Svg>
+  );
+}
+
 /** 카카오 로그인 버튼 심볼 (카카오 로그인 디자인 가이드의 말풍선 심볼) */
 export function KakaoSymbol({ size = 20, ...rest }: IconProps) {
   return (

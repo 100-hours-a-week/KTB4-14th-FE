@@ -1,5 +1,6 @@
 import { placesApi } from '@/api';
-import { Header } from '@/components/Header';
+import { PinIcon, SearchIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { KakaoMap } from '@/components/KakaoMap';
 import { PlaceRow } from '@/components/PlaceRow';
 import { useToast } from '@/context/ToastContext';
@@ -88,9 +89,10 @@ export function MapSearchPage() {
   };
 
   return (
-    <section className="screen">
-      <Header title="여행 생성하기" onBack={() => navigate(-1)} showBell />
+    <section className="screen map-search-screen jw-screen">
+      <PlannerHeader title="장소 검색" onBack={() => navigate(-1)} />
       <div className="search-row">
+        <span className="jw-search-icon" aria-hidden="true"><SearchIcon size={18} /></span>
         <input
           className="input"
           value={query}
@@ -102,7 +104,7 @@ export function MapSearchPage() {
           onKeyDown={(e) => e.key === 'Enter' && search()}
         />
         <button type="button" className="search-btn" onClick={search} aria-label="장소 검색">
-          🔍
+          <SearchIcon size={20} />
         </button>
       </div>
       {searchError ? <p className="field-help error" role="alert">{searchError}</p> : null}
@@ -120,12 +122,19 @@ export function MapSearchPage() {
               onSelect={setSelected}
               regionQuery={regionQuery}
             />
+            {regionQuery ? (
+              <span className="jw-map-region">
+                <PinIcon size={13} />
+                {regionQuery}
+              </span>
+            ) : null}
           </div>
           <div className="scroll" style={{ paddingTop: 4 }}>
             {selected ? (
               <div style={{ marginBottom: 10 }}>
                 <PlaceRow
                   place={selected}
+                  highlighted
                   onAdd={() => add(selected)}
                   addDisabled={!isPlaceInTravelRegion(selected, draft) || requiredPlacesLimitReached}
                   addLabel={!isPlaceInTravelRegion(selected, draft)
@@ -134,7 +143,10 @@ export function MapSearchPage() {
                 />
               </div>
             ) : null}
-            <strong>검색 결과</strong>
+            <div className="jw-section-head">
+              <strong>검색 결과</strong>
+              {results.length > 0 ? <small>{results.length}곳</small> : null}
+            </div>
             {searchStatus === 'loading' ? <p className="search-status">검색 중이에요.</p> : null}
             {searchStatus === 'idle' ? <p className="search-status">검색어를 입력하고 검색해 주세요.</p> : null}
             {results.some((place) => !isPlaceInTravelRegion(place, draft)) ? (

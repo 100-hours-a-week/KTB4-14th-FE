@@ -1,13 +1,15 @@
 import { travelsApi } from '@/api';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import { InfoIcon, PinIcon, SparkIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { PlaceRow } from '@/components/PlaceRow';
 import { Progress } from '@/components/Progress';
 import { useToast } from '@/context/ToastContext';
 import { MAX_REQUIRED_PLACES, useTravelDraft } from '@/context/TravelDraftContext';
-import { toDatetime } from '@/lib/options';
+import { companionOptions, toDatetime } from '@/lib/options';
 import { isTravelDateRangeValid, MAX_TRAVEL_DAYS } from '@/lib/travelDates';
+import { formatDateRange, formatTripLength } from '@/lib/tripDates';
 import { saveTravelGenerationRequest } from '@/storage';
 import type { CreateTravelPlanRequest } from '@/types';
 import { useState } from 'react';
@@ -128,37 +130,59 @@ export function PlacesPage() {
     }
   };
 
+  const regionLabel = draft.destination ?? draft.destination_province ?? null;
+
   return (
-    <section className="screen">
-      <Header title="여행 생성하기" onBack={() => navigate(-1)} showBell />
+    <section className="screen places-screen jw-screen">
+      <PlannerHeader title="여행 생성하기" onBack={() => navigate(-1)} />
       <div className="scroll">
         <Progress step={3} />
-        <h3 className="section" style={{ marginTop: 0 }}>
-          선택된 장소
-        </h3>
+        <DraftSummary draft={draft} />
+        <div className="jw-section-head">
+          <h3 className="section">선택된 장소</h3>
+          <small>{draft.required_places.length} / {MAX_REQUIRED_PLACES}</small>
+        </div>
         {draft.required_places.length === 0 ? (
-          <div className="empty-box">아직 선택한 장소가 없어요.</div>
+          <div className="empty-box jw-places-empty">
+            <span className="jw-empty-icon" aria-hidden="true"><PinIcon size={24} /></span>
+            <strong>아직 선택한 장소가 없어요.</strong>
+            <p>꼭 들르고 싶은 곳이 있다면 추가해 주세요. AI가 이 장소들을 포함해 일정을 짜요.</p>
+          </div>
         ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {draft.required_places.map((place) => (
-              <PlaceRow key={place.provider_place_id} place={place} onRemove={() => setTarget(place.provider_place_id)} />
+          <div className="jw-place-list">
+            {draft.required_places.map((place, index) => (
+              <PlaceRow
+                key={place.provider_place_id}
+                place={place}
+                number={index + 1}
+                onRemove={() => setTarget(place.provider_place_id)}
+              />
             ))}
           </div>
         )}
         <button
           type="button"
-          className="menu-row"
-          style={{ marginTop: 12 }}
+          className="menu-row jw-add-place"
           onClick={() => navigate('/create-travel/map-search')}
           disabled={requiredPlacesLimitReached}
         >
-          {requiredPlacesLimitReached
-            ? `필수 장소는 최대 ${MAX_REQUIRED_PLACES}개까지 추가할 수 있어요.`
-            : '+ 카카오맵에서 장소 추가'}
+          {requiredPlacesLimitReached ? (
+            `필수 장소는 최대 ${MAX_REQUIRED_PLACES}개까지 추가할 수 있어요.`
+          ) : (
+            <>
+              <span className="jw-add-plus">+</span> 카카오맵에서 장소 추가
+            </>
+          )}
         </button>
+        {regionLabel ? (
+          <p className="jw-note">
+            <InfoIcon size={14} />
+            {regionLabel} 안의 장소만 추가할 수 있어요.
+          </p>
+        ) : null}
       </div>
       <div className="footer-bar">
-        <Button label="AI 여행 생성하기" variant="dark" loading={loading} onClick={generate} />
+        <Button label="AI 여행 생성하기" icon={<SparkIcon size={18} />} variant="dark" loading={loading} onClick={generate} />
       </div>
       <Modal
         open={!!target}
@@ -171,5 +195,21 @@ export function PlacesPage() {
         }}
       />
     </section>
+  );
+}
+
+/** 1단계에서 입력한 값을 다시 보여주는 요약 카드 (입력값이 모두 있을 때만). */
+function DraftSummary({ draft }: { draft: ReturnType<typeof useTravelDraft>['draft'] }) {
+  if (!draft.destination || !draft.start_date || !draft.end_date) return null;
+  const companion = companionOptions.find((option) => option.value === draft.companion)?.label;
+  const people = companion ? `${companion} ${normalizedHeadcount(draft)}명` : null;
+  return (
+    <div className="jw-summary">
+      <span className="jw-summary-icon" aria-hidden="true"><PinIcon size={17} /></span>
+      <div>
+        <strong>{draft.destination} · {formatTripLength(draft.start_date, draft.end_date)}</strong>
+        <small>{[formatDateRange(draft.start_date, draft.end_date), people].filter(Boolean).join(' · ')}</small>
+      </div>
+    </div>
   );
 }

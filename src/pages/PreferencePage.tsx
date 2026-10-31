@@ -1,5 +1,19 @@
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import {
+  BoltIcon,
+  BusIcon,
+  CameraIcon,
+  CarIcon,
+  CoffeeIcon,
+  ForkIcon,
+  LeafIcon,
+  MuseumIcon,
+  RocketIcon,
+  ScaleIcon,
+  SofaIcon,
+  WalkIcon,
+} from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Progress } from '@/components/Progress';
 import { useTravelDraft } from '@/context/TravelDraftContext';
 import {
@@ -22,6 +36,22 @@ const MAX_BUDGET = 3_000_000;
 const BUDGET_STEP = 100_000;
 const MAX_THEME_COUNT = 3;
 const MAX_REQUEST_LENGTH = 300;
+
+/** 선택지 앞에 붙는 장식용 아이콘 (값 → 아이콘). 없는 값은 글자만 보여준다. */
+const CHOICE_ICONS: Record<string, ReactNode> = {
+  RELAXED: <CoffeeIcon size={16} />,
+  BALANCED: <ScaleIcon size={16} />,
+  PACKED: <RocketIcon size={16} />,
+  WALK: <WalkIcon size={16} />,
+  CAR: <CarIcon size={16} />,
+  PUBLIC_TRANSPORT: <BusIcon size={16} />,
+  NATURE: <LeafIcon size={16} />,
+  FOOD: <ForkIcon size={16} />,
+  CULTURE: <MuseumIcon size={16} />,
+  REST: <SofaIcon size={16} />,
+  SNS: <CameraIcon size={16} />,
+  ACTIVITY: <BoltIcon size={16} />,
+};
 
 export function PreferencePage() {
   const navigate = useNavigate();
@@ -53,13 +83,8 @@ export function PreferencePage() {
   );
 
   return (
-    <section className="screen preference-screen">
-      <Header
-        title="여행 생성하기"
-        className="create-travel-header"
-        onBack={() => navigate('/create-travel')}
-        showBell
-      />
+    <section className="screen preference-screen jw-screen">
+      <PlannerHeader title="여행 생성하기" onBack={() => navigate('/create-travel')} />
 
       <div className="scroll preference-scroll">
         <Progress step={2} labeled />
@@ -69,6 +94,7 @@ export function PreferencePage() {
             {travelPaceOptions.map((option) => (
               <ChoiceButton
                 key={option.value}
+                icon={CHOICE_ICONS[option.value]}
                 label={option.label}
                 selected={pref.pace_type === option.value}
                 onClick={() => updatePreference({ pace_type: option.value as TravelPaceType })}
@@ -82,6 +108,7 @@ export function PreferencePage() {
             {travelTransportOptions.map((option) => (
               <ChoiceButton
                 key={option.value}
+                icon={CHOICE_ICONS[option.value]}
                 label={option.label}
                 selected={pref.transport_type === option.value}
                 onClick={() => updatePreference({ transport_type: option.value as TravelTransportType })}
@@ -98,6 +125,7 @@ export function PreferencePage() {
               return (
                 <ChoiceButton
                   key={option.value}
+                  icon={CHOICE_ICONS[option.value]}
                   label={option.label}
                   selected={selected}
                   disabled={unavailable}
@@ -110,38 +138,42 @@ export function PreferencePage() {
         </PreferenceSection>
 
         <PreferenceSection label="비용">
-          <div className="range-value-row" aria-live="polite">
-            <strong>{formatBudget(pref.budget_min)}</strong>
-            <span>~</span>
-            <strong>{formatBudget(pref.budget_max)}</strong>
-          </div>
-          <BudgetRange
-            minValue={pref.budget_min}
-            maxValue={pref.budget_max}
-            onMinChange={(value) => updatePreference({ budget_min: value })}
-            onMaxChange={(value) => updatePreference({ budget_max: value })}
-          />
-          <div className="range-labels" aria-hidden="true">
-            <span>0원</span>
-            <span>300만원 이상</span>
+          <div className="jw-range-card">
+            <div className="range-value-row" aria-live="polite">
+              <strong>{formatBudget(pref.budget_min)}</strong>
+              <span>~</span>
+              <strong>{formatBudget(pref.budget_max)}</strong>
+            </div>
+            <BudgetRange
+              minValue={pref.budget_min}
+              maxValue={pref.budget_max}
+              onMinChange={(value) => updatePreference({ budget_min: value })}
+              onMaxChange={(value) => updatePreference({ budget_max: value })}
+            />
+            <div className="range-labels" aria-hidden="true">
+              <span>0원</span>
+              <span>300만원 이상</span>
+            </div>
           </div>
         </PreferenceSection>
 
         <PreferenceSection label="이동 거리">
-          <div className="distance-copy" aria-live="polite">{distanceLabel(pref.distance_preference)}</div>
-          <input
-            className="single-range"
-            type="range"
-            min="0"
-            max="100"
-            step="25"
-            value={pref.distance_preference}
-            aria-label="이동 거리 선호도"
-            onChange={(event) => updatePreference({ distance_preference: Number(event.target.value) })}
-          />
-          <div className="range-labels" aria-hidden="true">
-            <span>가까운 선호</span>
-            <span>거리 무관</span>
+          <div className="jw-range-card">
+            <div className="distance-copy" aria-live="polite">{distanceLabel(pref.distance_preference)}</div>
+            <input
+              className="single-range"
+              type="range"
+              min="0"
+              max="100"
+              step="25"
+              value={pref.distance_preference}
+              aria-label="이동 거리 선호도"
+              onChange={(event) => updatePreference({ distance_preference: Number(event.target.value) })}
+            />
+            <div className="range-labels" aria-hidden="true">
+              <span>가까운 선호</span>
+              <span>거리 무관</span>
+            </div>
           </div>
         </PreferenceSection>
 
@@ -150,6 +182,7 @@ export function PreferencePage() {
             {travelFoodOptions.map((option) => (
               <ChoiceButton
                 key={option.value}
+                icon={CHOICE_ICONS[option.value]}
                 label={option.label}
                 selected={pref.foods.includes(option.value as FoodPreference)}
                 onClick={() => toggleFood(option.value as FoodPreference)}
@@ -202,11 +235,13 @@ function ChoiceGrid({ columns, children }: { columns: number; children: ReactNod
 }
 
 function ChoiceButton({
+  icon,
   label,
   selected,
   disabled,
   onClick,
 }: {
+  icon?: ReactNode;
   label: string;
   selected: boolean;
   disabled?: boolean;
@@ -219,7 +254,7 @@ function ChoiceButton({
       aria-pressed={selected}
       disabled={disabled}
       onClick={onClick}>
-      <span className="choice-radio" aria-hidden="true" />
+      {icon ? <span className="jw-choice-icon" aria-hidden="true">{icon}</span> : <span className="choice-radio" aria-hidden="true" />}
       {label}
     </button>
   );

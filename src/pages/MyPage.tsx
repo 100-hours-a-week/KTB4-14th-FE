@@ -1,5 +1,17 @@
 import { usersApi } from '@/api';
-import { Header } from '@/components/Header';
+import {
+  BellIcon,
+  CalendarIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  DocIcon,
+  KakaoSymbol,
+  LogoutIcon,
+  MapFoldIcon,
+  PencilIcon,
+  UsersIcon,
+} from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -82,42 +94,56 @@ export function MyPage() {
   };
 
   return (
-    <section className="screen">
-      <Header title="마이페이지" showBell />
+    <section className="screen jm-screen my-screen">
+      <PlannerHeader title="마이페이지" />
       <div className="scroll">
         <div className="profile">
           <div className="avatar">
             {profileImageUrl ? <img src={profileImageUrl} alt="" /> : displayNickname.slice(0, 1)}
           </div>
           <button type="button" className="name-btn" onClick={openNicknameModal}>
-            {loading ? '불러오는 중...' : displayNickname} ✎
+            <span>{loading ? '불러오는 중...' : displayNickname}</span>
+            <span className="jm-edit-icon" aria-hidden="true"><PencilIcon size={14} /></span>
           </button>
-          <p className="hello">{me?.provider ?? 'KAKAO'} 계정으로 로그인됨</p>
+          <p className="hello">
+            {(me?.provider ?? 'KAKAO') === 'KAKAO' ? <KakaoSymbol size={13} /> : null}
+            {me?.provider ?? 'KAKAO'} 계정으로 로그인됨
+          </p>
         </div>
         <div className="stats">
-          <div className="stat">
+          <div className="stat done">
+            <span className="jm-stat-icon" aria-hidden="true"><CheckIcon size={16} /></span>
             <div className="stat-num">{me?.completed_travel_count ?? 0}</div>
             <div className="place-addr">완료한 여행</div>
           </div>
-          <div className="stat">
+          <div className="stat upcoming">
+            <span className="jm-stat-icon" aria-hidden="true"><CalendarIcon size={16} /></span>
             <div className="stat-num">{me?.upcoming_travel_count ?? 0}</div>
             <div className="place-addr">예정된 여행</div>
           </div>
         </div>
         <button type="button" className="menu-row" onClick={() => navigate('/my-trips')}>
-          여행 기록 보기 <span>›</span>
+          <span className="jm-menu-icon mint" aria-hidden="true"><MapFoldIcon size={18} /></span>
+          <span className="jm-menu-label">여행 기록 보기</span>
+          <ChevronRightIcon className="jm-menu-chevron" size={14} />
         </button>
         <button
           type="button"
           className="menu-row"
           onClick={() => navigate('/matching-settings')}>
-          매칭 설정 <span>›</span>
+          <span className="jm-menu-icon indigo" aria-hidden="true"><UsersIcon size={18} /></span>
+          <span className="jm-menu-label">매칭 설정</span>
+          <ChevronRightIcon className="jm-menu-chevron" size={14} />
         </button>
         <button type="button" className="menu-row" onClick={() => navigate('/notification-settings')}>
-          알림 설정 <span>›</span>
+          <span className="jm-menu-icon coral" aria-hidden="true"><BellIcon size={18} /></span>
+          <span className="jm-menu-label">알림 설정</span>
+          <ChevronRightIcon className="jm-menu-chevron" size={14} />
         </button>
         <button type="button" className="menu-row" onClick={() => navigate('/policies')}>
-          이용약관 및 개인정보 <span>›</span>
+          <span className="jm-menu-icon gray" aria-hidden="true"><DocIcon size={18} /></span>
+          <span className="jm-menu-label">이용약관 및 개인정보</span>
+          <ChevronRightIcon className="jm-menu-chevron" size={14} />
         </button>
         <button
           type="button"
@@ -126,6 +152,7 @@ export function MyPage() {
             await logout();
             navigate('/login', { replace: true });
           }}>
+          <LogoutIcon size={16} />
           로그아웃
         </button>
       </div>

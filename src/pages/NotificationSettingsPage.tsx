@@ -1,10 +1,11 @@
 import { notificationsApi } from '@/api';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import { BellIcon, ChatBubbleIcon, CheckIcon, SparkIcon, UsersIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import type { NotificationSettings } from '@/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ITEMS: { key: keyof NotificationSettings; label: string; desc: string }[] = [
@@ -13,6 +14,14 @@ const ITEMS: { key: keyof NotificationSettings; label: string; desc: string }[] 
   { key: 'travel_complete_enabled', label: '여행 생성 결과', desc: 'AI 일정 생성 완료 또는 실패를 알려드려요' },
   { key: 'notification_enabled', label: '전체 알림', desc: '서비스 알림 수신 여부를 설정해요' },
 ];
+
+/** 항목별 장식용 아이콘 · 색 (화면 표시 전용) */
+const ITEM_ICONS: Record<keyof NotificationSettings, { icon: ReactNode; tone: string }> = {
+  match_success_enabled: { icon: <UsersIcon size={18} />, tone: 'indigo' },
+  chat_enabled: { icon: <ChatBubbleIcon size={18} />, tone: 'mint' },
+  travel_complete_enabled: { icon: <SparkIcon size={18} />, tone: 'violet' },
+  notification_enabled: { icon: <BellIcon size={18} />, tone: 'coral' },
+};
 
 export function NotificationSettingsPage() {
   const navigate = useNavigate();
@@ -47,28 +56,34 @@ export function NotificationSettingsPage() {
   };
 
   return (
-    <section className="screen">
-      <Header title="알림 설정" onBack={handleBack} />
+    <section className="screen jm-screen notification-settings-screen">
+      <PlannerHeader title="알림 설정" onBack={handleBack} showBell={false} />
       <div className="scroll">
-        {ITEMS.map((item) => (
-          <div key={item.key} className="setting-row">
-            <div>
-              <strong>{item.label}</strong>
-              <div className="place-addr">{item.desc}</div>
+        <div className="jm-setting-list">
+          {ITEMS.map((item) => (
+            <div key={item.key} className="setting-row">
+              <span className={`jm-setting-icon ${ITEM_ICONS[item.key].tone}`} aria-hidden="true">
+                {ITEM_ICONS[item.key].icon}
+              </span>
+              <div className="jm-setting-copy">
+                <strong>{item.label}</strong>
+                <div className="place-addr">{item.desc}</div>
+              </div>
+              <input
+                type="checkbox"
+                className="switch"
+                aria-label={`${item.label} 설정`}
+                checked={settings[item.key]}
+                onChange={(e) => setSettings((prev) => ({ ...prev, [item.key]: e.target.checked }))}
+              />
             </div>
-            <input
-              type="checkbox"
-              className="switch"
-              aria-label={`${item.label} 설정`}
-              checked={settings[item.key]}
-              onChange={(e) => setSettings((prev) => ({ ...prev, [item.key]: e.target.checked }))}
-            />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       <div className="footer-bar">
         <Button
           label="저장"
+          icon={<CheckIcon size={16} />}
           variant="dark"
           onClick={async () => {
             await notificationsApi.updateSettings(settings);

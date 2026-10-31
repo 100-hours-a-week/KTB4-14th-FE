@@ -1,21 +1,8 @@
 import { Button } from '@/components/Button';
-import {
-  BoltIcon,
-  BusIcon,
-  CameraIcon,
-  CarIcon,
-  CoffeeIcon,
-  ForkIcon,
-  LeafIcon,
-  MuseumIcon,
-  RocketIcon,
-  ScaleIcon,
-  SofaIcon,
-  WalkIcon,
-} from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { Progress } from '@/components/Progress';
 import { useTravelDraft } from '@/context/TravelDraftContext';
+import { CHOICE_ICONS } from '@/lib/choiceIcons';
 import {
   travelFoodOptions,
   travelPaceOptions,
@@ -36,22 +23,6 @@ const MAX_BUDGET = 3_000_000;
 const BUDGET_STEP = 100_000;
 const MAX_THEME_COUNT = 3;
 const MAX_REQUEST_LENGTH = 300;
-
-/** 선택지 앞에 붙는 장식용 아이콘 (값 → 아이콘). 없는 값은 글자만 보여준다. */
-const CHOICE_ICONS: Record<string, ReactNode> = {
-  RELAXED: <CoffeeIcon size={16} />,
-  BALANCED: <ScaleIcon size={16} />,
-  PACKED: <RocketIcon size={16} />,
-  WALK: <WalkIcon size={16} />,
-  CAR: <CarIcon size={16} />,
-  PUBLIC_TRANSPORT: <BusIcon size={16} />,
-  NATURE: <LeafIcon size={16} />,
-  FOOD: <ForkIcon size={16} />,
-  CULTURE: <MuseumIcon size={16} />,
-  REST: <SofaIcon size={16} />,
-  SNS: <CameraIcon size={16} />,
-  ACTIVITY: <BoltIcon size={16} />,
-};
 
 export function PreferencePage() {
   const navigate = useNavigate();

@@ -1,6 +1,8 @@
 import { matchingApi } from '@/api';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import { BellIcon, CheckIcon } from '@/components/Icons';
+import { MatchingStatusArt } from '@/components/MatchingStatusArt';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { useToast } from '@/context/ToastContext';
 import { matchingResultDestination, restoreMatchingSession } from '@/lib/matchingSession';
 import { setJson, storage } from '@/storage';
@@ -16,6 +18,8 @@ const progressSteps: { label: string; state: ProgressState }[] = [
   { label: '관심사와 이동수단 분석', state: 'RUNNING' },
   { label: '최종 후보 연결', state: 'PENDING' },
 ];
+
+const doneStepCount = progressSteps.filter((step) => step.state === 'DONE').length;
 
 function getStepStatusLabel(state: ProgressState) {
   if (state === 'DONE') return '완료';
@@ -106,12 +110,14 @@ export function MatchingProgressPage() {
   };
 
   return (
-    <section className="screen matching-progress-screen">
-      <Header title="매칭 중" onBack={() => navigate('/home')} showBell />
+    <section className="screen matching-progress-screen jm-screen">
+      <PlannerHeader title="매칭 중" onBack={() => navigate('/home')} />
       <div className="scroll matching-progress-scroll">
-        <div className="matching-progress-hero" aria-hidden="true">
-          <span />
-        </div>
+        <MatchingStatusArt
+          tone={statusError ? 'fail' : 'progress'}
+          progress={doneStepCount / progressSteps.length}
+          progressLabel={`${doneStepCount} / ${progressSteps.length}`}
+        />
         <h2 className="matching-progress-title" role={statusError ? 'alert' : undefined}>
           {statusError ? '매칭 상태를 확인하지 못했어요' : '함께 여행할 메이트를 찾고 있어요'}
         </h2>
@@ -123,7 +129,7 @@ export function MatchingProgressPage() {
             {progressSteps.map((step) => (
               <li key={step.label} className={`matching-progress-step ${step.state.toLowerCase()}`}>
                 <span className="matching-step-marker">
-                  {step.state === 'DONE' ? '✓' : step.state === 'RUNNING' ? '•' : ''}
+                  {step.state === 'DONE' ? <CheckIcon size={13} /> : null}
                 </span>
                 <strong>{step.label}</strong>
                 <em>{getStepStatusLabel(step.state)}</em>
@@ -133,8 +139,11 @@ export function MatchingProgressPage() {
         </section>
 
         <div className="matching-progress-notice">
-          <strong>완료되면 알림으로 알려드릴게요</strong>
-          <p>다른 화면을 둘러봐도 매칭은 계속됩니다.</p>
+          <span className="jm-notice-icon" aria-hidden="true"><BellIcon size={17} /></span>
+          <div>
+            <strong>완료되면 알림으로 알려드릴게요</strong>
+            <p>다른 화면을 둘러봐도 매칭은 계속됩니다.</p>
+          </div>
         </div>
       </div>
       <div className={`footer-bar matching-footer${statusError ? ' matching-rematch-footer' : ''}`}>

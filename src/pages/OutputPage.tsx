@@ -6,11 +6,29 @@ import {
   type LivePlaceInfo,
 } from '@/api';
 import { ApiError } from '@/api/client';
-import { Header } from '@/components/Header';
+import {
+  BedIcon,
+  BusIcon,
+  CalendarIcon,
+  CarIcon,
+  CheckIcon,
+  ChecklistIcon,
+  ChevronDownIcon,
+  ForkIcon,
+  InfoIcon,
+  PencilIcon,
+  PinIcon,
+  RefreshIcon,
+  RouteIcon,
+  VideoIcon,
+  WalkIcon,
+} from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { KakaoRouteMap } from '@/components/KakaoRouteMap';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { nightsAndDays } from '@/lib/options';
+import { daysUntil, parseDate, startOfToday, WEEKDAY_LABELS } from '@/lib/tripDates';
 import { getTravelGenerationRequest } from '@/storage';
 import type {
   ItineraryDay,
@@ -368,8 +386,8 @@ function OutputPage({ tab }: { tab: OutputTab }) {
   }
 
   return (
-    <section className="screen output-screen">
-      <Header title="추천 경로" onBack={() => navigate('/home', { replace: true })} showBell />
+    <section className="screen output-screen jo-screen">
+      <PlannerHeader title="추천 경로" onBack={() => navigate('/home', { replace: true })} />
       <div className="scroll output-scroll">
         <OutputTripSummary
           detail={detail}
@@ -380,7 +398,12 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         />
         {error ? <p className="field-help error" role="alert">{error}</p> : null}
         <OutputTabs active={tab} onChange={changeTab} />
-        {tab === 'places' ? <p className="output-helper">다음 장소로 이동할 때 체크표시를 눌러주세요.</p> : null}
+        {tab === 'places' ? (
+          <p className="output-helper jo-hint">
+            <InfoIcon size={15} />
+            다음 장소로 이동할 때 체크표시를 눌러주세요.
+          </p>
+        ) : null}
 
         {tab === 'places' ? (
           <PlacesOutput
@@ -401,11 +424,13 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         <RecommendedMusic detail={detail} />
       </div>
       <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailId(null)} />
-      <div className="bottom-actions">
-        <button type="button" onClick={() => toast.show('서비스 준비 중입니다.')}>
+      <div className="bottom-actions jo-bottom-actions">
+        <button type="button" className="jo-action-light" onClick={() => toast.show('서비스 준비 중입니다.')}>
+          <ChecklistIcon size={18} />
           체크리스트
         </button>
-        <button type="button" onClick={() => toast.show('서비스 준비 중입니다.')}>
+        <button type="button" className="jo-action-dark" onClick={() => toast.show('서비스 준비 중입니다.')}>
+          <VideoIcon size={18} />
           여행 영상
         </button>
       </div>
@@ -434,8 +459,8 @@ function OutputPage({ tab }: { tab: OutputTab }) {
 
 function OutputFrame({ onBack, children }: { onBack: () => void; children: ReactNode }) {
   return (
-    <section className="screen output-screen">
-      <Header title="추천 경로" onBack={onBack} showBell />
+    <section className="screen output-screen jo-screen">
+      <PlannerHeader title="추천 경로" onBack={onBack} />
       <div className="empty-box output-empty">{children}</div>
     </section>
   );
@@ -462,41 +487,98 @@ function OutputTripSummary({
     .filter(Boolean)
     .join(' · ');
   const confirmed = Boolean(detail.confirmed_at);
+  const dday = summaryDday(detail.start_date, detail.end_date);
+  const dateText = `${detail.start_date.replaceAll('-', '.')} - ${detail.end_date.replaceAll('-', '.')} · ${nightsAndDays(detail.start_date, detail.end_date)}`;
+
+  const copy = (
+    <div className="output-trip-copy">
+      <h2>{detail.title}</h2>
+      <p className="jo-summary-line">
+        <CalendarIcon size={14} />
+        <small>{dateText}</small>
+      </p>
+      <p className="jo-summary-line">
+        <PinIcon size={14} />
+        <span>{meta || detail.destination}</span>
+      </p>
+    </div>
+  );
+
+  if (confirmed) {
+    return (
+      <div className="output-trip-summary jo-summary confirmed">
+        <div className="jo-summary-grid" aria-hidden="true" />
+        <div className="jo-summary-top">
+          {dday ? <span className="jo-dday">{dday}</span> : <span />}
+          <span className="jo-summary-badge">
+            <CheckIcon size={11} />
+            일정 확정
+          </span>
+        </div>
+        {copy}
+        <div className="output-summary-actions">
+          <button type="button" className="recreate output-recreate jo-recreate-ghost" onClick={onRecreate}>
+            <RefreshIcon size={16} />
+            일정 다시 만들기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="output-trip-summary">
-      <div className="output-trip-copy">
-        <h2>{detail.title}</h2>
-        <p>{meta || detail.destination}</p>
-        <small>
-          {detail.start_date.replaceAll('-', '.')} - {detail.end_date.replaceAll('-', '.')} · {nightsAndDays(detail.start_date, detail.end_date)}
-        </small>
+    <div className="output-trip-summary jo-summary draft">
+      <div className="jo-summary-top">
+        <span className="jo-summary-badge draft">확정 전 · AI 추천 일정</span>
+        {dday ? <span className="jo-dday light">{dday}</span> : null}
       </div>
+      {copy}
+      <p className="jo-summary-hint">
+        <InfoIcon size={14} />
+        확정한 여행만 홈의 최근 여행에 표시돼요.
+      </p>
       <div className="output-summary-actions">
         <button
           type="button"
-          className={`output-confirm${confirmed ? ' done' : ''}`}
-          disabled={confirmed || confirming}
-          onClick={onConfirm}>
-          {confirmed ? '확정 완료' : confirming ? '확정 중...' : '여행 확정하기'}
+          className="recreate output-recreate jo-recreate"
+          aria-label="일정 다시 만들기"
+          onClick={onRecreate}>
+          <RefreshIcon size={16} />
+          다시 만들기
         </button>
-        <button type="button" className="recreate output-recreate" onClick={onRecreate}>
-          일정 다시 만들기
+        <button
+          type="button"
+          className="output-confirm jo-confirm"
+          disabled={confirming}
+          onClick={onConfirm}>
+          <CheckIcon size={14} />
+          {confirming ? '확정 중...' : '여행 확정하기'}
         </button>
       </div>
     </div>
   );
 }
 
+/** 요약 카드의 D-day 표시. 이미 끝난 여행은 표시하지 않는다. */
+function summaryDday(start: string, end: string) {
+  const today = startOfToday().getTime();
+  if (parseDate(start).getTime() <= today && today <= parseDate(end).getTime()) return '여행 중';
+  const days = daysUntil(start);
+  if (days === 0) return 'D-DAY';
+  if (days > 0) return `D-${days}`;
+  return null;
+}
+
 function OutputTabs({ active, onChange }: { active: OutputTab; onChange: (tab: OutputTab) => void }) {
   return (
-    <div className="tabs output-tabs" role="tablist" aria-label="여행 결과 보기">
+    <div className="tabs output-tabs jo-tabs" role="tablist" aria-label="여행 결과 보기">
       <button
         type="button"
         role="tab"
         aria-selected={active === 'places'}
         className={active === 'places' ? 'on' : ''}
         onClick={() => onChange('places')}>
+        <PinIcon size={15} />
         장소
       </button>
       <button
@@ -505,6 +587,7 @@ function OutputTabs({ active, onChange }: { active: OutputTab; onChange: (tab: O
         aria-selected={active === 'routes'}
         className={active === 'routes' ? 'on' : ''}
         onClick={() => onChange('routes')}>
+        <RouteIcon size={15} />
         이동 경로
       </button>
     </div>
@@ -537,7 +620,7 @@ function PlacesOutput({
           <article key={day.itinerary_day_id} className="output-day-card">
             <div className="output-day-heading">
               <strong>DAY {day.day_number}</strong>
-              <span>{day.date.replaceAll('-', '.')}</span>
+              <span>{formatDayDate(day.date)}</span>
               <small>{day.day_number} / {detail.itinerary_days.length}일</small>
             </div>
             <div className="output-place-timeline">
@@ -612,10 +695,13 @@ function OutputPlaceRow({
         <div className="output-place-heading">
           <div>
             <strong>{place.name}</strong>
-            <span>{placeMeta(place)}</span>
+            <span className="jo-place-meta">
+              {placeTime(place) ? <span className="jo-place-time">{placeTime(place)}</span> : null}
+              <PlaceTypeTag type={place.place_type} />
+            </span>
           </div>
           <button type="button" className="ghost-icon output-edit" onClick={onChange} aria-label={`${place.name} 장소 변경`}>
-            ✎
+            <PencilIcon size={14} />
           </button>
         </div>
         {place.address ? <p className="output-place-address">{place.address}</p> : null}
@@ -638,12 +724,34 @@ function OutputPlaceRow({
             disabled={updating}
             aria-label={`${place.name} 일정 ${place.is_completed ? '완료 취소' : '완료'}`}
             onClick={onToggle}>
-            {place.is_completed ? '✓' : ''}
+            {place.is_completed ? <CheckIcon size={13} /> : null}
           </button>
         ) : null}
       </div>
     </div>
   );
+}
+
+function PlaceTypeTag({ type }: { type?: ItineraryPlaceItem['place_type'] }) {
+  if (type === 'RESTAURANT') {
+    return <em className="jo-tag food"><ForkIcon size={11} />식당</em>;
+  }
+  if (type === 'ACCOMMODATION') {
+    return <em className="jo-tag stay"><BedIcon size={11} />숙소</em>;
+  }
+  return <em className="jo-tag tour"><PinIcon size={11} />관광</em>;
+}
+
+function TransportIcon({ route, size = 16 }: { route: ItineraryRouteItem; size?: number }) {
+  const label = transportLabel(route);
+  if (label === '도보') return <WalkIcon size={size} />;
+  if (label === '차량') return <CarIcon size={size} />;
+  return <BusIcon size={size} />;
+}
+
+function transportTone(route: ItineraryRouteItem) {
+  const label = transportLabel(route);
+  return label === '도보' ? 'walk' : label === '차량' ? 'car' : 'transit';
 }
 
 function RouteInfoDisclosure({
@@ -675,8 +783,14 @@ function RouteInfoDisclosure({
         aria-expanded={expanded}
         aria-label={`${routeSummary(route)} ${expanded ? '상세 닫기' : '상세 보기'}`}
         onClick={onToggle}>
-        <span>{routeSummary(route)}</span>
-        <span className="route-info-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
+        <span className={`jo-route-icon ${transportTone(route)}`} aria-hidden="true">
+          <TransportIcon route={route} />
+        </span>
+        <span className="jo-route-text">
+          <strong>{routeHeadline(route)}</strong>
+          {routeSubline(route) ? <small>{routeSubline(route)}</small> : null}
+        </span>
+        <span className="route-info-chevron" aria-hidden="true"><ChevronDownIcon size={16} /></span>
       </button>
       {expanded ? (
         <RouteInfoPanel
@@ -745,7 +859,7 @@ function RouteInfoPanel({
         disabled={updating}
         aria-label={`일정 ${completed ? '완료 취소' : '완료'}`}
         onClick={onToggleCompletion}>
-        {completed ? '✓' : ''}
+        {completed ? <CheckIcon size={13} /> : null}
       </button>
     </div>
   );
@@ -760,10 +874,30 @@ function RoutesOutput({
   places: ItineraryPlaceItem[];
   onOpenRouteDetail: (entry: RouteEntry) => void;
 }) {
-  const routeEntries = useMemo(
-    () => detail.itinerary_days.flatMap((day) => getRouteEntries(day)),
-    [detail],
+  // null = 전체 일정. 일차를 고르면 그날 장소·이동만 지도와 목록에 보여준다.
+  const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
+  const days = detail.itinerary_days;
+  const selectedDay = days.find((day) => day.itinerary_day_id === selectedDayId) ?? null;
+  const visibleDays = selectedDay ? [selectedDay] : days;
+
+  // 장소 번호는 장소 탭과 같게 전체 일정 기준 번호를 유지한다.
+  const numberById = useMemo(
+    () => new Map(places.map((place, index) => [place.itinerary_item_id, index + 1])),
+    [places],
   );
+  const visiblePlaces = useMemo(
+    () => (selectedDay ? selectedDay.items.filter(isPlaceItem) : places),
+    [places, selectedDay],
+  );
+  const mapPoints = useMemo(
+    () => visiblePlaces.map((place) => ({ ...place, number: numberById.get(place.itinerary_item_id) })),
+    [numberById, visiblePlaces],
+  );
+  const routeEntries = useMemo(
+    () => visibleDays.flatMap((day) => getRouteEntries(day)),
+    [visibleDays],
+  );
+  const totals = useMemo(() => routeTotals(routeEntries), [routeEntries]);
   const [expandedRouteId, setExpandedRouteId] = useState<number | null>(routeEntries[0]?.route.itinerary_item_id ?? null);
 
   useEffect(() => {
@@ -772,24 +906,72 @@ function RoutesOutput({
 
   return (
     <div className="output-routes">
-      <div className="map-box route-map-box output-map-box">
-        <KakaoRouteMap points={places} />
+      <div className="jo-day-chips" role="group" aria-label="일차 선택">
+        <button
+          type="button"
+          className={`jo-day-chip${selectedDay ? '' : ' on'}`}
+          aria-pressed={!selectedDay}
+          onClick={() => setSelectedDayId(null)}>
+          <strong>전체</strong>
+          <small>{days.length}일</small>
+        </button>
+        {days.map((day) => (
+          <button
+            key={day.itinerary_day_id}
+            type="button"
+            className={`jo-day-chip${selectedDay?.itinerary_day_id === day.itinerary_day_id ? ' on' : ''}`}
+            aria-pressed={selectedDay?.itinerary_day_id === day.itinerary_day_id}
+            onClick={() => setSelectedDayId(day.itinerary_day_id)}>
+            <strong>DAY {day.day_number}</strong>
+            <small>{formatChipDate(day.date)}</small>
+          </button>
+        ))}
       </div>
+
+      <div className="map-box route-map-box output-map-box">
+        <KakaoRouteMap points={mapPoints} />
+        <span className="jo-map-label">
+          <i aria-hidden="true" />
+          {selectedDay ? `DAY ${selectedDay.day_number}` : '전체'} · 장소 {visiblePlaces.length}곳
+        </span>
+      </div>
+
+      <dl className="jo-route-totals">
+        <div>
+          <dt>총 이동</dt>
+          <dd>{formatTotalDuration(totals.minutes)}</dd>
+        </div>
+        <div>
+          <dt>거리</dt>
+          <dd>{totals.km > 0 ? `${totals.km.toFixed(1)}km` : '-'}</dd>
+        </div>
+        <div>
+          <dt>교통비</dt>
+          <dd>{`${totals.fare.toLocaleString()}원`}</dd>
+        </div>
+      </dl>
+
       <div className="route-index-list output-route-index-list">
-        {places.map((place, index) => (
+        {visiblePlaces.map((place) => (
           <div className="route-index-row" key={place.itinerary_item_id}>
-            <span className="map-pin on">{index + 1}</span>
+            <span className={`map-pin on${place.place_type === 'ACCOMMODATION' ? ' stay' : ''}`}>
+              {numberById.get(place.itinerary_item_id)}
+            </span>
             <span>{place.name}</span>
           </div>
         ))}
       </div>
+
       <div className="output-route-days">
-        {detail.itinerary_days.map((day) => {
+        {visibleDays.map((day) => {
           const dayRoutes = getRouteEntries(day);
           if (dayRoutes.length === 0) return null;
           return (
             <article className="output-route-day" key={day.itinerary_day_id}>
-              <div className="output-route-day-heading">DAY {day.day_number} 이동</div>
+              <div className="output-route-day-heading">
+                <strong>DAY {day.day_number}</strong>
+                <span>이동 {dayRoutes.length}구간</span>
+              </div>
               {dayRoutes.map((entry) => (
                 <RouteDetailCard
                   key={entry.route.itinerary_item_id}
@@ -808,6 +990,33 @@ function RoutesOutput({
   );
 }
 
+function routeTotals(entries: RouteEntry[]) {
+  return entries.reduce(
+    (sum, { route }) => ({
+      minutes: sum.minutes + (route.duration_minutes ?? 0),
+      km: sum.km + (route.distance_meter != null ? route.distance_meter / 1000 : route.distance_km ?? 0),
+      fare: sum.fare + (route.total_fare_amount ?? 0),
+    }),
+    { minutes: 0, km: 0, fare: 0 },
+  );
+}
+
+/** 107 → 1시간 47분 */
+function formatTotalDuration(minutes: number) {
+  if (minutes <= 0) return '-';
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}분`;
+  return rest === 0 ? `${hours}시간` : `${hours}시간 ${rest}분`;
+}
+
+/** 2026-11-04 → 11.04 수 */
+function formatChipDate(value: string) {
+  const date = parseDate(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${WEEKDAY_LABELS[date.getDay()]}`;
+}
+
 function RouteDetailCard({
   entry,
   expanded,
@@ -823,9 +1032,14 @@ function RouteDetailCard({
   return (
     <div className={`output-route-card${expanded ? ' expanded' : ''}`}>
       <button type="button" className="output-route-toggle" aria-expanded={expanded} onClick={onToggle}>
-        <span className="output-route-name">{from?.name ?? '이전 장소'} → {to?.name ?? '다음 장소'}</span>
-        <span className="output-route-summary">{routeSummary(route)}</span>
-        <span className="output-route-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
+        <span className={`jo-route-icon ${transportTone(route)}`} aria-hidden="true">
+          <TransportIcon route={route} />
+        </span>
+        <span className="jo-route-text">
+          <span className="output-route-name">{from?.name ?? '이전 장소'} → {to?.name ?? '다음 장소'}</span>
+          <span className="output-route-summary">{routeSummary(route)}</span>
+        </span>
+        <span className="output-route-chevron" aria-hidden="true"><ChevronDownIcon size={16} /></span>
       </button>
       {expanded ? (
         <div className="output-route-detail">
@@ -1208,19 +1422,6 @@ function findNextPlace(items: ItineraryItem[], index: number) {
   return undefined;
 }
 
-function placeMeta(place: ItineraryPlaceItem) {
-  const time = place.start_time
-    ? `${formatTimeToMinute(place.start_time)}${place.end_time ? ` - ${formatTimeToMinute(place.end_time)}` : ''}`
-    : '';
-  const stay = place.stay_minutes ? `${place.stay_minutes}분 체류` : '';
-  const type = place.place_type === 'RESTAURANT'
-    ? '식당'
-    : place.place_type === 'ACCOMMODATION'
-      ? '숙소'
-      : '관광';
-  return [time, type, stay].filter(Boolean).join(' · ');
-}
-
 function formatTimeToMinute(value: string) {
   const match = value.match(/(?:^|T)(\d{1,2}):(\d{2})/);
   return match ? `${match[1].padStart(2, '0')}:${match[2]}` : value;
@@ -1236,6 +1437,37 @@ function routeSummary(route: ItineraryRouteItem) {
       : '';
   const fare = route.total_fare_amount != null ? `${route.total_fare_amount.toLocaleString()}원` : transport === '도보' ? '무료' : '';
   return [transport, duration, distance, fare].filter(Boolean).join(' · ');
+}
+
+function routeDistanceLabel(route: ItineraryRouteItem) {
+  if (route.distance_meter != null) return `${(route.distance_meter / 1000).toFixed(1)}km`;
+  if (route.distance_km != null) return `${route.distance_km}km`;
+  return '';
+}
+
+/** 이동 구간 첫 줄: 수단 + 소요 시간 (예: 대중교통 38분) */
+function routeHeadline(route: ItineraryRouteItem) {
+  return [transportLabel(route), route.duration_minutes != null ? `${route.duration_minutes}분` : ''].filter(Boolean).join(' ');
+}
+
+/** 이동 구간 둘째 줄: 거리 · 요금 (예: 6.6km · 1,250원) */
+function routeSubline(route: ItineraryRouteItem) {
+  const fare = route.total_fare_amount != null
+    ? `${route.total_fare_amount.toLocaleString()}원`
+    : transportLabel(route) === '도보' ? '무료' : '';
+  return [routeDistanceLabel(route), fare].filter(Boolean).join(' · ');
+}
+
+function placeTime(place: ItineraryPlaceItem) {
+  if (!place.start_time) return '';
+  return `${formatTimeToMinute(place.start_time)}${place.end_time ? ` - ${formatTimeToMinute(place.end_time)}` : ''}`;
+}
+
+/** 2026-11-04 → 11.04 (수) */
+function formatDayDate(value: string) {
+  const date = parseDate(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}\u00a0(${WEEKDAY_LABELS[date.getDay()]})`;
 }
 
 function transportLabel(route: ItineraryRouteItem) {

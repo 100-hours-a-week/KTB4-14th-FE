@@ -1,7 +1,22 @@
 import type { ItineraryPlaceItem } from '@/types';
 import { useEffect, useRef, useState } from 'react';
 
-type RoutePoint = Pick<ItineraryPlaceItem, 'itinerary_item_id' | 'name' | 'latitude' | 'longitude'>;
+type RoutePoint = Pick<ItineraryPlaceItem, 'itinerary_item_id' | 'name' | 'latitude' | 'longitude'> &
+  Partial<Pick<ItineraryPlaceItem, 'place_type'>> & {
+    /** 지도에 표시할 장소 번호. 없으면 순서대로 1부터 매긴다. */
+    number?: number;
+  };
+
+/** 플래너 인디고 경로선 색 (tokens.css --j-indigo) */
+const ROUTE_LINE_COLOR = '#3445d9';
+
+function pointLabel(point: RoutePoint, index: number) {
+  return point.number ?? index + 1;
+}
+
+function pointClass(base: string, point: RoutePoint) {
+  return point.place_type === 'ACCOMMODATION' ? `${base} stay` : base;
+}
 
 type KakaoLatLng = { getLat: () => number; getLng: () => number };
 type KakaoMapInstance = { setCenter: (position: KakaoLatLng) => void; setBounds: (bounds: unknown) => void };
@@ -111,22 +126,24 @@ export function KakaoRouteMap({ points }: { points: RoutePoint[] }) {
     const bounds = new window.kakao.maps.LatLngBounds();
     positions.forEach((position, index) => {
       bounds.extend(position);
-      const marker = new window.kakao!.maps.Marker({ map, position, title: `${index + 1}. ${valid[index].name}` });
+      const point = valid[index];
+      // 기본 핀 대신 번호 원형 오버레이를 보이게 하고, 마커는 툴팁·접근성용으로 투명하게 둔다.
+      const marker = new window.kakao!.maps.Marker({ map, position, title: `${pointLabel(point, index)}. ${point.name}`, opacity: 0 });
       markersRef.current.push(marker);
       const overlay = new window.kakao!.maps.CustomOverlay({
         map,
         position,
-        content: `<span class="route-map-number">${index + 1}</span>`,
-        yAnchor: 1,
+        content: `<span class="${pointClass('route-map-number', point)}">${pointLabel(point, index)}</span>`,
+        yAnchor: 0.5,
       });
       overlaysRef.current.push(overlay);
     });
     polylineRef.current = new window.kakao.maps.Polyline({
       map,
       path: positions,
-      strokeWeight: 4,
-      strokeColor: '#1d2b3f',
-      strokeOpacity: 0.85,
+      strokeWeight: 5,
+      strokeColor: ROUTE_LINE_COLOR,
+      strokeOpacity: 0.9,
       strokeStyle: 'solid',
     });
     map.setBounds(bounds);
@@ -168,10 +185,10 @@ function FallbackRouteMap({
         return (
           <span
             key={point.itinerary_item_id}
-            className="kakao-fallback-pin"
+            className={pointClass('kakao-fallback-pin', point)}
             style={{ left: `${left}%`, top: `${top}%` }}
-            title={`${index + 1}. ${point.name}`}>
-            {index + 1}
+            title={`${pointLabel(point, index)}. ${point.name}`}>
+            {pointLabel(point, index)}
           </span>
         );
       })}

@@ -1,4 +1,5 @@
 @import './components.css';
+@import './home-login.css';
 
 .login {
   flex: 1;

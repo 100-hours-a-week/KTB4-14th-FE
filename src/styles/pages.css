@@ -1,6 +1,7 @@
 @import './components.css';
 @import './home-login.css';
 @import './trips-route.css';
+@import './create-travel.css';
 
 .login {
   flex: 1;

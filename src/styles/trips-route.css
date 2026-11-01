@@ -1,0 +1,990 @@
+/* =========================================================
+   여행 기록 · 추천 경로 리디자인 (#149) — 플래너 인디고 테마
+   jp-* : 공용 헤더 / jr-* : 여행 기록 / jo-* : 추천 경로
+   pages.css 의 기존 규칙보다 뒤에서 이기도록 화면 클래스(.jr-screen, .jo-screen)로 범위를 한정한다.
+   ========================================================= */
+
+/* ---------- 공용 헤더 ---------- */
+.jp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 10px 16px 6px;
+}
+
+.jp-header-title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--j-ink);
+}
+
+.jp-header-btn {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--j-line);
+  border-radius: 14px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-ink);
+}
+
+.jp-header-btn .jp-header-badge {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: var(--j-coral);
+}
+
+.jp-header-btn:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+/* ---------- 여행 기록 ---------- */
+.screen.jr-screen {
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.jr-screen .jr-scroll {
+  padding: 6px 16px 28px;
+}
+
+.jr-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.jr-filter {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--j-line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--j-sub);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.jr-filter.on {
+  border-color: var(--j-ink);
+  background: var(--j-ink);
+  color: var(--white);
+}
+
+.jr-filter:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+.jr-group + .jr-group {
+  margin-top: 22px;
+}
+
+.jr-group-title {
+  margin: 0 2px 10px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--j-ink);
+}
+
+.jr-screen .jr-list {
+  gap: 10px;
+}
+
+.jr-badge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.jr-badge.dday {
+  background: #fff0ed;
+  color: #e0442f;
+}
+
+.jr-badge.ongoing {
+  background: var(--j-indigo);
+  color: var(--white);
+}
+
+.jr-badge.confirmed {
+  background: var(--j-mint-50);
+  color: var(--j-mint-dark);
+}
+
+.jr-badge.draft {
+  background: #fff4de;
+  color: #9a6200;
+}
+
+.jr-screen .hv-trip-chevron {
+  margin-left: -4px;
+}
+
+.jr-empty {
+  padding: 28px 16px;
+  border: 1.5px dashed var(--j-line);
+  border-radius: 20px;
+  background: var(--white);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--j-muted);
+}
+
+/* ---------- 추천 경로 ---------- */
+.screen.jo-screen {
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.jo-screen .output-scroll {
+  padding: 6px 16px 20px;
+}
+
+/* 요약 카드 */
+.jo-screen .output-trip-summary.jo-summary {
+  position: relative;
+  display: block;
+  margin-bottom: 14px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid var(--j-line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+}
+
+.jo-screen .jo-summary.confirmed {
+  border-color: transparent;
+  background: linear-gradient(150deg, #4a5bf0 0%, var(--j-indigo) 55%, var(--j-indigo-dark) 100%);
+  box-shadow: 0 14px 30px rgba(52, 69, 217, 0.3);
+  color: var(--white);
+}
+
+.jo-summary-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+  pointer-events: none;
+}
+
+.jo-summary > *:not(.jo-summary-grid) {
+  position: relative;
+}
+
+.jo-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.jo-dday {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--j-indigo);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+
+.jo-dday.light {
+  background: #fff0ed;
+  color: #e0442f;
+}
+
+.jo-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.jo-summary-badge.draft {
+  border: 0;
+  border-radius: 8px;
+  background: #fff4de;
+  color: #9a6200;
+}
+
+.jo-screen .jo-summary .output-trip-copy h2 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--j-ink);
+}
+
+.jo-screen .jo-summary.confirmed .output-trip-copy h2 {
+  color: var(--white);
+}
+
+.jo-screen .jo-summary .jo-summary-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--j-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.jo-screen .jo-summary .jo-summary-line small {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.jo-screen .jo-summary .jo-summary-line svg {
+  flex-shrink: 0;
+  color: var(--j-muted);
+}
+
+.jo-screen .jo-summary.confirmed .jo-summary-line,
+.jo-screen .jo-summary.confirmed .jo-summary-line svg {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.jo-summary-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo-dark);
+  font-size: 12px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.jo-summary-hint svg {
+  flex-shrink: 0;
+}
+
+.jo-screen .jo-summary .output-summary-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.jo-screen .jo-summary .output-summary-actions button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 12px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.jo-screen .jo-summary .jo-recreate-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+}
+
+.jo-screen .jo-summary .jo-recreate {
+  flex: 0.85;
+  border: 1px solid var(--j-line);
+  background: var(--white);
+  color: var(--j-ink);
+}
+
+.jo-screen .jo-summary .jo-confirm {
+  flex: 1.15;
+  border: 0;
+  background: var(--j-indigo);
+  box-shadow: 0 8px 18px rgba(52, 69, 217, 0.3);
+  color: var(--white);
+}
+
+.jo-screen .jo-summary .jo-confirm:disabled {
+  opacity: 0.7;
+}
+
+/* 장소 / 이동 경로 탭 */
+.jo-screen .output-tabs.jo-tabs {
+  margin-bottom: 10px;
+  padding: 4px;
+  border-radius: 16px;
+  background: #e9ebf3;
+}
+
+.jo-screen .jo-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 40px;
+  border-radius: 12px;
+  color: var(--j-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.jo-screen .jo-tabs button.on {
+  background: var(--white);
+  box-shadow: 0 1px 4px rgba(18, 23, 51, 0.1);
+  color: var(--j-ink);
+  font-weight: 800;
+}
+
+/* 안내 배너 */
+.jo-screen .output-helper.jo-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo-dark);
+  font-size: 12px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.jo-hint svg {
+  flex-shrink: 0;
+}
+
+/* 일차 카드 */
+.jo-screen .output-day-card {
+  margin-bottom: 12px;
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  box-shadow: var(--j-shadow-1);
+}
+
+.jo-screen .output-day-heading {
+  align-items: center;
+  gap: 8px;
+  padding: 13px 16px 12px;
+  border-bottom-color: var(--j-line);
+}
+
+.jo-screen .output-day-heading strong {
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: var(--j-indigo);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.jo-screen .output-day-heading span {
+  color: var(--j-ink);
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.jo-screen .output-day-heading small {
+  color: var(--j-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.jo-screen .output-place-timeline {
+  padding: 4px 14px 10px 16px;
+}
+
+.jo-screen .output-place-timeline::before {
+  top: 26px;
+  left: 29px;
+  border-left: 1.5px dashed #d4d7e3;
+  width: 0;
+  background: none;
+}
+
+.jo-screen .output-place-row {
+  gap: 10px;
+  padding: 12px 0 10px;
+}
+
+.jo-screen .output-place-number {
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
+  background: var(--j-ink);
+  font-size: 12px;
+}
+
+.jo-screen .output-place-row.completed .output-place-number {
+  background: var(--j-mint);
+}
+
+.jo-screen .output-place-row.completed .output-place-heading strong {
+  color: var(--j-muted);
+}
+
+.jo-screen .output-place-content {
+  padding-right: 0;
+}
+
+.jo-screen .output-place-heading > div {
+  flex: 1;
+  padding-right: 36px;
+}
+
+.jo-screen .output-place-heading strong {
+  margin-top: 2px;
+  color: var(--j-ink);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.jo-screen .output-place-heading .jo-place-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+
+.jo-screen .output-place-heading .jo-place-time {
+  display: inline;
+  margin: 0;
+  color: var(--j-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.jo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.jo-tag.tour {
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+.jo-tag.food {
+  background: #fff0ed;
+  color: #e0442f;
+}
+
+.jo-tag.stay {
+  background: #f1eeff;
+  color: #6a4bd8;
+}
+
+.jo-screen .output-place-address {
+  margin-top: 4px;
+  color: var(--j-muted);
+  font-size: 11px;
+}
+
+.jo-screen .output-edit {
+  top: 0;
+  right: 0;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--j-bg);
+  color: var(--j-muted);
+}
+
+/* 이동 구간 (장소 탭) */
+.jo-screen .route-info {
+  margin-top: 10px;
+}
+
+.jo-screen .route-info-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 9px 36px 9px 10px;
+  border: 1px solid var(--j-line);
+  border-radius: 14px;
+  background: #fafbfd;
+  color: var(--j-ink);
+}
+
+.jo-screen .route-info.expanded .route-info-toggle {
+  border-color: var(--j-indigo-100);
+  border-radius: 14px 14px 0 0;
+  background: var(--white);
+}
+
+.jo-screen .route-info-toggle > span:first-child {
+  display: grid;
+  overflow: visible;
+  white-space: normal;
+}
+
+.jo-route-icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.jo-route-icon.transit {
+  background: var(--j-mint-50);
+  color: var(--j-mint-dark);
+}
+
+.jo-route-icon.walk {
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+.jo-route-icon.car {
+  background: #fff0ed;
+  color: #e0442f;
+}
+
+.jo-route-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jo-route-text strong,
+.jo-route-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jo-route-text strong {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.jo-route-text small {
+  color: var(--j-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.jo-screen .route-info-chevron {
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  color: #a3a8bf;
+  transition: transform 0.2s ease;
+}
+
+.jo-screen .route-info.expanded .route-info-chevron {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.jo-screen .route-info-panel {
+  border-color: var(--j-indigo-100);
+  border-radius: 0 0 14px 14px;
+  background: #f8f9ff;
+}
+
+.jo-screen .route-detail-open {
+  border-color: var(--j-indigo-100);
+  border-radius: 10px;
+  color: var(--j-indigo);
+}
+
+/* 완료 체크 */
+.jo-screen .completion-check {
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #cfd3e2;
+  background: var(--white);
+}
+
+.jo-screen .completion-check.checked {
+  border-color: var(--j-mint);
+  background: var(--j-mint);
+  color: var(--white);
+}
+
+/* 이동 경로 탭 */
+.jo-day-chips {
+  display: flex;
+  gap: 8px;
+  margin: 0 -16px 12px;
+  padding: 2px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.jo-day-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.jo-day-chip {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 64px;
+  padding: 7px 12px;
+  border: 1px solid var(--j-line);
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--j-ink);
+  font: inherit;
+}
+
+.jo-day-chip strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.jo-day-chip small {
+  color: var(--j-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.jo-day-chip.on {
+  border-color: var(--j-indigo);
+  background: var(--j-indigo);
+  box-shadow: 0 6px 14px rgba(52, 69, 217, 0.28);
+  color: var(--white);
+}
+
+.jo-day-chip.on small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.jo-day-chip:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+.jo-screen .output-map-box {
+  height: 300px;
+  margin: 0 0 10px;
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  box-shadow: var(--j-shadow-1);
+}
+
+.jo-map-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(18, 23, 51, 0.12);
+  color: var(--j-ink);
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.jo-map-label i {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--j-indigo);
+}
+
+.jo-screen .route-map-number,
+.jo-screen .kakao-fallback-pin {
+  width: 30px;
+  height: 30px;
+  border: 2.5px solid var(--white);
+  background: var(--j-indigo);
+  box-shadow: 0 3px 10px rgba(52, 69, 217, 0.35);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.jo-screen .route-map-number.stay,
+.jo-screen .kakao-fallback-pin.stay {
+  background: #6a4bd8;
+  box-shadow: 0 3px 10px rgba(106, 75, 216, 0.35);
+}
+
+.jo-screen .kakao-fallback-route {
+  background: linear-gradient(135deg, #eef1f7 0%, #e6eaf3 100%);
+}
+
+.jo-screen .kakao-fallback-route polyline {
+  stroke: var(--j-indigo);
+  stroke-dasharray: none;
+  stroke-width: 1.4;
+}
+
+.jo-screen .kakao-fallback-caption {
+  color: var(--j-muted);
+}
+
+.jo-route-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.jo-route-totals > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--j-line);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.jo-route-totals dt {
+  color: var(--j-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.jo-route-totals dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--j-ink);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.jo-screen .output-route-index-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.jo-screen .output-route-index-list .route-index-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--j-line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--j-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jo-screen .output-route-index-list .route-index-row > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jo-screen .output-route-index-list .map-pin {
+  position: static;
+  display: grid;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--j-indigo);
+  color: var(--white);
+  font-size: 11px;
+}
+
+.jo-screen .output-route-index-list .map-pin.stay {
+  background: #6a4bd8;
+}
+
+.jo-screen .output-route-day {
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  box-shadow: var(--j-shadow-1);
+}
+
+.jo-screen .output-route-day-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 16px 12px;
+  border-bottom-color: var(--j-line);
+}
+
+.jo-screen .output-route-day-heading strong {
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: var(--j-indigo);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.jo-screen .output-route-day-heading span {
+  color: var(--j-sub);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.jo-screen .output-route-card + .output-route-card {
+  border-top-color: var(--j-line);
+}
+
+.jo-screen .output-route-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 40px 12px 14px;
+  color: var(--j-ink);
+}
+
+.jo-screen .output-route-name {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.jo-screen .output-route-summary {
+  margin-top: 2px;
+  color: var(--j-muted);
+  font-size: 12px;
+}
+
+.jo-screen .output-route-chevron {
+  color: #a3a8bf;
+  transition: transform 0.2s ease;
+}
+
+.jo-screen .output-route-card.expanded .output-route-chevron {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.jo-screen .output-route-detail {
+  background: #f8f9ff;
+}
+
+.jo-screen .output-route-location-row {
+  color: var(--j-muted);
+  font-size: 12px;
+}
+
+.jo-screen .output-route-location-row strong {
+  color: var(--j-ink);
+}
+
+.jo-screen .route-info-row {
+  font-size: 12px;
+}
+
+/* 하단 버튼 */
+.jo-screen .bottom-actions.jo-bottom-actions {
+  gap: 8px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--j-line);
+  background: var(--white);
+}
+
+.jo-screen .jo-bottom-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 50px;
+  padding: 0 12px;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.jo-screen .jo-bottom-actions .jo-action-light {
+  border: 1px solid var(--j-line);
+  background: var(--white);
+  color: var(--j-ink);
+}
+
+.jo-screen .jo-bottom-actions .jo-action-dark {
+  background: var(--j-ink);
+  color: var(--white);
+}
+
+.jo-screen button:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+@media (max-width: 360px) {
+  .jo-screen .jo-summary .output-trip-copy h2 { font-size: 19px; }
+  .jo-screen .jo-summary .output-summary-actions button { padding: 0 8px; font-size: 13px; }
+  .jo-route-totals dd { font-size: 14px; }
+  .jr-screen .hv-trip-chevron { display: none; }
+}
+
+.jo-screen .route-info-row strong {
+  font-size: 12px;
+}

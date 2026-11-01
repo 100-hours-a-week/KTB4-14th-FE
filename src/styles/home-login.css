@@ -1,0 +1,934 @@
+/* =========================================================
+   로그인 · 홈 리디자인 (#147) — 플래너 인디고 테마
+   lv-* : 로그인 화면 / hv-* : 홈 화면
+   ========================================================= */
+
+/* ---------------- 로그인 ---------------- */
+.lv-screen {
+  background: var(--white);
+  color: var(--j-ink);
+}
+
+.lv-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.lv-hero {
+  position: relative;
+  flex-shrink: 0;
+  height: clamp(340px, 54vh, 460px);
+  background: var(--j-indigo-50);
+  border-radius: 0 0 36px 36px;
+  overflow: hidden;
+}
+
+.lv-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(52, 69, 217, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 69, 217, 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.lv-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 22px 0;
+}
+
+.lv-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 2.4px;
+}
+
+.lv-wordmark-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--j-indigo);
+  color: var(--white);
+  display: grid;
+  place-items: center;
+}
+
+.lv-top-chip {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--j-indigo);
+  background: var(--white);
+  padding: 7px 11px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--j-shadow-1);
+  white-space: nowrap;
+}
+
+/* 일러스트는 340 x 300 기준으로 그리고, 화면에 맞춰 축소한다 */
+.lv-art {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 340px;
+  height: 300px;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+}
+
+.lv-card-calendar {
+  position: absolute;
+  left: 160px;
+  top: 4px;
+  width: 172px;
+  padding: 14px 12px 12px;
+  border-radius: 20px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-2);
+  transform: rotate(7deg);
+}
+
+.lv-card-calendar-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--j-muted);
+  letter-spacing: 0.4px;
+}
+
+.lv-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.lv-calendar-weekday {
+  color: var(--j-muted);
+}
+
+.lv-calendar-day {
+  padding: 3px 0;
+  border-radius: 6px;
+  color: var(--j-ink);
+}
+
+.lv-calendar-day.on {
+  background: var(--j-indigo);
+  color: var(--white);
+}
+
+.lv-card-plan {
+  position: absolute;
+  left: 0;
+  top: 40px;
+  z-index: 2;
+  width: 224px;
+  padding: 14px 14px 12px;
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-2);
+  transform: rotate(-3deg);
+}
+
+.lv-card-plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.lv-card-plan-head strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lv-card-plan-head span {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--white);
+  background: var(--j-indigo);
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+
+.lv-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 28px;
+}
+
+.lv-plan-time {
+  width: 32px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--j-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lv-plan-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  border: 2px solid var(--j-line);
+  display: grid;
+  place-items: center;
+  color: var(--white);
+}
+
+.lv-plan-check.done {
+  border-color: var(--j-indigo);
+  background: var(--j-indigo);
+}
+
+.lv-plan-name {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lv-plan-route {
+  display: block;
+  width: fit-content;
+  margin: -2px 0 2px 41px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--j-mint-dark);
+  background: var(--j-mint-50);
+  padding: 3px 7px;
+  border-radius: 6px;
+}
+
+.lv-digo {
+  position: absolute;
+  right: -4px;
+  bottom: -6px;
+  z-index: 3;
+  width: 140px;
+  height: 145px;
+}
+
+.lv-body {
+  padding: 26px 26px 0;
+}
+
+.lv-headline {
+  font-size: 29px;
+  line-height: 1.3;
+  font-weight: 900;
+  letter-spacing: -1.2px;
+}
+
+.lv-headline em,
+.hv-title em {
+  font-style: normal;
+  color: var(--j-indigo);
+}
+
+.lv-sub {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 500;
+  color: var(--j-sub);
+}
+
+.lv-features {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.lv-features li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--j-line);
+  background: var(--j-bg);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.lv-features i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.lv-features i.indigo { background: var(--j-indigo); }
+.lv-features i.mint { background: var(--j-mint); }
+.lv-features i.coral { background: var(--j-coral); }
+
+.lv-actions {
+  margin-top: auto;
+  padding: 24px 22px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+.lv-kakao {
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--kakao);
+  color: var(--kakao-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.lv-kakao:focus-visible,
+.lv-terms:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+.lv-terms {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--j-muted);
+}
+
+.lv-terms-link {
+  color: var(--j-sub);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 360px) {
+  .lv-art { transform: translateX(-50%) scale(0.86); }
+  .lv-headline { font-size: 26px; }
+}
+
+@media (max-height: 700px) {
+  .lv-hero { height: 320px; }
+  .lv-art { transform: translateX(-50%) scale(0.82); }
+}
+
+@media (max-height: 600px) {
+  .lv-hero { height: 270px; }
+  .lv-art { transform: translateX(-50%) scale(0.7); }
+  .lv-body { padding-top: 20px; }
+}
+
+/* ---------------- 홈 ---------------- */
+.hv-screen {
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.hv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+  padding: 8px 20px 0;
+}
+
+.hv-header-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.7px;
+}
+
+.hv-bell {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--j-ink);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--j-shadow-1);
+}
+
+.hv-bell-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--j-coral);
+  box-shadow: 0 0 0 2.5px var(--j-bg);
+}
+
+.hv-scroll {
+  padding: 6px 20px 28px;
+}
+
+.hv-hello {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--j-sub);
+}
+
+.hv-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--j-indigo-100);
+  color: var(--j-indigo);
+  font-size: 11px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+}
+
+.hv-title {
+  margin-top: 6px;
+  font-size: 25px;
+  line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: -0.9px;
+  word-break: keep-all;
+}
+
+/* 예정 여행 카드 (기존 .hero-card 스타일을 덮어씀) */
+.hero-card.hv-hero {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 26px;
+  background: var(--j-indigo);
+  color: var(--white);
+  box-shadow: 0 14px 30px rgba(52, 69, 217, 0.3);
+}
+
+.hv-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+.hv-hero-top {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hv-dday {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+
+.hv-dday strong {
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -1.4px;
+}
+
+.hv-dday span {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.hv-status {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.hv-hero-title {
+  position: relative;
+  margin-top: 12px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  word-break: keep-all;
+}
+
+.hv-hero-meta {
+  position: relative;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  opacity: 0.88;
+}
+
+.hv-week {
+  position: relative;
+  list-style: none;
+  margin-left: 0;
+  margin-right: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-top: 14px;
+  padding: 8px 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hv-week-day {
+  text-align: center;
+}
+
+.hv-week-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.hv-week-date {
+  display: block;
+  height: 28px;
+  margin-top: 3px;
+  line-height: 28px;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.hv-week-day.in-trip .hv-week-date {
+  background: var(--white);
+  color: var(--j-indigo);
+}
+
+.hv-week-day.trip-start .hv-week-date { border-radius: 10px 0 0 10px; }
+.hv-week-day.trip-end .hv-week-date { border-radius: 0 10px 10px 0; }
+.hv-week-day.trip-start.trip-end .hv-week-date { border-radius: 10px; }
+
+.hv-week-day.today:not(.in-trip) .hv-week-date {
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.hv-hero-cta {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--j-indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+/* 예정 여행 없음 */
+.hv-empty {
+  position: relative;
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 26px;
+  border: 1px solid var(--j-line);
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  overflow: hidden;
+}
+
+.hv-empty-grid {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 180px;
+  height: 150px;
+  background-image:
+    linear-gradient(rgba(52, 69, 217, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 69, 217, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(circle at 100% 0%, #000 30%, transparent 72%);
+  mask-image: radial-gradient(circle at 100% 0%, #000 30%, transparent 72%);
+}
+
+.hv-empty-digo {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  width: 88px;
+  height: 92px;
+}
+
+.hv-eyebrow {
+  position: relative;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--j-indigo);
+}
+
+.hv-empty-title {
+  position: relative;
+  margin-top: 6px;
+  padding-right: 92px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  word-break: keep-all;
+}
+
+.hv-empty-desc {
+  position: relative;
+  margin-top: 6px;
+  padding-right: 80px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  font-weight: 500;
+  color: var(--j-sub);
+  word-break: keep-all;
+}
+
+.hv-steps {
+  position: relative;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.hv-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: var(--j-bg);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--j-sub);
+}
+
+.hv-step-num {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--j-indigo-100);
+  color: var(--j-indigo);
+  font-size: 10px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.hv-primary-btn {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--j-indigo);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(52, 69, 217, 0.28);
+}
+
+/* 섹션 */
+.hv-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 26px 0 10px;
+}
+
+.hv-section-title {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+}
+
+.hv-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0 6px 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--j-muted);
+}
+
+/* 바로가기 */
+.hv-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hv-quick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--j-line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  text-align: left;
+  font: inherit;
+  color: var(--j-ink);
+}
+
+.hv-quick strong {
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.hv-quick-desc {
+  margin-top: 3px;
+  word-break: keep-all;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--j-muted);
+}
+
+.hv-quick-arrow {
+  position: absolute;
+  right: 14px;
+  top: 16px;
+  width: 26px;
+  height: 26px;
+  padding: 7px;
+  border-radius: 50%;
+  background: var(--j-bg);
+  color: var(--j-muted);
+}
+
+.hv-quick-icon {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--white);
+}
+
+.hv-quick-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 48%);
+  pointer-events: none;
+}
+
+.hv-quick-icon.create {
+  background: linear-gradient(145deg, #6b7bff, var(--j-indigo) 60%, var(--j-indigo-dark));
+  box-shadow: 0 8px 18px rgba(52, 69, 217, 0.36), inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.hv-quick-icon.record {
+  background: linear-gradient(145deg, #4fe0b6, var(--j-mint) 60%, #0e8a6a);
+  box-shadow: 0 8px 18px rgba(20, 169, 130, 0.32), inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* 최근 여행 (기존 .list-card 스타일을 덮어씀) */
+.hv-trip-list {
+  display: grid;
+  gap: 9px;
+}
+
+.list-card.hv-trip {
+  min-height: 0;
+  gap: 12px;
+  padding: 11px 12px 11px 11px;
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  font: inherit;
+  color: var(--j-ink);
+}
+
+/* 달력형 날짜 블록: 테두리 반경 안쪽으로 글자가 잘리지 않게 여백을 두고 고정 폭을 쓴다 */
+.hv-cal {
+  flex-shrink: 0;
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 14px;
+  border: 1.5px solid var(--j-indigo-100);
+  background: var(--white);
+  overflow: hidden;
+  text-align: center;
+}
+
+.hv-cal-band {
+  display: block;
+  padding: 3px 4px 2px;
+  background: var(--j-indigo);
+  color: var(--white);
+  font-size: 10.5px;
+  line-height: 15px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hv-cal-day {
+  display: block;
+  margin-top: 5px;
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hv-cal-weekday {
+  display: block;
+  margin: 3px 0 6px;
+  font-size: 10.5px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--j-muted);
+}
+
+.hv-cal.past-year {
+  border-color: #d9dce8;
+}
+
+.hv-cal.past-year .hv-cal-band {
+  background: var(--j-muted);
+}
+
+.hv-trip-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hv-trip-body strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.hv-trip-range {
+  margin-top: 4px;
+  word-break: keep-all;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--j-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.hv-trip-length {
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--j-muted);
+}
+
+.hv-trip-tag {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: var(--j-bg);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--j-sub);
+}
+
+.hv-trip-chevron {
+  flex-shrink: 0;
+  color: #b5b9cc;
+}
+
+.hv-empty-list {
+  padding: 24px 16px;
+  border: 1.5px dashed var(--j-line);
+  border-radius: 20px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--j-muted);
+}
+
+.hv-bell:focus-visible,
+.hv-quick:focus-visible,
+.hv-primary-btn:focus-visible,
+.hv-hero-cta:focus-visible,
+.hv-more:focus-visible,
+.list-card.hv-trip:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+@media (max-width: 360px) {
+  .hv-title { font-size: 23px; }
+  .hv-empty-digo { width: 72px; height: 76px; }
+  .hv-empty-title { padding-right: 64px; font-size: 18px; }
+  .hv-empty-desc { padding-right: 56px; }
+  .hv-trip-tag { display: none; }
+}

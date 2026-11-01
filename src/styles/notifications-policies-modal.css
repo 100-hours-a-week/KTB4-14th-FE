@@ -1,0 +1,447 @@
+/* =========================================================
+   알림 · 약관 · 카카오 로그인 처리 중 · 공용 팝업 리디자인 (#155) — 플래너 인디고 테마
+   화면 규칙은 .screen.jn-screen 으로 범위를 한정한다.
+   공용 팝업(.modal-*)은 모든 화면에서 같은 모양이어야 해서 범위 없이 components.css 규칙을 덮어쓴다.
+   ========================================================= */
+
+.screen.jn-screen {
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.screen.jn-screen > .scroll {
+  padding: 4px 16px 24px;
+  background: transparent;
+}
+
+/* ---------- 알림 목록 ---------- */
+.jn-read-all {
+  display: inline-flex;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  border: 1px solid var(--j-line);
+  border-radius: 14px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-indigo);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.jn-read-all:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+.jn-count {
+  margin: 4px 2px 10px;
+  color: var(--j-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.screen.jn-screen .noti-row {
+  position: relative;
+  width: 100%;
+  grid-template-columns: 40px minmax(0, 1fr) max-content;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-ink);
+  font: inherit;
+  text-align: left;
+}
+
+/* 읽은 알림은 흐리게 (투명도 60%) */
+.screen.jn-screen .noti-row:not(.unread) {
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.screen.jn-screen .noti-row.unread {
+  border-color: var(--j-indigo-100);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(52, 69, 217, 0.06), var(--j-shadow-1);
+  opacity: 1;
+}
+
+.screen.jn-screen .jn-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+}
+
+.jn-icon.indigo { background: var(--j-indigo-50); color: var(--j-indigo); }
+.jn-icon.mint { background: var(--j-mint-50); color: var(--j-mint-dark); }
+.jn-icon.coral { background: #fff0ed; color: #e0442f; }
+.jn-icon.violet { background: #f1eeff; color: #6a4bd8; }
+
+.screen.jn-screen .noti-content strong {
+  color: var(--j-ink);
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.screen.jn-screen .noti-message {
+  margin-top: 3px;
+  color: var(--j-sub);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.screen.jn-screen .noti-date {
+  margin-top: 2px;
+  color: var(--j-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.jn-unread-dot {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--j-coral);
+}
+
+.screen.jn-screen .jn-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 16px;
+  border: 1.5px dashed #d4d8e6;
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--j-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.jn-empty-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+/* ---------- 이용약관 및 개인정보 ---------- */
+.screen.jn-screen .tabs.jn-tabs {
+  margin: 4px 16px 0;
+  padding: 4px;
+  border-radius: 16px;
+  background: #e9ebf3;
+}
+
+.screen.jn-screen .jn-tabs button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 12px;
+  color: var(--j-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.screen.jn-screen .jn-tabs button.on {
+  background: var(--white);
+  box-shadow: 0 1px 4px rgba(18, 23, 51, 0.1);
+  color: var(--j-ink);
+  font-weight: 800;
+}
+
+.screen.jn-screen.policies-screen .page-title {
+  margin: 14px 2px 0;
+  color: var(--j-ink);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  text-align: left;
+}
+
+.screen.jn-screen .jn-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 2px 0;
+  padding: 5px 10px;
+  border: 1px solid var(--j-line);
+  border-radius: 9px;
+  background: var(--white);
+  color: var(--j-sub);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.jn-version b {
+  color: var(--j-indigo);
+  font-weight: 800;
+}
+
+.jn-doc {
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid var(--j-line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-sub);
+  font-size: 13.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 카카오 로그인 처리 중 ---------- */
+.splash.jk-splash {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  overflow: hidden;
+  padding: 24px;
+  background: var(--j-indigo-50);
+  text-align: center;
+}
+
+.jk-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(52, 69, 217, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 69, 217, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+.jk-splash > *:not(.jk-grid) {
+  position: relative;
+}
+
+.jk-orb {
+  display: grid;
+  width: 150px;
+  height: 150px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: var(--j-shadow-2);
+}
+
+.jk-orb.fail {
+  color: var(--j-coral);
+}
+
+.jk-ring {
+  position: absolute;
+  inset: -8px;
+  width: 166px;
+  height: 166px;
+  animation: jk-spin 1.1s linear infinite;
+}
+
+.jk-ring circle {
+  fill: none;
+  stroke-width: 6;
+}
+
+.jk-ring .track { stroke: var(--j-indigo-100); }
+
+.jk-ring .bar {
+  stroke: var(--j-indigo);
+  stroke-linecap: round;
+}
+
+@keyframes jk-spin {
+  to { transform: rotate(360deg); }
+}
+
+.jk-digo {
+  width: 88px;
+  height: 92px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jk-ring { animation: none; }
+}
+
+.jk-kakao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 26px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fee500;
+  color: #3a2a00;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.splash.jk-splash .jk-title {
+  margin: 14px 0 0;
+  color: var(--j-ink);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.jk-sub,
+.splash.jk-splash .hint[role='alert'] {
+  max-width: 280px;
+  margin: 6px 0 0;
+  color: var(--j-muted);
+  font-size: 13px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.splash.jk-splash .jk-back {
+  margin-top: 22px;
+  padding: 0 20px;
+  min-height: 48px;
+  width: auto;
+  border-radius: 16px;
+  background: var(--j-indigo);
+  box-shadow: 0 10px 22px rgba(52, 69, 217, 0.3);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* ---------- 공용 팝업 (Modal) ---------- */
+.modal-overlay {
+  align-items: end;
+  padding: 12px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: rgba(18, 23, 51, 0.48);
+}
+
+.modal-sheet {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 14px 20px 18px;
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(18, 23, 51, 0.3);
+  text-align: center;
+  animation: modal-up 0.22s ease-out;
+}
+
+@keyframes modal-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-sheet { animation: none; }
+}
+
+.modal-grab {
+  display: block;
+  width: 38px;
+  height: 5px;
+  margin: 0 auto 16px;
+  border-radius: 3px;
+  background: #d9dce8;
+}
+
+.modal-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+.modal-sheet.danger .modal-icon {
+  background: #fff0ed;
+  color: #e0442f;
+}
+
+.modal-title {
+  color: var(--j-ink);
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  word-break: keep-all;
+}
+
+.modal-message {
+  margin-top: 6px;
+  color: var(--j-sub);
+  font-size: 13.5px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.modal-sheet .nickname-input {
+  margin-top: 14px;
+  border: 1.5px solid var(--j-line);
+  border-radius: 16px;
+  color: var(--j-ink);
+}
+
+.modal-sheet .nickname-input:focus {
+  border-color: var(--j-indigo);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 69, 217, 0.12);
+}
+
+.modal-actions {
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.modal-actions .btn {
+  min-height: 50px;
+  border-radius: 15px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.modal-actions .btn-ghost {
+  border: 0;
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.modal-actions .btn-dark {
+  background: var(--j-indigo);
+  box-shadow: 0 8px 18px rgba(52, 69, 217, 0.3);
+}
+
+.btn-danger {
+  background: #e0442f;
+  box-shadow: 0 8px 18px rgba(224, 68, 47, 0.28);
+  color: var(--white);
+}
+
+.modal-actions .btn:disabled {
+  opacity: 0.5;
+}

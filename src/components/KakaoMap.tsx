@@ -37,7 +37,7 @@ type KakaoMapApi = {
     Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMapInstance;
     LatLng: new (latitude: number, longitude: number) => KakaoLatLng;
     LatLngBounds: new () => { extend: (position: KakaoLatLng) => void };
-    Marker: new (options: { map: KakaoMapInstance; position: KakaoLatLng; title?: string }) => {
+    Marker: new (options: { map: KakaoMapInstance; position: KakaoLatLng; title?: string; opacity?: number }) => {
       setMap: (map: KakaoMapInstance | null) => void;
     };
     Polyline: new (options: {

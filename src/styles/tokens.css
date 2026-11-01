@@ -27,4 +27,21 @@
   --phone-width: 430px;
   --shadow-card: 0 8px 24px rgba(28, 36, 48, 0.08);
   --font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* 플래너 인디고 테마 (로그인 · 홈 리디자인, #147) — 기존 토큰은 유지하고 새 토큰으로 추가 */
+  --j-indigo: #3445d9;
+  --j-indigo-dark: #2433b8;
+  --j-indigo-50: #eef0ff;
+  --j-indigo-100: #dde1ff;
+  --j-ink: #121733;
+  --j-sub: #545b77;
+  --j-muted: #6b708c;
+  --j-line: #e6e8f0;
+  --j-bg: #f6f7fb;
+  --j-coral: #ff6b57;
+  --j-mint: #14a982;
+  --j-mint-dark: #0b7a5e;
+  --j-mint-50: #e3f7f1;
+  --j-shadow-1: 0 1px 2px rgba(18, 23, 51, 0.04), 0 6px 18px rgba(18, 23, 51, 0.06);
+  --j-shadow-2: 0 2px 6px rgba(18, 23, 51, 0.06), 0 18px 40px rgba(18, 23, 51, 0.12);
 }

@@ -92,41 +92,55 @@
 
 .tab-bar {
   display: flex;
-  height: 78px;
-  border-top: 1px solid var(--line);
-  background: var(--paper);
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--j-line);
+  background: var(--white);
 }
 
 .tab-item {
   flex: 1;
+  min-width: 0;
+  height: 54px;
   border: 0;
+  border-radius: 18px;
   background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  color: #a39b93;
+  gap: 3px;
+  color: var(--j-muted);
   font-size: 11px;
   font-weight: 700;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.tab-item:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
 }
 
 .tab-item.active {
-  color: var(--navy);
+  flex: 1.35;
+  flex-direction: row;
+  gap: 7px;
+  background: var(--j-indigo);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgba(52, 69, 217, 0.32);
 }
 
 .tab-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 17px;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  line-height: 0;
 }
 
-.tab-item.active .tab-icon {
-  background: var(--navy);
-  color: var(--white);
+.tab-label {
+  white-space: nowrap;
 }
 
 .splash {

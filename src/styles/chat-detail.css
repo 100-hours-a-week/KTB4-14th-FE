@@ -57,6 +57,15 @@
   overscroll-behavior: contain;
 }
 
+.chat-history-page-status {
+  flex: 0 0 auto;
+  padding: 5px 16px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .chat-detail-state,
 .chat-detail-error,
 .chat-detail-empty {

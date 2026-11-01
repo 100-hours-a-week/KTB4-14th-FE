@@ -1,17 +1,19 @@
 import { notificationsApi } from '@/api';
-import { Header } from '@/components/Header';
+import { AlertIcon, BellIcon, CalendarIcon, ChatBubbleIcon, CheckIcon, SparkIcon, UsersIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { useNotifications } from '@/context/NotificationContext';
 import { useToast } from '@/context/ToastContext';
 import type { AppNotification, NotificationType } from '@/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const ICONS: Record<NotificationType, string> = {
-  MATCH_SUCCESS: '✓',
-  NEW_MESSAGE: '💬',
-  TRAVEL_BEFORE: '📅',
-  TRAVEL_COMPLETE: '✦',
-  TRAVEL_FAILED: '!',
+/** 알림 종류별 장식용 아이콘 · 색 (화면 표시 전용) */
+const ICONS: Record<NotificationType, { icon: ReactNode; tone: string }> = {
+  MATCH_SUCCESS: { icon: <UsersIcon size={18} />, tone: 'indigo' },
+  NEW_MESSAGE: { icon: <ChatBubbleIcon size={18} />, tone: 'mint' },
+  TRAVEL_BEFORE: { icon: <CalendarIcon size={18} />, tone: 'coral' },
+  TRAVEL_COMPLETE: { icon: <SparkIcon size={18} />, tone: 'violet' },
+  TRAVEL_FAILED: { icon: <AlertIcon size={18} />, tone: 'coral' },
 };
 
 function timeLabel(value: string) {
@@ -58,29 +60,36 @@ export function NotificationsPage() {
     void load();
   }, []);
 
+  const unreadCount = items.filter((item) => !item.is_read).length;
+
   return (
-    <section className="screen">
-      <Header
+    <section className="screen jn-screen notifications-screen">
+      <PlannerHeader
         title="알림"
         onBack={() => navigate('/home', { replace: true })}
         right={
           <button
             type="button"
-            className="logout"
-            style={{ padding: 0 }}
+            className="jn-read-all"
             onClick={async () => {
               await notificationsApi.markAllRead();
               notifications.markAllReadLocally();
               await load();
             }}>
+            <CheckIcon size={13} />
             모두 읽음
           </button>
         }
       />
       <div className="scroll">
         {items.length === 0 ? (
-          <div className="empty-box">알림이 없습니다.</div>
-        ) : (
+          <div className="empty-box jn-empty">
+            <span className="jn-empty-icon" aria-hidden="true"><BellIcon size={24} /></span>
+            알림이 없습니다.
+          </div>
+        ) : null}
+        {unreadCount > 0 ? <p className="jn-count">새 알림 {unreadCount}개</p> : null}
+        {items.length === 0 ? null : (
           items.map((item) => (
             <button
               key={item.notification_id}
@@ -100,14 +109,15 @@ export function NotificationsPage() {
                   state: item.type === 'MATCH_SUCCESS' ? { notificationBody: item.body } : undefined,
                 });
               }}>
-              <span className="menu-icon" style={{ background: 'var(--sand)' }}>
-                {ICONS[item.type]}
+              <span className={`menu-icon jn-icon ${ICONS[item.type]?.tone ?? 'indigo'}`} aria-hidden="true">
+                {ICONS[item.type]?.icon ?? <BellIcon size={18} />}
               </span>
               <span className="noti-content">
                 <strong>{item.title}</strong>
                 <div className="place-addr noti-message">{item.body}</div>
               </span>
               <small className="place-addr noti-date">{timeLabel(item.created_at)}</small>
+              {item.is_read ? null : <span className="jn-unread-dot" aria-hidden="true" />}
             </button>
           ))
         )}

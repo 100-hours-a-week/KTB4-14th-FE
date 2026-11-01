@@ -1,0 +1,1243 @@
+/* =========================================================
+   매칭 · 채팅 · 마이페이지 · 설정 리디자인 (#153) — 플래너 인디고 테마
+   pages.css 의 기존 규칙보다 우선하도록 .screen.jm-screen 으로 범위를 한정한다.
+   ========================================================= */
+
+.screen.jm-screen {
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.screen.jm-screen > .scroll {
+  padding: 4px 16px 24px;
+  background: transparent;
+}
+
+.jp-header-spacer {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* ---------- 공통: 선택 칸 ---------- */
+.screen.jm-screen .matching-choice-grid {
+  gap: 7px;
+}
+
+.screen.jm-screen .matching-choice {
+  position: relative;
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--j-line);
+  border-radius: 14px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-sub);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.jm-choice-icon {
+  display: grid;
+  color: #a3a8bf;
+}
+
+.jm-choice-icon:empty {
+  display: none;
+}
+
+.screen.jm-screen .matching-choice.selected {
+  border-color: var(--j-indigo);
+  background: var(--j-indigo-50);
+  box-shadow: none;
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .matching-choice.selected .jm-choice-icon {
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .matching-choice.selected::after {
+  position: absolute;
+  top: -6px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: var(--j-indigo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4L18 8'/%3E%3C/svg%3E") center / 12px no-repeat;
+  content: '';
+}
+
+.screen.jm-screen .matching-choice:disabled {
+  opacity: 0.5;
+}
+
+/* 하단 버튼 */
+.screen.jm-screen > .footer-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 14px;
+  border-top: 0;
+  background: linear-gradient(180deg, rgba(246, 247, 251, 0), var(--j-bg) 30%);
+}
+
+.screen.jm-screen > .footer-bar .btn {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.screen.jm-screen > .footer-bar .btn-dark,
+.screen.jm-screen > .footer-bar .btn-primary {
+  background: var(--j-indigo);
+  box-shadow: 0 10px 22px rgba(52, 69, 217, 0.3);
+  color: var(--white);
+}
+
+.screen.jm-screen > .footer-bar .btn-ghost {
+  border: 1px solid var(--j-line);
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-ink);
+}
+
+.screen.jm-screen > .footer-bar .btn-soft {
+  background: var(--j-indigo-50);
+  box-shadow: none;
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen > .footer-bar .btn:disabled {
+  opacity: 0.45;
+}
+
+.screen.jm-screen > .footer-bar .btn-dark:disabled,
+.screen.jm-screen > .footer-bar .btn-primary:disabled {
+  background: #c9cde0;
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* ---------- 상태 그림 (MatchingStatusArt) ---------- */
+.jm-art {
+  position: relative;
+  display: grid;
+  width: 140px;
+  height: 140px;
+  margin: 14px auto 16px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+}
+
+.jm-art-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.jm-art-ring circle {
+  fill: none;
+  stroke-width: 8;
+}
+
+.jm-art-ring .track {
+  stroke: var(--j-line);
+}
+
+.jm-art-ring .bar {
+  stroke: var(--j-indigo);
+  stroke-linecap: round;
+}
+
+.jm-art.loading .jm-art-ring {
+  animation: jm-spin 1.1s linear infinite;
+}
+
+@keyframes jm-spin {
+  to { transform: rotate(270deg); }
+}
+
+.jm-art-digo {
+  width: 80px;
+  height: 84px;
+  animation: jm-bob 1.8s ease-in-out infinite;
+}
+
+@keyframes jm-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jm-art-digo,
+  .jm-art.loading .jm-art-ring { animation: none; }
+}
+
+.jm-art-search {
+  width: 58px;
+  height: 58px;
+  color: var(--j-muted);
+}
+
+.jm-art-badge {
+  position: absolute;
+  right: -2px;
+  bottom: 8px;
+  display: grid;
+  min-width: 38px;
+  height: 38px;
+  place-items: center;
+  padding: 0 8px;
+  border: 4px solid var(--j-bg);
+  border-radius: 999px;
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.jm-art-badge.ok { background: var(--j-mint); }
+.jm-art-badge.fail { background: var(--j-coral); }
+
+.jm-art-badge.count {
+  min-width: 0;
+  height: 30px;
+  background: var(--j-ink);
+  font-size: 12px;
+}
+
+/* ---------- 매칭 조건 ---------- */
+.screen.jm-screen .matching-title {
+  color: var(--j-ink);
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+
+.screen.jm-screen .matching-title em {
+  color: var(--j-indigo);
+  font-style: normal;
+}
+
+.screen.jm-screen .matching-subtitle {
+  margin: 6px 0 16px;
+  color: var(--j-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.screen.jm-screen .matching-condition-section,
+.screen.jm-screen .matching-settings-fieldset {
+  margin-bottom: 18px;
+}
+
+.screen.jm-screen .matching-condition-section legend,
+.screen.jm-screen .matching-settings-fieldset legend {
+  margin-bottom: 8px;
+  padding: 0 2px;
+  color: var(--j-ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .matching-condition-section legend small {
+  color: #e0442f;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.screen.jm-screen .matching-settings-fieldset legend small {
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+/* 비용 카드 */
+.screen.jm-screen .matching-condition-section:has(.matching-budget-range) {
+  padding: 14px 16px 10px;
+  border: 1px solid var(--j-line);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+}
+
+.screen.jm-screen .matching-condition-section:has(.matching-budget-range) legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.screen.jm-screen .matching-budget-summary {
+  clear: both;
+  color: var(--j-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.screen.jm-screen .matching-budget-summary strong {
+  padding: 5px 10px;
+  border-radius: 9px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.screen.jm-screen .matching-budget-track {
+  height: 6px;
+  background: linear-gradient(
+    to right,
+    var(--j-line) 0 var(--range-start),
+    var(--j-indigo) var(--range-start) var(--range-end),
+    var(--j-line) var(--range-end) 100%
+  );
+}
+
+.screen.jm-screen .matching-budget-range input::-webkit-slider-thumb {
+  border: 2px solid var(--j-indigo);
+  background: var(--white);
+  box-shadow: 0 3px 8px rgba(52, 69, 217, 0.25);
+}
+
+.screen.jm-screen .matching-budget-range input::-moz-range-thumb {
+  border: 2px solid var(--j-indigo);
+  background: var(--white);
+  box-shadow: 0 3px 8px rgba(52, 69, 217, 0.25);
+}
+
+/* ---------- 매칭 중 / 확인 중 ---------- */
+.screen.jm-screen .matching-progress-scroll {
+  text-align: center;
+}
+
+.screen.jm-screen .matching-progress-title,
+.screen.jm-screen .matching-result-title,
+.screen.jm-screen .matching-result-fail h2 {
+  margin: 0;
+  color: var(--j-ink);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  word-break: keep-all;
+}
+
+.screen.jm-screen .matching-progress-subtitle,
+.screen.jm-screen .matching-result-subtitle,
+.screen.jm-screen .matching-result-fail p {
+  margin: 6px 0 0;
+  color: var(--j-muted);
+  font-size: 13px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.screen.jm-screen .matching-progress-card {
+  margin-top: 16px;
+  padding: 14px 16px 6px;
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  text-align: left;
+}
+
+.screen.jm-screen .matching-progress-card h3 {
+  margin-bottom: 6px;
+  color: var(--j-ink);
+  font-size: 14px;
+}
+
+.screen.jm-screen .matching-progress-step {
+  min-height: 52px;
+}
+
+.screen.jm-screen .matching-progress-step:not(:last-child)::after {
+  top: 34px;
+  bottom: -10px;
+  background: var(--j-line);
+}
+
+.screen.jm-screen .matching-step-marker {
+  border: 2px solid #d9dce8;
+  background: var(--white);
+}
+
+.screen.jm-screen .matching-progress-step.done .matching-step-marker {
+  border-color: var(--j-mint);
+  background: var(--j-mint);
+  color: var(--white);
+}
+
+.screen.jm-screen .matching-progress-step.running .matching-step-marker {
+  border: 3px solid var(--j-indigo-100);
+  border-top-color: var(--j-indigo);
+  background: var(--white);
+  box-shadow: none;
+  animation: jm-spin-full 0.9s linear infinite;
+}
+
+@keyframes jm-spin-full {
+  to { transform: rotate(360deg); }
+}
+
+.screen.jm-screen .matching-progress-step strong {
+  color: var(--j-ink);
+  font-size: 14px;
+}
+
+.screen.jm-screen .matching-progress-step.done strong {
+  color: var(--j-sub);
+}
+
+.screen.jm-screen .matching-progress-step em {
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: #eef0f5;
+  color: var(--j-muted);
+  font-size: 11px;
+}
+
+.screen.jm-screen .matching-progress-step.done em {
+  background: var(--j-mint-50);
+  color: var(--j-mint-dark);
+}
+
+.screen.jm-screen .matching-progress-step.running em {
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .matching-progress-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--j-ink);
+  text-align: left;
+}
+
+.jm-notice-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+}
+
+.screen.jm-screen .matching-progress-notice strong {
+  color: var(--white);
+  font-size: 13.5px;
+}
+
+.screen.jm-screen .matching-progress-notice p {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+/* ---------- 매칭 결과 ---------- */
+.screen.jm-screen .matching-result-scroll,
+.screen.jm-screen .matching-result-fail {
+  text-align: center;
+}
+
+.screen.jm-screen .matching-result-fail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.screen.jm-screen .matching-candidate-list {
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.screen.jm-screen .matching-candidate-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 46px;
+  align-items: start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--j-line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  text-align: left;
+}
+
+.screen.jm-screen .matching-candidate-avatar {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #7d8bff, var(--j-indigo));
+  color: var(--white);
+  font-size: 20px;
+  font-weight: 900;
+  object-fit: cover;
+}
+
+.screen.jm-screen .matching-candidate-copy small {
+  color: var(--j-indigo);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .matching-candidate-copy strong {
+  margin-top: 2px;
+  color: var(--j-ink);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.screen.jm-screen .matching-candidate-copy > span:not(.jm-rate-bar) {
+  display: block;
+  margin-top: 8px;
+  color: var(--j-sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jm-rate-bar {
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #e3e6f0;
+}
+
+.jm-rate-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--j-indigo);
+}
+
+.screen.jm-screen .matching-candidate-copy p.jm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0 0;
+}
+
+.jm-tags span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border: 1px solid var(--j-line);
+  border-radius: 9px;
+  color: var(--j-sub);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.jm-tags svg {
+  width: 12px;
+  height: 12px;
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .matching-candidate-send {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 0;
+  border-radius: 15px;
+  background: var(--j-indigo);
+  box-shadow: 0 8px 18px rgba(52, 69, 217, 0.3);
+  color: var(--white);
+}
+
+.screen.jm-screen .matching-candidate-send:disabled {
+  opacity: 0.5;
+}
+
+.screen.jm-screen .matching-rematch-status {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 5px;
+  margin: 0 0 2px;
+  padding: 6px 11px;
+  border: 1px solid var(--j-line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--j-sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .matching-result-error {
+  border-radius: 12px;
+}
+
+/* ---------- 채팅 목록 ---------- */
+.screen.jm-screen .chat-room-list-heading {
+  margin: 4px 2px 10px;
+}
+
+.screen.jm-screen .chat-room-list-heading strong {
+  color: var(--j-ink);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.screen.jm-screen .chat-room-list-heading span {
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .chat-room-search {
+  position: relative;
+  margin: 0 0 14px;
+}
+
+.jm-search-icon {
+  position: absolute;
+  top: 0;
+  left: 14px;
+  display: grid;
+  height: 100%;
+  align-items: center;
+  color: var(--j-indigo);
+  pointer-events: none;
+}
+
+.screen.jm-screen .chat-room-search .jm-search-icon {
+  height: 48px;
+}
+
+.screen.jm-screen .chat-room-search-input {
+  height: 48px;
+  padding-left: 40px;
+  border: 1px solid var(--j-line);
+  border-radius: 16px;
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-ink);
+}
+
+.screen.jm-screen .chat-room-search-input:focus {
+  border-color: var(--j-indigo);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 69, 217, 0.12);
+}
+
+.screen.jm-screen .chat-room-search-button {
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--j-indigo);
+  box-shadow: 0 8px 18px rgba(52, 69, 217, 0.28);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .chat-room-search-clear {
+  height: 48px;
+  border-radius: 16px;
+}
+
+.screen.jm-screen .chat-room-list {
+  gap: 8px;
+}
+
+.screen.jm-screen .chat-room-row {
+  min-height: 74px;
+  padding: 12px;
+  border: 1px solid var(--j-line);
+  border-radius: 20px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+}
+
+.screen.jm-screen .chat-room-row:hover {
+  background: #fbfbfe;
+}
+
+.screen.jm-screen .chat-room-avatar-wrap {
+  flex-basis: 48px;
+  height: 48px;
+}
+
+.screen.jm-screen .chat-room-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(145deg, #7d8bff, var(--j-indigo));
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.screen.jm-screen .chat-room-online-dot {
+  border-color: var(--white);
+  background: var(--j-mint);
+}
+
+.screen.jm-screen .chat-room-name {
+  color: var(--j-ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .chat-room-time {
+  color: var(--j-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.screen.jm-screen .chat-room-last-message {
+  color: var(--j-sub);
+  font-size: 13px;
+}
+
+.screen.jm-screen .chat-room-unread {
+  background: var(--j-coral);
+}
+
+.screen.jm-screen .chat-room-empty,
+.screen.jm-screen .chat-room-error {
+  border: 1.5px dashed #d4d8e6;
+  border-radius: 20px;
+  background: var(--white);
+}
+
+.screen.jm-screen .chat-room-empty-icon,
+.screen.jm-screen .coming-icon {
+  display: inline-grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .chat-room-retry {
+  color: var(--j-indigo);
+}
+
+/* ---------- 채팅방 ---------- */
+.screen.jm-screen.chat-detail-screen .jp-header {
+  border-bottom: 1px solid var(--j-line);
+  background: var(--white);
+}
+
+.screen.jm-screen .chat-detail-header-actions {
+  display: flex;
+  min-width: 40px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.screen.jm-screen .chat-detail-presence {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.screen.jm-screen .chat-detail-presence.online > span {
+  background: var(--j-mint);
+}
+
+.screen.jm-screen .chat-detail-leave-button {
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: #fff0ed;
+  color: #e0442f;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .chat-search {
+  border-bottom-color: var(--j-line);
+}
+
+.screen.jm-screen .chat-search-row {
+  position: relative;
+}
+
+.screen.jm-screen .chat-search-row .jm-search-icon {
+  left: 12px;
+  color: var(--j-muted);
+}
+
+.screen.jm-screen .chat-search-row input {
+  height: 40px;
+  padding: 0 12px 0 36px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.screen.jm-screen .chat-search-row input:focus {
+  border-color: var(--j-indigo);
+  outline: none;
+  background: var(--white);
+}
+
+.screen.jm-screen .chat-detail-scroll {
+  background: var(--j-bg);
+}
+
+.screen.jm-screen .chat-detail-date span {
+  padding: 4px 10px;
+  border: 1px solid var(--j-line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--j-muted);
+  font-weight: 700;
+}
+
+.screen.jm-screen .chat-message-bubble {
+  border: 1px solid var(--j-line);
+  border-radius: 18px 18px 18px 6px;
+  background: var(--white);
+  box-shadow: none;
+  color: var(--j-ink);
+}
+
+.screen.jm-screen .chat-message-row.mine .chat-message-bubble {
+  border-color: var(--j-indigo);
+  border-radius: 18px 18px 6px 18px;
+  background: var(--j-indigo);
+  color: var(--white);
+}
+
+.screen.jm-screen .chat-message-meta {
+  color: var(--j-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.screen.jm-screen .chat-message-row.mine .chat-message-meta span {
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .chat-detail-empty span {
+  display: inline-grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--j-indigo-50);
+  color: var(--j-indigo);
+}
+
+.screen.jm-screen .chat-composer {
+  padding: 10px 16px 12px;
+  border-top-color: var(--j-line);
+  background: var(--white);
+}
+
+.screen.jm-screen .chat-composer-input {
+  border-color: var(--j-line);
+  background: var(--j-bg);
+  color: var(--j-ink);
+}
+
+.screen.jm-screen .chat-composer-input:focus {
+  border-color: var(--j-indigo);
+  background: var(--white);
+}
+
+.screen.jm-screen .chat-composer-send {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 5px;
+  border-radius: 15px;
+  background: var(--j-indigo);
+  box-shadow: 0 8px 16px rgba(52, 69, 217, 0.28);
+}
+
+.screen.jm-screen .chat-composer-send:disabled {
+  background: #c9cde0;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.screen.jm-screen .chat-composer-footer {
+  color: var(--j-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.screen.jm-screen .chat-detail-ended {
+  background: #fff4de;
+  color: #8a5800;
+  font-weight: 700;
+}
+
+/* ---------- 마이페이지 ---------- */
+.screen.jm-screen .profile {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 14px;
+  margin: 4px 0 10px;
+  padding: 18px;
+  border: 1px solid var(--j-line);
+  border-radius: 24px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  text-align: left;
+}
+
+.screen.jm-screen .profile .avatar {
+  grid-row: 1 / span 2;
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  background: linear-gradient(145deg, #7d8bff, var(--j-indigo));
+  font-size: 24px;
+}
+
+.screen.jm-screen .name-btn {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  align-self: end;
+  gap: 8px;
+  padding: 0;
+  color: var(--j-ink);
+  font-size: 20px;
+  text-align: left;
+}
+
+.screen.jm-screen .name-btn > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jm-edit-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--j-bg);
+  color: var(--j-sub);
+}
+
+.screen.jm-screen .profile .hello {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  justify-self: start;
+  gap: 5px;
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: #fee500;
+  color: #3a2a00;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+  border: 0;
+  background: none;
+}
+
+.screen.jm-screen .stat {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--j-line);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+  text-align: left;
+}
+
+.jm-stat-icon {
+  display: grid;
+  grid-row: 1 / span 2;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.stat.done .jm-stat-icon { background: var(--j-mint-50); color: var(--j-mint-dark); }
+.stat.upcoming .jm-stat-icon { background: var(--j-indigo-50); color: var(--j-indigo); }
+
+.screen.jm-screen .stat-num {
+  align-self: end;
+  color: var(--j-ink);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.screen.jm-screen .stat .place-addr {
+  align-self: start;
+  margin-top: 4px;
+  color: var(--j-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.screen.jm-screen.my-screen .menu-row {
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--j-line);
+  border-radius: 18px;
+  box-shadow: var(--j-shadow-1);
+  color: var(--j-ink);
+  font-size: 14.5px;
+}
+
+.jm-menu-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 11px;
+}
+
+.jm-menu-icon.mint { background: var(--j-mint-50); color: var(--j-mint-dark); }
+.jm-menu-icon.indigo { background: var(--j-indigo-50); color: var(--j-indigo); }
+.jm-menu-icon.coral { background: #fff0ed; color: #e0442f; }
+.jm-menu-icon.gray { background: var(--j-bg); color: var(--j-sub); }
+
+.jm-menu-label {
+  flex: 1;
+  text-align: left;
+}
+
+.jm-menu-chevron {
+  color: #b5b9cc;
+}
+
+.screen.jm-screen.my-screen .logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--j-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ---------- 설정 (매칭 · 알림) ---------- */
+.screen.jm-screen .matching-settings-card {
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--j-indigo-100);
+  border-radius: 20px;
+  background: var(--j-indigo-50);
+  box-shadow: none;
+}
+
+.screen.jm-screen .matching-settings-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.screen.jm-screen .matching-settings-copy strong {
+  color: var(--j-ink);
+  font-size: 14.5px;
+}
+
+.screen.jm-screen .matching-settings-copy p {
+  color: var(--j-sub);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.screen.jm-screen .matching-settings-section-title {
+  margin: 0 2px 4px;
+  color: var(--j-ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.screen.jm-screen .matching-help {
+  margin: 8px 2px 0;
+  color: var(--j-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.screen.jm-screen .matching-help.error {
+  color: #e0442f;
+}
+
+.screen.jm-screen .matching-unsaved {
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: #fff4de;
+  color: #8a5800;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jm-setting-list {
+  padding: 2px 16px;
+  border: 1px solid var(--j-line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--j-shadow-1);
+}
+
+.screen.jm-screen .jm-setting-list .setting-row {
+  justify-content: flex-start;
+  margin: 0;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--j-line);
+  border-radius: 0;
+  background: none;
+}
+
+.screen.jm-screen .jm-setting-list .setting-row:last-child {
+  border-bottom: 0;
+}
+
+.jm-setting-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.jm-setting-copy strong {
+  display: block;
+  color: var(--j-ink);
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.screen.jm-screen .jm-setting-copy .place-addr {
+  margin-top: 2px;
+  color: var(--j-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.jm-setting-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.jm-setting-icon.ink { background: var(--j-ink); color: var(--white); }
+.jm-setting-icon.indigo { background: var(--j-indigo-50); color: var(--j-indigo); }
+.jm-setting-icon.mint { background: var(--j-mint-50); color: var(--j-mint-dark); }
+.jm-setting-icon.violet { background: #f1eeff; color: #6a4bd8; }
+.jm-setting-icon.coral { background: #fff0ed; color: #e0442f; }
+
+/* 스위치 */
+.screen.jm-screen .switch {
+  flex-shrink: 0;
+  width: 48px;
+  height: 28px;
+  background: #d5d8e4;
+  cursor: pointer;
+}
+
+.screen.jm-screen .switch::after {
+  width: 22px;
+  height: 22px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.screen.jm-screen .switch:checked {
+  background: var(--j-indigo);
+}
+
+.screen.jm-screen .switch:checked::after {
+  left: 23px;
+}
+
+.screen.jm-screen .switch:focus-visible,
+.screen.jm-screen button:focus-visible,
+.screen.jm-screen input:focus-visible {
+  outline: 2px solid var(--j-indigo);
+  outline-offset: 2px;
+}
+
+@media (max-width: 360px) {
+  .screen.jm-screen .matching-choice { gap: 4px; font-size: 12.5px; }
+  .screen.jm-screen .jm-choice-icon { display: none; }
+  .screen.jm-screen .matching-candidate-card { grid-template-columns: 46px minmax(0, 1fr) 42px; padding: 14px; }
+  .screen.jm-screen .matching-candidate-avatar { width: 46px; height: 46px; }
+}
+
+/* 한국어 줄바꿈: 단어 중간에서 끊기지 않게 */
+.screen.jm-screen .chat-message-bubble,
+.screen.jm-screen .matching-settings-copy p,
+.screen.jm-screen .jm-setting-copy .place-addr,
+.screen.jm-screen .matching-help {
+  word-break: keep-all;
+}
+
+/* 본인 성별 미선택 안내는 경고 색으로 */
+.screen.jm-screen .matching-settings-fieldset:first-of-type legend small {
+  background: #fff0ed;
+  color: #e0442f;
+}
+
+.screen.jm-screen .matching-settings-copy strong {
+  word-break: keep-all;
+}
+
+.screen.jm-screen .profile .hello {
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .screen.jm-screen .profile { grid-template-columns: 52px minmax(0, 1fr); padding: 16px 14px; }
+  .screen.jm-screen .profile .avatar { width: 52px; height: 52px; font-size: 20px; }
+  .screen.jm-screen .profile .hello { font-size: 10.5px; }
+}

@@ -1,8 +1,11 @@
 import { matchingApi } from '@/api';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import { SearchIcon } from '@/components/Icons';
+import { MatchingStatusArt } from '@/components/MatchingStatusArt';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { useToast } from '@/context/ToastContext';
+import { CHOICE_ICONS } from '@/lib/choiceIcons';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import { restoreMatchingSession } from '@/lib/matchingSession';
 import { getJson, setJson, storage } from '@/storage';
@@ -218,12 +221,10 @@ export function MatchingPage() {
 
   if (checkingSession || sessionError) {
     return (
-      <section className="screen matching-progress-screen" aria-busy={checkingSession}>
-        <Header title="여행 매칭" onBack={() => navigate('/home')} showBell />
+      <section className="screen matching-progress-screen jm-screen" aria-busy={checkingSession}>
+        <PlannerHeader title="여행 매칭" onBack={() => navigate('/home')} />
         <div className="scroll matching-progress-scroll">
-          <div className="matching-progress-hero" aria-hidden="true">
-            <span />
-          </div>
+          <MatchingStatusArt tone={sessionError ? 'fail' : 'loading'} />
           <h2 className="matching-progress-title" role={sessionError ? 'alert' : undefined}>
             {sessionError ? '매칭 정보를 확인하지 못했어요' : '매칭 정보를 확인하고 있어요'}
           </h2>
@@ -238,10 +239,10 @@ export function MatchingPage() {
   }
 
   return (
-    <section className="screen matching-screen">
-      <Header title="여행 매칭" onBack={resetAndGoHome} showBell />
+    <section className="screen matching-screen jm-screen">
+      <PlannerHeader title="여행 매칭" onBack={resetAndGoHome} />
       <div className="scroll matching-scroll">
-        <h2 className="matching-title">나에게 맞는 여행을 찾아보세요</h2>
+        <h2 className="matching-title">나에게 맞는 <em>여행</em>을 찾아보세요</h2>
         <p className="matching-subtitle">취향을 선택하고 잘 맞는 여행을 추천해요.</p>
 
         <fieldset className="matching-condition-section">
@@ -256,7 +257,7 @@ export function MatchingPage() {
                 type="button"
                 className={`matching-choice${condition.preferred_companion_gender === option.value ? ' selected' : ''}`}
                 onClick={() => setCondition((prev) => ({ ...prev, preferred_companion_gender: option.value }))}>
-                <span className="matching-radio" />
+                <span className="jm-choice-icon" aria-hidden="true">{CHOICE_ICONS[option.value]}</span>
                 {option.label}
               </button>
             ))}
@@ -275,6 +276,7 @@ export function MatchingPage() {
                 type="button"
                 className={`matching-choice${condition.themes.includes(option.value) ? ' selected' : ''}`}
                 onClick={() => toggleTheme(option.value)}>
+                <span className="jm-choice-icon" aria-hidden="true">{CHOICE_ICONS[option.value]}</span>
                 {option.label}
               </button>
             ))}
@@ -293,7 +295,7 @@ export function MatchingPage() {
                 type="button"
                 className={`matching-choice${condition.pace === option.value ? ' selected' : ''}`}
                 onClick={() => setCondition((prev) => ({ ...prev, pace: option.value as TravelPaceType }))}>
-                <span className="matching-radio" />
+                <span className="jm-choice-icon" aria-hidden="true">{CHOICE_ICONS[option.value]}</span>
                 {option.label}
               </button>
             ))}
@@ -340,7 +342,14 @@ export function MatchingPage() {
         </fieldset>
       </div>
       <div className="footer-bar matching-footer">
-        <Button label="매칭 결과 보기" variant="dark" disabled={!isValid} loading={submitting} onClick={handleSubmit} />
+        <Button
+          label="매칭 결과 보기"
+          icon={<SearchIcon size={18} />}
+          variant="dark"
+          disabled={!isValid}
+          loading={submitting}
+          onClick={handleSubmit}
+        />
       </div>
     </section>
   );

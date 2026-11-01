@@ -1,5 +1,6 @@
 import { policiesApi } from '@/api';
-import { Header } from '@/components/Header';
+import { DocIcon, UsersIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { defaultPolicies } from '@/data/policies';
 import type { Policy, PolicyType } from '@/types';
 import { useEffect, useState } from 'react';
@@ -31,22 +32,28 @@ export function PoliciesPage() {
   }, [type]);
 
   return (
-    <section className="screen">
-      <Header title="이용약관 및 개인정보" onBack={() => navigate(-1)} />
-      <div className="tabs" style={{ margin: '0 20px' }}>
+    <section className="screen jn-screen policies-screen">
+      <PlannerHeader title="이용약관 및 개인정보" onBack={() => navigate(-1)} showBell={false} />
+      <div className="tabs jn-tabs">
         <button type="button" className={type === 'TERMS_OF_SERVICE' ? 'on' : ''} onClick={() => setType('TERMS_OF_SERVICE')}>
+          <DocIcon size={15} />
           이용약관
         </button>
         <button type="button" className={type === 'PRIVACY_POLICY' ? 'on' : ''} onClick={() => setType('PRIVACY_POLICY')}>
+          <UsersIcon size={15} />
           개인정보
         </button>
       </div>
       <div className="scroll">
         <h2 className="page-title">{policy.title}</h2>
-        <p className="hello">
-          {loading ? '불러오는 중...' : `v${policy.version} · ${policy.effective_date}`}
+        <p className="hello jn-version">
+          {loading ? '불러오는 중...' : (
+            <>
+              <b>v{policy.version}</b> · 시행일 {policy.effective_date}
+            </>
+          )}
         </p>
-        <p style={{ lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{policy.content}</p>
+        <div className="jn-doc">{policy.content}</div>
       </div>
     </section>
   );

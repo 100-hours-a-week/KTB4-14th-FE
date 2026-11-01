@@ -1,6 +1,6 @@
 import { notificationsApi } from '@/api';
 import { Button } from '@/components/Button';
-import { BellIcon, ChatBubbleIcon, CheckIcon, SparkIcon, UsersIcon } from '@/components/Icons';
+import { AlertIcon, BellIcon, ChatBubbleIcon, CheckIcon, SparkIcon, UsersIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
@@ -95,6 +95,8 @@ export function NotificationSettingsPage() {
       <Modal
         open={leaveConfirmOpen}
         title="변경사항이 있습니다."
+        tone="danger"
+        icon={<AlertIcon size={24} />}
         message="저장하지 않고 나가면 변경한 알림 설정이 반영되지 않습니다."
         confirmLabel="나가기"
         cancelLabel="계속 수정"

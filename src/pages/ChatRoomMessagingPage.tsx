@@ -1,7 +1,7 @@
 import { ApiError, USE_MOCK } from '@/api/client';
 import type { ChatRealtimeEvent } from '@/api/chatRealtime';
 import { chatApi, chatRoomDetailApi } from '@/api';
-import { ChatBubbleIcon, SearchIcon, SendIcon } from '@/components/Icons';
+import { ChatBubbleIcon, LogoutIcon, SearchIcon, SendIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
@@ -950,6 +950,8 @@ export function ChatRoomMessagingPage() {
       <Modal
         open={leaveDialogOpen}
         title="채팅방에서 나가시겠어요?"
+        tone="danger"
+        icon={<LogoutIcon size={24} />}
         message="나가면 채팅방이 종료되어 더 이상 메시지를 주고받을 수 없어요."
         confirmLabel="나가기"
         cancelLabel="취소"

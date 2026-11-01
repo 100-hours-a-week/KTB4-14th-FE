@@ -1,6 +1,6 @@
 import { travelsApi } from '@/api';
 import { Button } from '@/components/Button';
-import { InfoIcon, PinIcon, SparkIcon } from '@/components/Icons';
+import { InfoIcon, PinIcon, SparkIcon, TrashIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { PlaceRow } from '@/components/PlaceRow';
@@ -187,6 +187,8 @@ export function PlacesPage() {
       <Modal
         open={!!target}
         title="선택한 장소를 삭제하시겠어요?"
+        tone="danger"
+        icon={<TrashIcon size={22} />}
         message="이 장소는 필수 방문 목록에서 바로 빠집니다."
         onClose={() => setTarget(null)}
         onConfirm={() => {

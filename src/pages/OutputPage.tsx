@@ -437,6 +437,7 @@ function OutputPage({ tab }: { tab: OutputTab }) {
       <Modal
         open={recreate}
         title="일정을 다시 만들까요?"
+        icon={<RefreshIcon size={24} />}
         message="일정이 다시 생성되면 현재 저장된 일정이 사라집니다."
         onClose={() => setRecreate(false)}
         onConfirm={async () => {

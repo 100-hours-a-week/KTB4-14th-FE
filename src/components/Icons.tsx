@@ -453,6 +453,23 @@ export function FemaleIcon(props: IconProps) {
   );
 }
 
+export function TrashIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2} {...props}>
+      <path d="M5 7h14M10 7V5h4v2M7 7l1 12.5h8L17 7" />
+    </Svg>
+  );
+}
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth={2.1} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.8v5M12 16.2v.1" />
+    </Svg>
+  );
+}
+
 /** 카카오 로그인 버튼 심볼 (카카오 로그인 디자인 가이드의 말풍선 심볼) */
 export function KakaoSymbol({ size = 20, ...rest }: IconProps) {
   return (

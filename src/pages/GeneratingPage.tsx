@@ -1,6 +1,6 @@
 import { travelsApi } from '@/api';
 import { Digo } from '@/components/Digo';
-import { BellIcon, CheckIcon, XIcon } from '@/components/Icons';
+import { AlertIcon, BellIcon, CheckIcon, XIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { getTravelGenerationRequest } from '@/storage';
@@ -143,7 +143,7 @@ export function GeneratingPage() {
           </button>
         ) : null}
       </div>
-      <Modal open={failOpen} title="일정 생성에 실패했습니다." confirmLabel="확인" cancelLabel="닫기" onClose={() => setFailOpen(false)} onConfirm={() => setFailOpen(false)} />
+      <Modal open={failOpen} title="일정 생성에 실패했습니다." icon={<AlertIcon size={24} />} confirmLabel="확인" cancelLabel="닫기" onClose={() => setFailOpen(false)} onConfirm={() => setFailOpen(false)} />
     </section>
   );
 }

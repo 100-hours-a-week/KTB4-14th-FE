@@ -159,6 +159,7 @@ export function MyPage() {
       <Modal
         open={open}
         title="닉네임 변경"
+        icon={<PencilIcon size={22} />}
         confirmLabel="변경하기"
         confirmDisabled={Boolean(nicknameError) || nickname.length === 0}
         confirmBusy={saving}

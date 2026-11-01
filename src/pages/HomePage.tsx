@@ -89,7 +89,7 @@ export function HomePage() {
         <h1 className="hv-header-title">내 여행</h1>
         <button type="button" className="hv-bell" onClick={() => navigate('/notifications')} aria-label="알림">
           <BellIcon size={20} />
-          {unread > 0 ? <span className="hv-bell-badge" aria-hidden="true" /> : null}
+          {unread > 0 ? <span className="badge-dot hv-bell-badge" aria-hidden="true" /> : null}
         </button>
       </header>
 

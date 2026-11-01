@@ -221,7 +221,7 @@ e2e/
   ```ts
   api.once('GET', '/api/travel-plans/upcoming', { status: 401, body: { message: 'unauthorized' } });
   api.on('GET', '/api/places/search', { delayMs: 30_000 });
-  expect(api.callsTo('POST', '/api/travel-plans')).toHaveLength(1);
+  expect(api.callsTo('POST', '/api/v2/travel-plans')).toHaveLength(1);
   ```
 - **카카오 로그인**: `kauth.kakao.com` 요청을 가로채서 곧바로 `/auth/kakao?code=...`로 리다이렉트합니다. 로그인된 상태가 필요한 테스트는 `localStorage.audigo.user`를 주입합니다.
 - **시간 고정**: `page.clock.setFixedTime`으로 기준 시각을 고정합니다. 바꾸려면 `test.use({ now: '2026-10-02T13:20:00+09:00' })`처럼 지정합니다.

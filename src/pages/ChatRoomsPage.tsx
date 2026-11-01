@@ -1,5 +1,6 @@
 import { chatApi } from '@/api';
 import { Header } from '@/components/Header';
+import { useChatRealtime } from '@/context/ChatRealtimeContext';
 import type { ChatRoom, ChatRoomListResponse } from '@/types';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -72,6 +73,7 @@ function ChatRoomRow({ room }: { room: ChatRoom }) {
 }
 
 export function ChatPage() {
+  const { subscribe } = useChatRealtime();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const matchingState = location.state as
@@ -94,7 +96,6 @@ export function ChatPage() {
   const pendingRealtimeRefreshRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
-  // Keep the newest list available to async refreshes without relying on a stale render closure.
   const roomsRef = useRef<ChatRoom[]>([]);
   const pageRef = useRef<ChatRoomListResponse | null>(null);
   const refreshRoomsRef = useRef<() => void>(() => undefined);
@@ -213,8 +214,6 @@ export function ChatPage() {
   useEffect(() => {
     if (matchedUserId) return;
 
-    let active = true;
-    let disconnect: (() => void) | null = null;
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
     const scheduleRefresh = () => {
@@ -244,24 +243,20 @@ export function ChatPage() {
       }, 150);
     };
 
-    void import('@/api/chatRealtime').then(({ connectChatRealtime }) => {
-      if (!active) return;
-      disconnect = connectChatRealtime(
-        null,
-        (event) => {
-          if (event.event_type === 'MESSAGE_CREATED') scheduleRefresh();
-        },
-        () => undefined,
-        scheduleRefresh,
-      );
+    const unsubscribe = subscribe({
+      onEvent: (event) => {
+        if (event.event_type === 'MESSAGE_CREATED' || event.event_type === 'PRESENCE_UPDATED') {
+          scheduleRefresh();
+        }
+      },
+      onConnected: scheduleRefresh,
     });
 
     return () => {
-      active = false;
       if (refreshTimer) clearTimeout(refreshTimer);
-      disconnect?.();
+      unsubscribe();
     };
-  }, [matchedUserId]);
+  }, [matchedUserId, subscribe]);
 
   const loadNextPage = useCallback(() => {
     if (loadingMoreRef.current) return;

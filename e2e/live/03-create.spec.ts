@@ -43,7 +43,7 @@ test.describe('[live] 3. 여행 생성', () => {
     await goToPlacesStep(page, LIVE_BASIC);
     await addPlaceFromMap(page, '경복궁');
 
-    const created = waitForApi(page, 'POST', '/api/travel-plans');
+    const created = waitForApi(page, 'POST', '/api/v2/travel-plans');
     await generateButton(page).click();
     const response = await created;
     expect(response.status(), await response.text()).toBeLessThan(300);

@@ -1,4 +1,9 @@
 @import './components.css';
+@import './home-login.css';
+@import './trips-route.css';
+@import './create-travel.css';
+@import './matching-chat-my.css';
+@import './notifications-policies-modal.css';
 
 .login {
   flex: 1;

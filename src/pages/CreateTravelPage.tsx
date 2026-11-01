@@ -1,6 +1,17 @@
 import { regionsApi } from '@/api';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import {
+  CalendarIcon as CalendarSvg,
+  ClockIcon,
+  HeartIcon,
+  HomeIcon,
+  MinusIcon,
+  PinIcon,
+  PlusIcon,
+  UserIcon,
+  UsersIcon,
+} from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Progress } from '@/components/Progress';
 import { toDateLabel } from '@/components/DateTime';
 import { useTravelDraft } from '@/context/TravelDraftContext';
@@ -11,6 +22,7 @@ import {
   MAX_TRAVEL_DAYS,
   subtractCalendarDays,
 } from '@/lib/travelDates';
+import { formatTripLength } from '@/lib/tripDates';
 import type { CompanionType, RegionSummary } from '@/types';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -102,6 +114,13 @@ const relationshipOptions = [
   { value: 'FAMILY', label: '가족' },
 ] as const;
 
+const relationshipIcons: Record<(typeof relationshipOptions)[number]['value'], ReactNode> = {
+  SOLO: <UserIcon size={16} />,
+  COUPLE: <HeartIcon size={16} />,
+  FRIEND: <UsersIcon size={16} />,
+  FAMILY: <HomeIcon size={16} />,
+};
+
 const DEFAULT_TRAVEL_TIME = '10:00';
 
 type Picker = null | 'region' | 'startDate' | 'endDate' | 'startTime' | 'endTime';
@@ -191,6 +210,10 @@ export function CreateTravelPage() {
   const endDateMax = startDateForBounds
     ? addCalendarDays(startDateForBounds, MAX_TRAVEL_DAYS - 1)
     : undefined;
+  // 도착·출발 날짜가 모두 정상일 때만 "3박 4일" 배지를 보여준다 (화면 표시용 계산).
+  const tripLength = draft.start_date && draft.end_date && !durationError && draft.start_date <= draft.end_date
+    ? formatTripLength(draft.start_date, draft.end_date)
+    : null;
   const canContinue = Boolean(
     draft.region_id
       && draft.start_date
@@ -200,8 +223,8 @@ export function CreateTravelPage() {
   );
 
   return (
-    <section className="screen create-travel-screen">
-      <Header title="여행 생성하기" className="create-travel-header" onBack={() => navigate('/home', { replace: true })} showBell />
+    <section className="screen create-travel-screen jw-screen">
+      <PlannerHeader title="여행 생성하기" onBack={() => navigate('/home', { replace: true })} />
 
       <div className="scroll">
         <Progress step={1} labeled />
@@ -214,6 +237,7 @@ export function CreateTravelPage() {
               onClick={() => togglePicker('region')}
               aria-haspopup="listbox"
               aria-expanded={picker === 'region'}>
+              <span className="jw-field-icon" aria-hidden="true"><PinIcon size={17} /></span>
               <span className={draft.destination ? 'has-value' : ''}>{draft.destination ?? '지역을 선택해 주세요.'}</span>
               <span className={`select-chevron${picker === 'region' ? ' up' : ''}`} aria-hidden="true" />
             </button>
@@ -282,7 +306,7 @@ export function CreateTravelPage() {
                   aria-haspopup="dialog"
                   aria-expanded={picker === 'startDate'}>
                   <span className={draft.start_date ? 'has-value' : ''}>{toDateLabel(draft.start_date)}</span>
-                  <CalendarIcon />
+                  <CalendarSvg className="jw-date-icon" size={18} />
                 </button>
                 <button
                   type="button"
@@ -290,13 +314,14 @@ export function CreateTravelPage() {
                   onClick={() => togglePicker('startTime')}
                   aria-haspopup="dialog"
                   aria-expanded={picker === 'startTime'}>
+                  <span className="jw-field-icon" aria-hidden="true"><ClockIcon size={17} /></span>
                   <span className="has-value">{startTime}</span>
                   <span className={`select-chevron${picker === 'startTime' ? ' up' : ''}`} aria-hidden="true" />
                 </button>
               </div>
             </Field>
 
-            <Field label="여행지 출발">
+            <Field label="여행지 출발" badge={tripLength}>
               <div className="row">
                 <button
                   type="button"
@@ -305,7 +330,7 @@ export function CreateTravelPage() {
                   aria-haspopup="dialog"
                   aria-expanded={picker === 'endDate'}>
                   <span className={draft.end_date ? 'has-value' : ''}>{toDateLabel(draft.end_date)}</span>
-                  <CalendarIcon />
+                  <CalendarSvg className="jw-date-icon" size={18} />
                 </button>
                 <button
                   type="button"
@@ -313,6 +338,7 @@ export function CreateTravelPage() {
                   onClick={() => togglePicker('endTime')}
                   aria-haspopup="dialog"
                   aria-expanded={picker === 'endTime'}>
+                  <span className="jw-field-icon" aria-hidden="true"><ClockIcon size={17} /></span>
                   <span className="has-value">{endTime}</span>
                   <span className={`select-chevron${picker === 'endTime' ? ' up' : ''}`} aria-hidden="true" />
                 </button>
@@ -356,7 +382,7 @@ export function CreateTravelPage() {
                       companion: option.value as CompanionType,
                       headcount: option.value === 'SOLO' ? 1 : 2,
                     })}>
-                    <span className="radio-mark" aria-hidden="true" />
+                    <span className="jw-rel-icon" aria-hidden="true">{relationshipIcons[option.value]}</span>
                     <span>{option.label}</span>
                   </button>
                 );
@@ -372,16 +398,16 @@ export function CreateTravelPage() {
                 onClick={() => update({ headcount: Math.max(minimumHeadcount, displayedHeadcount - 1) })}
                 disabled={isFixedHeadcount || displayedHeadcount <= minimumHeadcount}
                 aria-label="인원 한 명 줄이기">
-                −
+                <MinusIcon size={18} />
               </button>
-              <strong>{displayedHeadcount}명</strong>
+              <strong>{displayedHeadcount}<small>명</small></strong>
               <button
                 type="button"
                 className="stepper-button"
                 onClick={() => update({ headcount: Math.min(30, displayedHeadcount + 1) })}
                 disabled={isFixedHeadcount || displayedHeadcount >= 30}
                 aria-label="인원 한 명 늘리기">
-                +
+                <PlusIcon size={18} />
               </button>
             </div>
           </Field>
@@ -400,20 +426,25 @@ export function CreateTravelPage() {
   );
 }
 
-function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
+function Field({
+  label,
+  badge,
+  children,
+  className = '',
+}: {
+  label: string;
+  badge?: string | null;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`field${className ? ` ${className}` : ''}`}>
-      <span className="field-label">{label}</span>
+      <span className="field-label">
+        {label}
+        {badge ? <em className="jw-field-badge">{badge}</em> : null}
+      </span>
       {children}
     </div>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <span className="calendar-icon" aria-hidden="true">
-      <span />
-    </span>
   );
 }
 

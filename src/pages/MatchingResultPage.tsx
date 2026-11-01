@@ -1,8 +1,11 @@
 import { matchingApi } from '@/api';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/Button';
-import { Header } from '@/components/Header';
+import { ChatBubbleIcon, RefreshIcon, SendIcon, SlidersIcon } from '@/components/Icons';
+import { MatchingStatusArt } from '@/components/MatchingStatusArt';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { useToast } from '@/context/ToastContext';
+import { CHOICE_ICONS } from '@/lib/choiceIcons';
 import { travelPaceOptions, travelThemeOptions } from '@/lib/options';
 import { matchingResultDestination, restoreMatchingSession } from '@/lib/matchingSession';
 import type { MatchingChatReturn } from '@/lib/matchingChatNavigation';
@@ -15,7 +18,10 @@ const themeLabels = new Map<TravelTheme, string>(travelThemeOptions.map((option)
 const paceLabels = new Map<TravelPaceType, string>(travelPaceOptions.map((option) => [option.value, option.label]));
 
 function candidateTags(candidate: MatchingCandidate) {
-  return [...candidate.theme.map((theme) => themeLabels.get(theme) ?? theme), paceLabels.get(candidate.pace) ?? candidate.pace];
+  return [
+    ...candidate.theme.map((theme) => ({ key: theme, label: themeLabels.get(theme) ?? theme })),
+    { key: candidate.pace, label: paceLabels.get(candidate.pace) ?? candidate.pace },
+  ];
 }
 
 export function MatchingResultPage() {
@@ -127,12 +133,14 @@ export function MatchingResultPage() {
     <div className="footer-bar matching-footer matching-rematch-footer">
       {candidatesResponse ? (
         <p className="matching-rematch-status" aria-live="polite">
+          <RefreshIcon size={13} aria-hidden="true" />
           {canRematch ? `재매칭 ${remainingRetryCount}회 남음` : '재매칭 기회를 모두 사용했어요'}
         </p>
       ) : null}
       {!isEmpty ? (
         <Button
           label={isError ? '다시 시도' : '매칭 다시하기'}
+          icon={<RefreshIcon size={16} />}
           variant="ghost"
           loading={rematching}
           disabled={resetting || preparingCandidateUserId !== null || (!isError && !canRematch)}
@@ -141,7 +149,8 @@ export function MatchingResultPage() {
       ) : null}
       <Button
         label={isError || isEmpty ? '조건 변경하기' : '새 조건으로 다시 찾기'}
-        variant="soft"
+        icon={<SlidersIcon size={16} />}
+        variant={isError || isEmpty ? 'primary' : 'soft'}
         loading={resetting}
         disabled={rematching || preparingCandidateUserId !== null}
         onClick={() => void startWithNewConditions()}
@@ -208,10 +217,10 @@ export function MatchingResultPage() {
   if (showingConnection) {
     if (!validMatchConnectionId) {
       return (
-        <section className="screen matching-result-screen">
-          <Header title="매칭 결과" onBack={() => navigate(connectionBackTo, { replace: true })} showBell />
+        <section className="screen matching-result-screen jm-screen">
+          <PlannerHeader title="매칭 결과" onBack={() => navigate(connectionBackTo, { replace: true })} />
           <div className="scroll matching-result-fail" role="alert">
-            <div className="matching-result-icon fail" aria-hidden="true">!</div>
+            <MatchingStatusArt tone="fail" />
             <h2>매칭 정보를 확인할 수 없어요</h2>
             <p>알림에 연결된 매칭 정보가 올바르지 않습니다.</p>
           </div>
@@ -220,10 +229,10 @@ export function MatchingResultPage() {
     }
 
     return (
-      <section className="screen matching-result-screen">
-        <Header title="매칭 완료" onBack={() => navigate(connectionBackTo, { replace: true })} showBell />
+      <section className="screen matching-result-screen jm-screen">
+        <PlannerHeader title="매칭 완료" onBack={() => navigate(connectionBackTo, { replace: true })} />
         <div className="scroll matching-result-scroll">
-          <div className="matching-result-icon" aria-hidden="true">✓</div>
+          <MatchingStatusArt tone="ok" />
           <h2 className="matching-result-title">매칭이 완료됐어요!</h2>
           <p className="matching-result-subtitle">
             {state?.notificationBody ?? '매칭된 여행 메이트와 대화를 시작해 보세요.'}
@@ -232,6 +241,7 @@ export function MatchingResultPage() {
         <div className="footer-bar matching-footer">
           <Button
             label="채팅 시작하기"
+            icon={<ChatBubbleIcon size={18} />}
             loading={preparingCandidateUserId === matchConnectionId}
             onClick={() => void openMatchedChat()}
           />
@@ -242,12 +252,10 @@ export function MatchingResultPage() {
 
   if (candidates.length === 0) {
     return (
-      <section className="screen matching-result-screen">
-        <Header title={isError ? '매칭 오류' : '매칭 결과'} onBack={() => navigate('/home')} showBell />
+      <section className="screen matching-result-screen jm-screen">
+        <PlannerHeader title={isError ? '매칭 오류' : '매칭 결과'} onBack={() => navigate('/home')} />
         <div className="scroll matching-result-fail">
-          <div className="matching-result-icon fail" aria-hidden="true">
-            !
-          </div>
+          <MatchingStatusArt tone="fail" />
           <h2>{isError ? '매칭을 완료하지 못했어요' : '조건에 맞는 상대가 없어요'}</h2>
           <p>{isError
             ? '일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'
@@ -259,12 +267,10 @@ export function MatchingResultPage() {
   }
 
   return (
-    <section className="screen matching-result-screen">
-      <Header title="매칭 완료" onBack={() => navigate('/home')} showBell />
+    <section className="screen matching-result-screen jm-screen">
+      <PlannerHeader title="매칭 완료" onBack={() => navigate('/home')} />
       <div className="scroll matching-result-scroll">
-        <div className="matching-result-icon" aria-hidden="true">
-          ◷
-        </div>
+        <MatchingStatusArt tone="ok" />
         <h2 className="matching-result-title">매칭이 완료됐어요!</h2>
         <p className="matching-result-subtitle">마음에 드는 사람과 채팅을 시작해보세요.</p>
 
@@ -281,14 +287,24 @@ export function MatchingResultPage() {
                 <img className="matching-candidate-avatar" src={candidate.profile_image_url} alt="" />
               ) : (
                 <div className="matching-candidate-avatar" aria-hidden="true">
-                  ●
+                  {candidate.nickname.slice(0, 1)}
                 </div>
               )}
               <div className="matching-candidate-copy">
                 <small>최적의 여행 메이트</small>
                 <strong>{candidate.nickname}</strong>
                 <span>취향 일치 {candidate.match_rate}%</span>
-                <p>{candidateTags(candidate).join(' · ')}</p>
+                <span className="jm-rate-bar" aria-hidden="true">
+                  <i style={{ width: `${Math.max(0, Math.min(100, candidate.match_rate))}%` }} />
+                </span>
+                <p className="jm-tags">
+                  {candidateTags(candidate).map((tag) => (
+                    <span key={tag.key}>
+                      {CHOICE_ICONS[tag.key]}
+                      {tag.label}
+                    </span>
+                  ))}
+                </p>
               </div>
               <button
                 type="button"
@@ -297,7 +313,7 @@ export function MatchingResultPage() {
                 aria-busy={preparingCandidateUserId === candidate.user_id}
                 disabled={preparingCandidateUserId !== null || rematching || resetting}
                 onClick={() => void openChatEntry(candidate)}>
-                {preparingCandidateUserId === candidate.user_id ? '…' : '➤'}
+                {preparingCandidateUserId === candidate.user_id ? '…' : <SendIcon size={19} />}
               </button>
             </article>
           ))}

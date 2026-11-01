@@ -24,12 +24,12 @@ test.describe('6. 세션 · 토큰', () => {
 
   test('SESS-02 마법사 작성 도중 토큰 만료 — 입력 데이터 손실 없이 정상 제출', { tag: '@P0' }, async ({ page, api }) => {
     await goToPlacesStep(page);
-    api.once('POST', '/api/travel-plans', { status: 401, body: { message: 'unauthorized' } });
+    api.once('POST', '/api/v2/travel-plans', { status: 401, body: { message: 'unauthorized' } });
 
     await generateButton(page).click();
 
     await expect(page).toHaveURL(/\/generating\/\d+/);
-    const creates = api.callsTo('POST', '/api/travel-plans');
+    const creates = api.callsTo('POST', '/api/v2/travel-plans');
     expect(creates).toHaveLength(2);
     expect(creates[1].body).toEqual(creates[0].body);
     expect(creates[1].body).toMatchObject({ region_id: 11, companion_type: 'FRIEND' });

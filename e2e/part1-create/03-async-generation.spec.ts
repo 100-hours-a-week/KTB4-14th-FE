@@ -11,11 +11,18 @@ test.describe('3. AI 비동기 생성', () => {
   test('ASY-01 생성 요청 → 진행 상태 확인 → 완료 시 알림과 함께 일정 상세로 이동', { tag: '@P0' }, async ({ page, api }) => {
     await goToPlacesStep(page);
     await addPlaceFromMap(page, '경복궁');
+    const accepted = page.waitForResponse((response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/v2/travel-plans'));
     await generateButton(page).click();
+    expect((await accepted).status()).toBe(202);
 
     await expect(page).toHaveURL(/\/generating\/\d+/);
     await expect(page).toHaveURL(/\/output\/\d+\/places$/, { timeout: 15_000 });
     await expect(page.getByRole('heading', { name: '서울 1박 2일 여행' })).toBeVisible();
+    expect(api.callsTo('POST', '/api/v2/travel-plans')).toHaveLength(1);
+    expect(api.callsTo('POST', '/api/travel-plans')).toHaveLength(0);
+    expect(api.callsTo('GET', '/api/ai-generation-jobs/:id').length).toBeGreaterThan(0);
+    expect(api.callsTo('GET', '/api/travel-plans/:id/itinerary').length).toBeGreaterThan(0);
     // 완료 알림(SSE) 수신 → 알림 뱃지
     await expect(page.getByRole('button', { name: '알림' }).locator('.badge-dot')).toBeVisible();
   });
@@ -42,7 +49,7 @@ test.describe('3. AI 비동기 생성', () => {
       await page.waitForTimeout(200);
     }
     await expect(page).toHaveURL(/\/output\/\d+\/places$/);
-    expect(api.callsTo('POST', '/api/travel-plans/:id/regeneration')).toHaveLength(0);
+    expect(api.callsTo('POST', '/api/v2/travel-plans/:id/regeneration')).toHaveLength(0);
   });
 
   test('ASY-03 최대 재시도 초과로 최종 실패 시 실패 안내와 재시도 버튼 제공', { tag: '@P0' }, async ({ page, api }) => {
@@ -58,7 +65,9 @@ test.describe('3. AI 비동기 생성', () => {
 
     await page.getByRole('button', { name: '다시 생성하기' }).click();
     await expect(page).toHaveURL(new RegExp(`/generating/${planId}\\?job_id=\\d+`));
-    expect(api.callsTo('POST', `/api/travel-plans/${planId}/regeneration`)).toHaveLength(1);
+    expect(api.callsTo('POST', `/api/v2/travel-plans/${planId}/regeneration`)).toHaveLength(1);
+    expect(api.callsTo('POST', `/api/travel-plans/${planId}/regeneration`)).toHaveLength(0);
+    expect(api.callsTo('POST', `/api/v2/travel-plans/${planId}/regeneration`)[0].body).toBeNull();
   });
 
   test('ASY-04 생성 대기 중 4단계 항목이 순서대로 체크됨', { tag: '@P1' }, async ({ page, api }) => {
@@ -108,23 +117,24 @@ test.describe('3. AI 비동기 생성', () => {
       await expect(page.getByRole('button', { name: '일정 다시 만들기' })).toBeVisible();
     }
 
-    expect(api.callsTo('POST', '/api/travel-plans/77/regeneration')).toHaveLength(3);
+    expect(api.callsTo('POST', '/api/v2/travel-plans/77/regeneration')).toHaveLength(3);
+    expect(api.callsTo('POST', '/api/travel-plans/77/regeneration')).toHaveLength(0);
     expect(new Set(jobsOfPlan()).size).toBe(3);
   });
 
   test('ASY-06 "AI 여행 생성하기" 연속 클릭 시 생성 요청은 한 번만 전송', { tag: '@P1' }, async ({ page, api }) => {
     await goToPlacesStep(page);
     // 응답 지연(네트워크 지연 상황)
-    api.on('POST', '/api/travel-plans', (req, backend) => ({
+    api.on('POST', '/api/v2/travel-plans', (req, backend) => ({
       delayMs: 1500,
-      status: 201,
+      status: 202,
       body: { travel_plan_id: 555, generation_job_id: backend.createGeneration().jobId, status: 'GENERATING' },
     }));
 
     await generateButton(page).dblclick();
 
     await expect(page).toHaveURL(/\/generating\/555/, { timeout: 10_000 });
-    expect(api.callsTo('POST', '/api/travel-plans')).toHaveLength(1);
+    expect(api.callsTo('POST', '/api/v2/travel-plans')).toHaveLength(1);
   });
 
   test('ASY-07 생성 결과 상세 — 기본정보 · 장소 목록 · 이동 경로 · 추천 음악 표시', { tag: '@P0' }, async ({ page }) => {
@@ -145,5 +155,36 @@ test.describe('3. AI 비동기 생성', () => {
     await page.getByRole('tab', { name: '이동 경로' }).click();
     await expect(page.locator('.output-route-card')).toHaveCount(3);
     await expect(page.locator('.output-route-card').first()).toContainText('경복궁 → 광장시장');
+  });
+
+  test('ASY-08 SQS 재생성은 최초 요청 본문을 보존하고 새 작업 ID로 상태를 조회', { tag: '@P0' }, async ({ page, api }) => {
+    api.generation = generationScript({ status: 'COMPLETED', done: 4 });
+    await goToPlacesStep(page);
+    const creationAccepted = page.waitForResponse((response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/v2/travel-plans'));
+    await generateButton(page).click();
+    expect((await creationAccepted).status()).toBe(202);
+    await expect(page).toHaveURL(/\/output\/\d+\/places$/);
+
+    const initialJob = [...api.jobs.values()][0];
+    expect(api.callsTo('POST', '/api/travel-plans')).toHaveLength(0);
+    const initialBody = api.callsTo('POST', '/api/v2/travel-plans')[0].body;
+    const regenerationPath = `/api/v2/travel-plans/${initialJob.planId}/regeneration`;
+    await page.getByRole('button', { name: '일정 다시 만들기' }).click();
+    const accepted = page.waitForResponse((response) =>
+      response.request().method() === 'POST' && response.url().endsWith(regenerationPath));
+    await page.getByRole('dialog').filter({ hasText: '일정을 다시 만들까요?' })
+      .getByRole('button', { name: '확인' }).click();
+    expect((await accepted).status()).toBe(202);
+
+    await expect.poll(() => api.jobs.size).toBe(2);
+    const nextJob = [...api.jobs.values()].find((job) => job.jobId !== initialJob.jobId)!;
+    expect(nextJob.planId).toBe(initialJob.planId);
+    expect(api.callsTo('POST', regenerationPath)).toHaveLength(1);
+    expect(api.callsTo('POST', regenerationPath)[0].body).toEqual(initialBody);
+    expect(api.callsTo('POST', `/api/travel-plans/${initialJob.planId}/regeneration`)).toHaveLength(0);
+    await expect.poll(() => api.callsTo('GET', `/api/ai-generation-jobs/${nextJob.jobId}`).length)
+      .toBeGreaterThan(0);
+    await expect(page).toHaveURL(new RegExp(`/output/${initialJob.planId}/places$`));
   });
 });

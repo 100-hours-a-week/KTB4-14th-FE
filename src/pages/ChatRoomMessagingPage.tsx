@@ -1,9 +1,11 @@
 import { ApiError, USE_MOCK } from '@/api/client';
 import type { ChatRealtimeEvent } from '@/api/chatRealtime';
 import { chatApi, chatRoomDetailApi } from '@/api';
-import { Header } from '@/components/Header';
+import { ChatBubbleIcon, LogoutIcon, SearchIcon, SendIcon } from '@/components/Icons';
+import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
 import { useAuth } from '@/context/AuthContext';
+import { useChatRealtime } from '@/context/ChatRealtimeContext';
 import { useToast } from '@/context/ToastContext';
 import { getMatchingChatReturn } from '@/lib/matchingChatNavigation';
 import type { ChatRoomDetailMessage, ChatRoomDetailResponse } from '@/types/chat-detail';
@@ -13,6 +15,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
+const OLDER_MESSAGES_SCROLL_THRESHOLD = 96;
 const CATCH_UP_PAGE_SIZE = 100;
 const MAX_MESSAGE_CHARACTERS = 500;
 
@@ -112,6 +115,7 @@ export function ChatRoomMessagingPage() {
   const location = useLocation();
   const matchingReturn = getMatchingChatReturn(location.state);
   const { user } = useAuth();
+  const { connected: realtimeConnected, subscribe } = useChatRealtime();
   const toast = useToast();
   const roomId = Number(rawRoomId);
   const validRoomId = Number.isSafeInteger(roomId) && roomId > 0;
@@ -129,7 +133,6 @@ export function ChatRoomMessagingPage() {
   const [leaving, setLeaving] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResult, setSearchResult] = useState<ChatMessageSearchResponse | null>(null);
@@ -350,7 +353,6 @@ export function ChatRoomMessagingPage() {
     setDraft('');
     setSendError(null);
     setSyncError(false);
-    setRealtimeConnected(false);
     searchRequestRef.current += 1;
     targetRequestRef.current += 1;
     searchActiveRef.current = false;
@@ -446,6 +448,7 @@ export function ChatRoomMessagingPage() {
     let catchingUp = false;
     let catchUpAgain = false;
     let catchUpRetryTimer: number | null = null;
+    let presenceUpdateVersion = 0;
 
     const advancePendingSequences = () => {
       while (pendingSequencesRef.current.delete(sequenceCursorRef.current + 1)) {
@@ -462,9 +465,13 @@ export function ChatRoomMessagingPage() {
     };
 
     const syncReadStates = async () => {
+      const requestPresenceVersion = presenceUpdateVersion;
       try {
         const latestDetail = await chatRoomDetailApi.getRoomDetail(roomId, { size: PAGE_SIZE });
         if (!active) return;
+        if (requestPresenceVersion === presenceUpdateVersion) {
+          setDetail((current) => current ? { ...current, opponent: latestDetail.opponent } : current);
+        }
         const readStates = new Map(
           latestDetail.chats.map((message) => [message.chat_id, message.is_read]),
         );
@@ -530,6 +537,16 @@ export function ChatRoomMessagingPage() {
     };
 
     const handleMessage = (event: ChatRealtimeEvent) => {
+      if (event.event_type === 'PRESENCE_UPDATED') {
+        if (event.user_id !== opponentUserId) return;
+        presenceUpdateVersion += 1;
+        setDetail((current) => current ? {
+          ...current,
+          opponent: { ...current.opponent, is_online: event.is_online },
+        } : current);
+        return;
+      }
+
       if (event.event_type === 'READ_RECEIPT_UPDATED') {
         if (event.reader_id !== opponentUserId || currentUserId === undefined) return;
         setMessages((current) => current.map((message) => (
@@ -553,27 +570,28 @@ export function ChatRoomMessagingPage() {
       if (sequence > sequenceCursorRef.current) void catchUp();
     };
 
-    let disconnect: (() => void) | null = null;
-    void import('@/api/chatRealtime').then(({ connectChatRealtime }) => {
-      if (!active) return;
-      disconnect = connectChatRealtime(
-        roomId,
-        handleMessage,
-        (connected) => {
-          if (active) setRealtimeConnected(connected);
-        },
-        () => {
-          void catchUp();
-          void syncReadStates();
-        },
-      );
+    const unsubscribe = subscribe({
+      onEvent: (event) => {
+        if (event.event_type === 'PRESENCE_UPDATED') {
+          handleMessage(event);
+          return;
+        }
+
+        const eventRoomId = event.event_type === 'MESSAGE_CREATED'
+          ? event.data.room_id
+          : event.room_id;
+        if (eventRoomId === roomId) handleMessage(event);
+      },
+      onConnected: () => {
+        void catchUp();
+        void syncReadStates();
+      },
     });
 
     return () => {
       active = false;
       if (catchUpRetryTimer !== null) window.clearTimeout(catchUpRetryTimer);
-      disconnect?.();
-      setRealtimeConnected(false);
+      unsubscribe();
     };
   }, [
     detail?.opponent.user_id,
@@ -582,6 +600,7 @@ export function ChatRoomMessagingPage() {
     markRoomReadThrough,
     mergeMessages,
     roomId,
+    subscribe,
     user?.user_id,
     validRoomId,
   ]);
@@ -632,6 +651,15 @@ export function ChatRoomMessagingPage() {
         setLoadingOlder(false);
       }
     }
+  };
+
+  const handleTimelineScroll = () => {
+    if (searchActiveRef.current || searchWindow) return;
+
+    const container = scrollRef.current;
+    if (!container || container.scrollTop > OLDER_MESSAGES_SCROLL_THRESHOLD) return;
+
+    void loadOlderMessages();
   };
 
   const sendDraft = async () => {
@@ -726,8 +754,8 @@ export function ChatRoomMessagingPage() {
   const notFound = errorStatus === 404;
 
   return (
-    <section className="screen chat-detail-screen">
-      <Header
+    <section className="screen chat-detail-screen jm-screen">
+      <PlannerHeader
         className="chat-detail-header"
         title={title}
         onBack={() => matchingReturn
@@ -759,6 +787,7 @@ export function ChatRoomMessagingPage() {
       {!loading && detail ? (
         <div className="chat-search" role="search" aria-label="대화 검색">
           <div className="chat-search-row">
+            <span className="jm-search-icon" aria-hidden="true"><SearchIcon size={16} /></span>
             <input
               type="search"
               aria-label="대화 검색어"
@@ -823,25 +852,27 @@ export function ChatRoomMessagingPage() {
 
       {!loading && !errorStatus && detail ? (
         <>
-          <div className="chat-detail-scroll" ref={scrollRef}>
+          {!searchWindow && !searchInput.trim() && loadingOlder ? (
+            <div className="chat-history-page-status" role="status">
+              이전 메시지를 불러오는 중입니다.
+            </div>
+          ) : null}
+          {!searchWindow && !searchInput.trim() && olderError ? (
+            <div className="chat-history-page-status" role="alert">
+              이전 메시지를 불러오지 못했습니다.
+            </div>
+          ) : null}
+
+          <div className="chat-detail-scroll" ref={scrollRef} onScroll={handleTimelineScroll}>
             {searchWindow && contextHasOlder ? (
               <button type="button" className="chat-detail-older" disabled={contextLoading} onClick={() => void loadSearchContext('older')}>
                 이전 대화 더 보기
               </button>
             ) : null}
-            {!searchWindow && detail.has_next ? (
-              <button
-                type="button"
-                className="chat-detail-older"
-                disabled={loadingOlder}
-                onClick={() => void loadOlderMessages()}>
-                {loadingOlder ? '이전 대화를 불러오는 중...' : olderError ? '다시 시도' : '이전 대화 불러오기'}
-              </button>
-            ) : null}
 
             {(searchWindow ?? messages).length === 0 ? (
               <div className="chat-detail-empty">
-                <span aria-hidden="true">💬</span>
+                <span aria-hidden="true"><ChatBubbleIcon size={28} /></span>
                 <p>아직 대화가 없습니다.</p>
               </div>
             ) : (
@@ -903,6 +934,7 @@ export function ChatRoomMessagingPage() {
                   type="submit"
                   className="chat-composer-send"
                   disabled={sending || Array.from(normalizeMessageContent(draft)).length === 0 || Array.from(draft).length > MAX_MESSAGE_CHARACTERS}>
+                  <SendIcon size={17} />
                   {sending ? '전송 중' : '전송'}
                 </button>
               </div>
@@ -918,6 +950,8 @@ export function ChatRoomMessagingPage() {
       <Modal
         open={leaveDialogOpen}
         title="채팅방에서 나가시겠어요?"
+        tone="danger"
+        icon={<LogoutIcon size={24} />}
         message="나가면 채팅방이 종료되어 더 이상 메시지를 주고받을 수 없어요."
         confirmLabel="나가기"
         cancelLabel="취소"

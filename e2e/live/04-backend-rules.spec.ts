@@ -85,7 +85,7 @@ test.describe('[live] 4. 백엔드 규칙', () => {
     // 앱이 실제로 만드는 요청 body 를 가로채고(백엔드로는 보내지 않음), 같은 body 를 동시에 두 번 보낸다.
     await goToPlacesStep(page, LIVE_BASIC);
     let body: unknown;
-    api.once('POST', '/api/travel-plans', (req) => {
+    api.once('POST', '/api/v2/travel-plans', (req) => {
       body = req.body;
       return { abort: true };
     });
@@ -93,8 +93,8 @@ test.describe('[live] 4. 백엔드 규칙', () => {
     await expect.poll(() => body).toBeTruthy();
 
     const responses = await Promise.all([
-      backendRequest(page.request, 'POST', '/api/travel-plans', body),
-      backendRequest(page.request, 'POST', '/api/travel-plans', body),
+      backendRequest(page.request, 'POST', '/api/v2/travel-plans', body),
+      backendRequest(page.request, 'POST', '/api/v2/travel-plans', body),
     ]);
     const statuses = responses.map((r) => r.status());
     const planIds = new Set<number>();

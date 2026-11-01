@@ -4,7 +4,6 @@ const roomId = 54;
 const limitRoomId = 55;
 const olderCursorTime = '2026-10-01T08:30:00+09:00';
 const initialOldestTime = '2026-10-01T08:59:00+09:00';
-const initialSingleMessageTime = '2026-10-01T09:00:00+09:00';
 
 test.describe('15. 채팅방 상세 조회', () => {
   test('CHAT-01 목록에서 대화방을 열고 상대방의 읽음 상태와 최신 메시지를 표시', { tag: '@P0' }, async ({ page, api }) => {
@@ -71,6 +70,16 @@ test.describe('15. 채팅방 상세 조회', () => {
   });
 
   test('CHAT-02 이전 대화를 compound cursor로 가져와 앞에 붙이고 읽음 표시를 반영', { tag: '@P0' }, async ({ page, api }) => {
+    const initialMessages = Array.from({ length: 20 }, (_, index) => ({
+      chat_id: 103 + index,
+      sender_id: api.user.user_id,
+      content: `최근 메시지 ${index + 1} ${'대화 내용 '.repeat(8)}`,
+      sent_at: index === 0
+        ? initialOldestTime
+        : new Date(Date.parse(initialOldestTime) + index * 60_000).toISOString(),
+      is_read: index !== 0,
+    }));
+
     api.on('GET', '/api/v2/chat/rooms', {
       body: {
         rooms: [{
@@ -109,32 +118,40 @@ test.describe('15. 채팅방 상세 조회', () => {
         chat_room_id: roomId,
         status: 'ACTIVE',
         opponent: { user_id: 2, chat_name: '지민', profile_image_url: null, is_online: false },
-        chats: [{
-          chat_id: 103,
-          sender_id: api.user.user_id,
-          content: '반가워요',
-          sent_at: '2026-10-01T09:00:00+09:00',
-          is_read: false,
-        }],
-        size: 1,
-        chat_cursor_time: initialSingleMessageTime,
+        chats: initialMessages,
+        size: initialMessages.length,
+        chat_cursor_time: initialOldestTime,
         chat_cursor_id: 103,
         has_next: true,
       },
+      delayMs: request.query.has('chat_cursor_time') ? 200 : undefined,
     }));
 
     await page.goto(`/chat/${roomId}`);
-    await page.getByRole('button', { name: '이전 대화 불러오기' }).click();
+    const scrollContainer = page.locator('.chat-detail-scroll');
+    const anchorMessage = page.getByText(initialMessages[0].content, { exact: true });
+    const getAnchorOffset = () => anchorMessage.evaluate((message) => {
+      const container = message.closest('.chat-detail-scroll');
+      return message.getBoundingClientRect().top - (container?.getBoundingClientRect().top ?? 0);
+    });
+    await scrollContainer.evaluate((container) => { container.scrollTop = 0; });
+    await expect(page.getByRole('status').filter({ hasText: '이전 메시지를 불러오는 중입니다.' })).toBeVisible();
+    const anchorOffsetBeforeLoad = await getAnchorOffset();
 
-    await expect(page.locator('.chat-message-bubble')).toHaveText(['읽은 메시지예요', '반가워요']);
-    await expect(page.getByText('읽음', { exact: true })).toBeVisible();
+    await expect(page.locator('.chat-message-bubble')).toHaveCount(21);
+    await expect(page.locator('.chat-message-bubble').first()).toHaveText('읽은 메시지예요');
+    await expect(page.locator('#chat-message-101').getByText('읽음', { exact: true })).toBeVisible();
     await expect(page.getByText('안 읽음', { exact: true })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: '이전 메시지를 불러오는 중입니다.' })).toHaveCount(0);
+
+    const anchorOffsetAfterLoad = await getAnchorOffset();
+    expect(Math.abs(anchorOffsetAfterLoad - anchorOffsetBeforeLoad)).toBeLessThan(3);
 
     const detailCalls = api.callsTo('GET', `/api/v2/chat/rooms/${roomId}`);
     expect(detailCalls.length).toBeGreaterThanOrEqual(2);
     const olderPageCall = detailCalls.at(-1);
     expect(olderPageCall?.query.get('size')).toBe('20');
-    expect(olderPageCall?.query.get('chat_cursor_time')).toBe(initialSingleMessageTime);
+    expect(olderPageCall?.query.get('chat_cursor_time')).toBe(initialOldestTime);
     expect(olderPageCall?.query.get('chat_cursor_id')).toBe('103');
     expect(detailCalls.every((call) => call.method === 'GET')).toBe(true);
   });

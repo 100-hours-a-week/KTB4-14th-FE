@@ -1,70 +1,51 @@
 import { notificationsApi } from '@/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { NotificationStore } from '@/notifications/NotificationStore';
 import type { AppNotification } from '@/types';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 
 type NotificationContextValue = {
+  items: AppNotification[];
   unread: number;
   refreshUnread: () => Promise<void>;
-  markOneReadLocally: () => void;
-  markAllReadLocally: () => void;
+  markRead: (id: number) => Promise<boolean>;
+  markAllRead: () => Promise<boolean>;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, sessionVersion, expireSession } = useAuth();
   const toast = useToast();
-  const [unread, setUnread] = useState(0);
-
-  const refreshUnread = useCallback(async () => {
-    if (!user) {
-      setUnread(0);
-      return;
-    }
-    const response = await notificationsApi.unreadCount();
-    setUnread(response.count);
-  }, [user]);
+  const userId = user?.user_id;
+  const store = useMemo(() => new NotificationStore(notificationsApi), [userId, sessionVersion]);
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
 
   useEffect(() => {
-    if (!user) {
-      setUnread(0);
-      return undefined;
-    }
-
-    let cancelled = false;
-    let eventSource: EventSource | null = null;
-
-    const connect = async () => {
-      await refreshUnread().catch(() => setUnread(0));
-      if (cancelled) return;
-      eventSource = notificationsApi.subscribe((notification: AppNotification) => {
-        setUnread((current) => current + 1);
-        toast.show(notification.body || notification.title);
-      });
-    };
-
-    void connect();
-
+    if (!userId) return;
+    const stop = store.start(toast.show, () => {
+      toast.show('로그인이 만료됐습니다. 다시 로그인해 주세요.');
+      expireSession();
+    });
+    const onVisible = () => { if (document.visibilityState === 'visible') store.resume(); };
+    window.addEventListener('focus', store.resume);
+    window.addEventListener('online', store.resume);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
-      cancelled = true;
-      eventSource?.close();
+      window.removeEventListener('focus', store.resume);
+      window.removeEventListener('online', store.resume);
+      document.removeEventListener('visibilitychange', onVisible);
+      stop();
     };
-  }, [refreshUnread, toast, user]);
+  }, [store, userId, toast.show, expireSession]);
 
-  const markOneReadLocally = useCallback(() => {
-    setUnread((current) => Math.max(0, current - 1));
-  }, []);
-
-  const markAllReadLocally = useCallback(() => {
-    setUnread(0);
-  }, []);
-
-  const value = useMemo(
-    () => ({ unread, refreshUnread, markOneReadLocally, markAllReadLocally }),
-    [markAllReadLocally, markOneReadLocally, refreshUnread, unread],
-  );
+  const value = useMemo(() => ({
+    ...snapshot,
+    refreshUnread: store.synchronize,
+    markRead: store.markRead,
+    markAllRead: store.markAllRead,
+  }), [snapshot, store]);
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }

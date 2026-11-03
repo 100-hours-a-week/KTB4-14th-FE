@@ -1,10 +1,9 @@
-import { notificationsApi } from '@/api';
 import { AlertIcon, BellIcon, CalendarIcon, ChatBubbleIcon, CheckIcon, SparkIcon, UsersIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { useNotifications } from '@/context/NotificationContext';
 import { useToast } from '@/context/ToastContext';
 import type { AppNotification, NotificationType } from '@/types';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /** 알림 종류별 장식용 아이콘 · 색 (화면 표시 전용) */
@@ -50,15 +49,11 @@ export function NotificationsPage() {
   const navigate = useNavigate();
   const notifications = useNotifications();
   const toast = useToast();
-  const [items, setItems] = useState<AppNotification[]>([]);
-  const load = async () => {
-    setItems(await notificationsApi.list());
-    await notifications.refreshUnread();
-  };
+  const { items, refreshUnread } = notifications;
 
   useEffect(() => {
-    void load();
-  }, []);
+    void refreshUnread();
+  }, [refreshUnread]);
 
   const unreadCount = items.filter((item) => !item.is_read).length;
 
@@ -72,9 +67,9 @@ export function NotificationsPage() {
             type="button"
             className="jn-read-all"
             onClick={async () => {
-              await notificationsApi.markAllRead();
-              notifications.markAllReadLocally();
-              await load();
+              try { await notifications.markAllRead(); } catch (error) {
+                if (!(error instanceof Error && error.name === 'AbortError')) toast.show('읽음 처리에 실패했어요. 다시 시도해 주세요.');
+              }
             }}>
             <CheckIcon size={13} />
             모두 읽음
@@ -97,10 +92,12 @@ export function NotificationsPage() {
               className={`noti-row${item.is_read ? '' : ' unread'}`}
               onClick={async () => {
                 const destination = notificationDestination(item);
-                const wasUnread = !item.is_read;
-                await notificationsApi.markRead(item.notification_id);
-                if (wasUnread) notifications.markOneReadLocally();
-                await load();
+                try {
+                  if (!await notifications.markRead(item.notification_id)) return;
+                } catch (error) {
+                  if (!(error instanceof Error && error.name === 'AbortError')) toast.show('읽음 처리에 실패했어요. 다시 시도해 주세요.');
+                  return;
+                }
                 if (!destination) {
                   toast.show('연결된 화면을 열 수 없어요.');
                   return;

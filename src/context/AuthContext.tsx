@@ -1,11 +1,14 @@
 import { authApi } from '@/api';
+import { resetAuthSession } from '@/api/client';
 import { getJson, setJson, storage } from '@/storage';
 import type { AuthUser } from '@/types';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 type AuthContextValue = {
   ready: boolean;
   user: AuthUser | null;
+  sessionVersion: number;
+  expireSession: () => void;
   loginWithKakaoCode: (code: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   updateNickname: (nickname: string) => Promise<void>;
@@ -16,29 +19,60 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [sessionVersion, setSessionVersion] = useState(0);
+  const sessionTask = useRef<AbortController | null>(null);
+
+  const invalidateSession = useCallback(() => {
+    sessionTask.current?.abort();
+    resetAuthSession();
+    setSessionVersion((value) => value + 1);
+  }, []);
+
+  const expireSession = useCallback(() => {
+    invalidateSession();
+    storage.clearSession();
+    setUser(null);
+  }, [invalidateSession]);
 
   useEffect(() => {
     const saved = getJson<AuthUser>(storage.keys.user);
     if (saved) setUser(saved);
     setReady(true);
-  }, []);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== storage.keys.user) return;
+      invalidateSession();
+      setUser(getJson<AuthUser>(storage.keys.user));
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      sessionTask.current?.abort();
+    };
+  }, [invalidateSession]);
 
   const loginWithKakaoCode = useCallback(async (code: string) => {
-    const result = await authApi.loginWithKakao(code);
+    invalidateSession();
+    const controller = new AbortController();
+    sessionTask.current = controller;
+    storage.clearSession();
+    setUser(null);
+    const result = await authApi.loginWithKakao(code, controller.signal);
+    if (controller.signal.aborted) throw new DOMException('Session changed', 'AbortError');
     setJson(storage.keys.user, result);
     setUser(result);
     return result;
-  }, []);
+  }, [invalidateSession]);
 
   const logout = useCallback(async () => {
+    expireSession();
+    const controller = new AbortController();
+    sessionTask.current = controller;
     try {
-      await authApi.logout();
+      await authApi.logout(controller.signal);
     } catch {
       // 토큰 폐기 실패해도 로컬 세션은 종료한다.
     }
-    storage.clearSession();
-    setUser(null);
-  }, []);
+  }, [expireSession]);
 
   const updateNickname = useCallback(async (nickname: string) => {
     setUser((prev) => (prev ? { ...prev, nickname } : prev));
@@ -47,8 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ ready, user, loginWithKakaoCode, logout, updateNickname }),
-    [ready, user, loginWithKakaoCode, logout, updateNickname],
+    () => ({ ready, user, sessionVersion, expireSession, loginWithKakaoCode, logout, updateNickname }),
+    [ready, user, sessionVersion, expireSession, loginWithKakaoCode, logout, updateNickname],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

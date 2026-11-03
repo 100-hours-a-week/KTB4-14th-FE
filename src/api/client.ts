@@ -29,7 +29,21 @@ type RequestOptions = {
   query?: Record<string, string | number | boolean | undefined>;
   auth?: boolean;
   skipRefresh?: boolean;
+  signal?: AbortSignal;
 };
+
+let sessionVersion = 0;
+let refreshFlight: { controller: AbortController; promise: Promise<boolean> } | null = null;
+
+export function getAuthSessionVersion() {
+  return sessionVersion;
+}
+
+export function resetAuthSession() {
+  sessionVersion += 1;
+  refreshFlight?.controller.abort();
+  refreshFlight = null;
+}
 
 function withQuery(path: string, query?: RequestOptions['query']) {
   if (!query) return path;
@@ -41,19 +55,36 @@ function withQuery(path: string, query?: RequestOptions['query']) {
   return qs ? `${path}?${qs}` : path;
 }
 
-async function refreshAccessToken(): Promise<boolean> {
-  const response = await fetch(`${API_BASE_URL}/users/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
-  if (!response.ok) return false;
-
-  await response.json().catch(() => null);
-  return true;
+export function refreshAccessToken(): Promise<boolean> {
+  if (refreshFlight) return refreshFlight.promise;
+  const controller = new AbortController();
+  const version = sessionVersion;
+  const flight = { controller, promise: Promise.resolve(false) };
+  refreshFlight = flight;
+  flight.promise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      if (response.status === 401 || response.status === 403) return false;
+      if (!response.ok) throw new ApiError(response.status, '토큰 갱신에 실패했습니다.');
+      await response.json().catch(() => null);
+      return version === sessionVersion && !controller.signal.aborted;
+    } catch (error) {
+      if (controller.signal.aborted) return false;
+      throw error;
+    } finally {
+      if (refreshFlight === flight) refreshFlight = null;
+    }
+  })();
+  return flight.promise;
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const version = sessionVersion;
   const { method = 'GET', body, query, auth = true, skipRefresh } = options;
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -63,10 +94,14 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: 'include',
+    signal: options.signal,
   });
+
+  if (auth && version !== sessionVersion) throw new DOMException('Session changed', 'AbortError');
 
   if (response.status === 401 && auth && !skipRefresh) {
     if (await refreshAccessToken()) {
+      if (version !== sessionVersion || options.signal?.aborted) throw new DOMException('Session changed', 'AbortError');
       return apiRequest<T>(path, { ...options, skipRefresh: true });
     }
   }
@@ -79,6 +114,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     | ApiEnvelope<T>
     | { message?: string }
     | null;
+
+  if (auth && version !== sessionVersion) throw new DOMException('Session changed', 'AbortError');
 
   if (!response.ok) {
     const retryAfterHeader = response.headers.get('Retry-After');

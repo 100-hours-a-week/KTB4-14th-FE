@@ -2,6 +2,7 @@ import { chatApi } from '@/api';
 import { ChatBubbleIcon, SearchIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { useChatRealtime } from '@/context/ChatRealtimeContext';
+import { formatChatRoomTime } from '@/lib/chatRoomTime';
 import type { ChatRoom, ChatRoomListResponse } from '@/types';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -15,22 +16,6 @@ type ChatRoomCursor = {
   cursor_time: string;
   cursor_id: number;
 };
-
-function formatMessageTime(value: string) {
-  const sentAt = new Date(value);
-  if (Number.isNaN(sentAt.getTime())) return '';
-
-  const now = new Date();
-  if (sentAt.toDateString() === now.toDateString()) {
-    return sentAt.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
-  }
-
-  if (sentAt.getFullYear() === now.getFullYear()) {
-    return `${sentAt.getMonth() + 1}월 ${sentAt.getDate()}일`;
-  }
-
-  return `${sentAt.getFullYear()}. ${sentAt.getMonth() + 1}. ${sentAt.getDate()}.`;
-}
 
 function ChatRoomRow({ room }: { room: ChatRoom }) {
   const navigate = useNavigate();
@@ -57,7 +42,7 @@ function ChatRoomRow({ room }: { room: ChatRoom }) {
           <strong className="chat-room-name">{room.chat_name}</strong>
           {room.status === 'ENDED' ? <span className="chat-room-ended">종료</span> : null}
           <time className="chat-room-time" dateTime={room.last_message_at}>
-            {formatMessageTime(room.last_message_at)}
+            {formatChatRoomTime(room.last_message_at)}
           </time>
         </div>
         <div className="chat-room-message-line">

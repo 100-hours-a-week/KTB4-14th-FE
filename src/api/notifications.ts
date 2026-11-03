@@ -1,5 +1,6 @@
 ﻿import { mockMatchingSettings, mockNotifications, mockNotificationSettings } from '@/mocks/data';
 import { API_BASE_URL, ApiError, apiRequest, USE_MOCK } from '@/api/client';
+import { openNotificationStream, type NotificationStreamHandlers } from '@/api/notification-stream';
 import type {
   AppNotification,
   CreateMatchingRequestRequest,
@@ -72,35 +73,35 @@ function toCreateMatchingRequest(condition: MatchingConditionDraft): CreateMatch
 
 export const notificationsApi = {
   /** GET /api/notifications */
-  async list(): Promise<AppNotification[]> {
+  async list(signal?: AbortSignal): Promise<AppNotification[]> {
     if (USE_MOCK) return localNotifications;
-    return apiRequest<AppNotification[]>('/api/notifications');
+    return apiRequest<AppNotification[]>('/api/notifications', { signal });
   },
 
   /** GET /api/notifications/unread-count */
-  async unreadCount() {
+  async unreadCount(signal?: AbortSignal) {
     if (USE_MOCK) return { count: localNotifications.filter((item) => !item.is_read).length };
-    return apiRequest<{ count: number }>('/api/notifications/unread-count');
+    return apiRequest<{ count: number }>('/api/notifications/unread-count', { signal });
   },
 
   /** PATCH /api/notifications/:id/read */
-  async markRead(notificationId: number) {
+  async markRead(notificationId: number, signal?: AbortSignal) {
     if (USE_MOCK) {
       localNotifications = localNotifications.map((item) =>
         item.notification_id === notificationId ? { ...item, is_read: true } : item,
       );
       return;
     }
-    await apiRequest<void>(`/api/notifications/${notificationId}/read`, { method: 'PATCH' });
+    await apiRequest<void>(`/api/notifications/${notificationId}/read`, { method: 'PATCH', signal });
   },
 
   /** POST /api/notifications/read-all */
-  async markAllRead() {
+  async markAllRead(signal?: AbortSignal) {
     if (USE_MOCK) {
       localNotifications = localNotifications.map((item) => ({ ...item, is_read: true }));
       return;
     }
-    await apiRequest<void>('/api/notifications/read-all', { method: 'POST' });
+    await apiRequest<void>('/api/notifications/read-all', { method: 'POST', signal });
   },
 
   /** GET /api/v2/notification-settings */
@@ -121,19 +122,9 @@ export const notificationsApi = {
     });
   },
 
-  subscribe(onNotification: (notification: AppNotification) => void) {
+  subscribe(handlers: NotificationStreamHandlers) {
     if (USE_MOCK) return null;
-    const eventSource = new EventSource(`${API_BASE_URL}/api/notifications/subscribe`, {
-      withCredentials: true,
-    });
-    eventSource.addEventListener('notification', (event) => {
-      try {
-        onNotification(JSON.parse(event.data) as AppNotification);
-      } catch {
-        // 잘못된 SSE payload는 화면 흐름을 막지 않는다.
-      }
-    });
-    return eventSource;
+    return openNotificationStream(handlers);
   },
 };
 

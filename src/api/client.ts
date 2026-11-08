@@ -9,6 +9,7 @@ import type { ApiEnvelope } from '@/types';
  */
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false';
+export const AUTH_SESSION_EXPIRED_EVENT = 'audigo:auth-session-expired';
 
 export class ApiError extends Error {
   status: number;
@@ -69,9 +70,13 @@ export function refreshAccessToken(): Promise<boolean> {
         credentials: 'include',
         signal: controller.signal,
       });
-      if (response.status === 401 || response.status === 403) return false;
-      if (!response.ok) throw new ApiError(response.status, '토큰 갱신에 실패했습니다.');
-      await response.json().catch(() => null);
+      const payload = await response.json().catch(() => null) as { message?: string } | null;
+      if (response.status === 401) return false;
+      if (!response.ok) throw new ApiError(
+        response.status,
+        payload?.message ?? '토큰 갱신에 실패했습니다.',
+        payload,
+      );
       return version === sessionVersion && !controller.signal.aborted;
     } catch (error) {
       if (controller.signal.aborted) return false;
@@ -104,6 +109,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       if (version !== sessionVersion || options.signal?.aborted) throw new DOMException('Session changed', 'AbortError');
       return apiRequest<T>(path, { ...options, skipRefresh: true });
     }
+    if (version !== sessionVersion || options.signal?.aborted) throw new DOMException('Session changed', 'AbortError');
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+    throw new ApiError(401, 'invalid_refresh_token', { message: 'invalid_refresh_token' });
   }
 
   if (response.status === 204) {

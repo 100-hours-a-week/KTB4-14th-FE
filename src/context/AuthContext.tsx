@@ -1,11 +1,13 @@
 import { authApi } from '@/api';
-import { resetAuthSession } from '@/api/client';
+import { AUTH_SESSION_EXPIRED_EVENT, ApiError, getAuthSessionVersion, resetAuthSession, USE_MOCK } from '@/api/client';
 import { getJson, setJson, storage } from '@/storage';
 import type { AuthUser } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 type AuthContextValue = {
   ready: boolean;
+  sessionCheckError: boolean;
+  retrySessionCheck: () => Promise<void>;
   user: AuthUser | null;
   sessionVersion: number;
   expireSession: () => void;
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [sessionCheckError, setSessionCheckError] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [sessionVersion, setSessionVersion] = useState(0);
   const sessionTask = useRef<AbortController | null>(null);
@@ -32,12 +35,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     invalidateSession();
     storage.clearSession();
     setUser(null);
+    setSessionCheckError(false);
   }, [invalidateSession]);
 
-  useEffect(() => {
+  const retrySessionCheck = useCallback(async () => {
     const saved = getJson<AuthUser>(storage.keys.user);
-    if (saved) setUser(saved);
-    setReady(true);
+    if (!saved || USE_MOCK) {
+      setSessionCheckError(false);
+      setReady(true);
+      return;
+    }
+    setReady(false);
+    const version = getAuthSessionVersion();
+    try {
+      await authApi.refresh();
+      if (version !== getAuthSessionVersion()) return;
+      setUser(saved);
+      setSessionCheckError(false);
+    } catch (error) {
+      if (version !== getAuthSessionVersion()) return;
+      if (error instanceof ApiError && error.status === 401) {
+        expireSession();
+      } else {
+        setSessionCheckError(true);
+      }
+    } finally {
+      setReady(true);
+    }
+  }, [expireSession]);
+
+  useEffect(() => {
+    void retrySessionCheck();
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, expireSession);
     const onStorage = (event: StorageEvent) => {
       if (event.key !== null && event.key !== storage.keys.user) return;
       invalidateSession();
@@ -45,10 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener('storage', onStorage);
     return () => {
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, expireSession);
       window.removeEventListener('storage', onStorage);
       sessionTask.current?.abort();
     };
-  }, [invalidateSession]);
+  }, [expireSession, invalidateSession, retrySessionCheck]);
 
   const loginWithKakaoCode = useCallback(async (code: string) => {
     invalidateSession();
@@ -60,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (controller.signal.aborted) throw new DOMException('Session changed', 'AbortError');
     setJson(storage.keys.user, result);
     setUser(result);
+    setSessionCheckError(false);
     return result;
   }, [invalidateSession]);
 
@@ -81,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ ready, user, sessionVersion, expireSession, loginWithKakaoCode, logout, updateNickname }),
-    [ready, user, sessionVersion, expireSession, loginWithKakaoCode, logout, updateNickname],
+    () => ({ ready, user, sessionCheckError, retrySessionCheck, sessionVersion, expireSession, loginWithKakaoCode, logout, updateNickname }),
+    [ready, user, sessionCheckError, retrySessionCheck, sessionVersion, expireSession, loginWithKakaoCode, logout, updateNickname],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

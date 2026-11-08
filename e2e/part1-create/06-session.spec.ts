@@ -1,4 +1,4 @@
-import { test, expect, knownGap } from '../support/fixtures';
+import { test, expect } from '../support/fixtures';
 import { summary } from '../support/data';
 import { generationScript } from '../support/mock-backend';
 import { generateButton, goToPlacesStep } from '../support/flows';
@@ -16,9 +16,9 @@ test.describe('6. 세션 · 토큰', () => {
 
     await expect(page.locator('.hero-card')).toContainText('서울 1박 2일 여행');
     await expect(page).toHaveURL(/\/home$/);
-    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(1);
+    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(2);
     // 401 받은 요청 이후 같은 요청이 한 번 더(재시도) 호출되어야 한다
-    const refreshedAt = api.callsTo('POST', '/users/refresh')[0].at;
+    const refreshedAt = api.callsTo('POST', '/users/refresh')[1].at;
     expect(api.callsTo('GET', '/api/travel-plans/upcoming').filter((c) => c.at >= refreshedAt).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -33,11 +33,10 @@ test.describe('6. 세션 · 토큰', () => {
     expect(creates).toHaveLength(2);
     expect(creates[1].body).toEqual(creates[0].body);
     expect(creates[1].body).toMatchObject({ region_id: 11, companion_type: 'FRIEND' });
-    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(1);
+    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(2);
   });
 
   test('SESS-03 리프레시 토큰까지 만료되면 401 후 로그인 화면으로 이동', { tag: '@P1' }, async ({ page, api }) => {
-    knownGap('리프레시 실패 시 로그인 화면 이동 없음 (api/client.ts)');
     api.on('GET', '/api/travel-plans/upcoming', { status: 401, body: { message: 'unauthorized' } });
     api.on('GET', '/api/travel-plans/recent', { status: 401, body: { message: 'unauthorized' } });
     api.on('POST', '/users/refresh', { status: 401, body: { message: 'refresh_token_expired' } });
@@ -62,12 +61,22 @@ test.describe('6. 세션 · 토큰', () => {
     api.once('GET', '/api/ai-generation-jobs/:id', { status: 401, body: { message: 'unauthorized' } });
 
     await expect(page).toHaveURL(/\/output\/\d+\/places$/, { timeout: 15_000 });
-    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(1);
+    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(2);
     await expect(page.getByRole('heading', { name: '서울 1박 2일 여행' })).toBeVisible();
   });
 
-  test.skip('SESS-05 동일 계정 다중 기기 로그인 시 두 기기 모두 작동', { tag: ['@P2', '@BE'] }, async () => {
-    // 현재 정책은 단일 기기만 허용(유저당 리프레시 토큰 1개)이라 이 시나리오는 적용되지 않는다.
-    // → live 스위트 LIVE-SESS-05(e2e/live/05-single-device.spec.ts)에서 반대로 "새 로그인 시 이전 기기 세션 만료"를 검증.
+  test('SESS-05 인증 서비스 장애 시 로그인 상태를 보존하고 재시도한다', { tag: '@P1' }, async ({ page, api }) => {
+    api.on('POST', '/users/refresh', { status: 503, body: { message: 'auth_service_unavailable' } });
+
+    await page.goto('/home');
+
+    await expect(page.getByText('인증 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.')).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('audigo.user'))).not.toBeNull();
+
+    api.on('POST', '/users/refresh', { body: null });
+    await page.getByRole('button', { name: '다시 시도' }).click();
+    await expect(page.getByRole('heading', { name: '내 여행' })).toBeVisible();
+    await expect(page).toHaveURL(/\/home$/);
+    expect(api.callsTo('POST', '/users/refresh')).toHaveLength(2);
   });
 });

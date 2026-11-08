@@ -28,8 +28,19 @@ import { PreferencePage } from '@/pages/PreferencePage';
 import { VideoPage } from '@/pages/VideoPage';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 
+function AuthUnavailable({ retry }: { retry: () => Promise<void> }) {
+  return (
+    <section className="splash">
+      <p className="hint">인증 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.</p>
+      <button type="button" className="logout" onClick={() => { void retry(); }}>
+        다시 시도
+      </button>
+    </section>
+  );
+}
+
 function Gate() {
-  const { ready, user } = useAuth();
+  const { ready, user, sessionCheckError, retrySessionCheck } = useAuth();
   if (!ready) {
     return (
       <div className="splash">
@@ -37,11 +48,12 @@ function Gate() {
       </div>
     );
   }
+  if (sessionCheckError) return <AuthUnavailable retry={retrySessionCheck} />;
   return <Navigate to={user ? '/home' : '/login'} replace />;
 }
 
 function ProtectedRoute() {
-  const { ready, user } = useAuth();
+  const { ready, user, sessionCheckError, retrySessionCheck } = useAuth();
   const location = useLocation();
 
   if (!ready) {
@@ -51,6 +63,7 @@ function ProtectedRoute() {
       </div>
     );
   }
+  if (sessionCheckError) return <AuthUnavailable retry={retrySessionCheck} />;
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;

@@ -1,5 +1,5 @@
 import { authApi } from '@/api';
-import { AUTH_SESSION_EXPIRED_EVENT, ApiError, getAuthSessionVersion, resetAuthSession, USE_MOCK } from '@/api/client';
+import { AUTH_SESSION_EXPIRED_EVENT, AUTH_SESSION_UNAVAILABLE_EVENT, ApiError, getAuthSessionVersion, resetAuthSession, USE_MOCK } from '@/api/client';
 import { getJson, setJson, storage } from '@/storage';
 import type { AuthUser } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -67,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void retrySessionCheck();
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, expireSession);
+    const onUnavailable = () => setSessionCheckError(true);
+    window.addEventListener(AUTH_SESSION_UNAVAILABLE_EVENT, onUnavailable);
     const onStorage = (event: StorageEvent) => {
       if (event.key !== null && event.key !== storage.keys.user) return;
       invalidateSession();
@@ -75,8 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, expireSession);
+      window.removeEventListener(AUTH_SESSION_UNAVAILABLE_EVENT, onUnavailable);
       window.removeEventListener('storage', onStorage);
-      sessionTask.current?.abort();
     };
   }, [expireSession, invalidateSession, retrySessionCheck]);
 

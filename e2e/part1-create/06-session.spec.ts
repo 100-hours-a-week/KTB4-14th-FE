@@ -79,4 +79,45 @@ test.describe('6. 세션 · 토큰', () => {
     await expect(page).toHaveURL(/\/home$/);
     expect(api.callsTo('POST', '/users/refresh')).toHaveLength(2);
   });
+
+  test.describe('마이페이지 내 정보 조회', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/home');
+      await expect(page.getByRole('link', { name: '마이' })).toBeVisible();
+    });
+
+    test('403 후 토큰 재발급에 성공하면 내 정보를 다시 조회한다', async ({ page, api }) => {
+      let refreshed = false;
+      api.on('POST', '/users/refresh', () => {
+        refreshed = true;
+        return { body: null };
+      });
+      api.on('GET', '/api/users/me', () => refreshed
+        ? { body: { ...api.user, nickname: '새닉네임', completed_travel_count: 3, upcoming_travel_count: 1 } }
+        : { status: 403 });
+
+      await page.getByRole('link', { name: '마이' }).click();
+      await expect(page.getByRole('button', { name: '새닉네임' })).toBeVisible();
+      await expect(page).toHaveURL(/\/my$/);
+      expect(api.callsTo('POST', '/users/refresh')).toHaveLength(2); // 앱 시작 1회와 403 복구 1회
+    });
+
+    test('403 후 재발급도 401이면 수동 로그아웃 없이 로그인 화면으로 이동한다', async ({ page, api }) => {
+      api.on('GET', '/api/users/me', { status: 403 });
+      api.on('POST', '/users/refresh', { status: 401, body: { message: 'invalid_refresh_token' } });
+
+      await page.getByRole('link', { name: '마이' }).click();
+      await expect(page).toHaveURL(/\/login$/);
+      expect(await page.evaluate(() => localStorage.getItem('audigo.user'))).toBeNull();
+      await expect(page.getByText('사용자 정보를 불러오지 못했습니다.')).toHaveCount(0);
+    });
+
+    test('사용자 정보 서버 오류는 재발급 없이 조회 오류를 안내한다', async ({ page, api }) => {
+      api.on('GET', '/api/users/me', { status: 500 });
+      await page.getByRole('link', { name: '마이' }).click();
+      await expect(page.getByText('사용자 정보를 불러오지 못했습니다.')).toBeVisible();
+      await expect(page).toHaveURL(/\/my$/);
+      expect(api.callsTo('POST', '/users/refresh')).toHaveLength(1);
+    });
+  });
 });

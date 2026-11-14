@@ -1,4 +1,5 @@
 import { usersApi } from '@/api';
+import { ApiError } from '@/api/client';
 import {
   BellIcon,
   CalendarIcon,
@@ -43,21 +44,21 @@ export function MyPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    let alive = true;
+    const controller = new AbortController();
     setLoading(true);
-    usersApi.getMe()
+    usersApi.getMe(controller.signal)
       .then((data) => {
-        if (alive) setMe(data);
+        if (!controller.signal.aborted) setMe(data);
       })
-      .catch(() => {
-        if (alive) toast.show('사용자 정보를 불러오지 못했습니다.');
+      .catch((error: unknown) => {
+        if (controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return;
+        if (error instanceof ApiError && error.message === 'invalid_refresh_token') return;
+        toast.show('사용자 정보를 불러오지 못했습니다.');
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      alive = false;
-    };
+    return () => controller.abort();
   }, [toast]);
 
   const displayNickname = me?.nickname ?? user?.nickname ?? DEFAULT_NICKNAME;

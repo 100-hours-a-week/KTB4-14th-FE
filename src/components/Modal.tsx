@@ -24,7 +24,7 @@ export function Modal({
   title: string;
   message?: string;
   confirmLabel?: string;
-  cancelLabel?: string;
+  cancelLabel?: string | null;
   confirmDisabled?: boolean;
   confirmBusy?: boolean;
   tone?: 'default' | 'danger';
@@ -49,9 +49,11 @@ export function Modal({
         {message ? <p className="modal-message">{message}</p> : null}
         {children}
         <div className="modal-actions">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            {cancelLabel}
-          </button>
+          {cancelLabel != null && (
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              {cancelLabel}
+            </button>
+          )}
           <button
             type="button"
             className={`btn ${tone === 'danger' ? 'btn-danger' : 'btn-dark'}`}

@@ -1,4 +1,5 @@
 import type { AppNotification } from '../types';
+import { notificationBody } from '../lib/travelGenerationFailure';
 import type { NotificationConnection, NotificationStreamHandlers } from '../api/notification-stream';
 
 export type NotificationApi = {
@@ -50,7 +51,7 @@ export class NotificationStore {
         this.seen.add(notification.notification_id);
         this.revision += 1;
         this.update([...this.snapshot.items, notification]);
-        if (this.initialized && !notification.is_read) onToast(notification.body || notification.title);
+        if (this.initialized && !notification.is_read) onToast(notificationBody(notification) || notification.title);
         if (this.flight) this.pending = true;
       },
     });

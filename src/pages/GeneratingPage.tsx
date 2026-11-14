@@ -3,6 +3,7 @@ import { Digo } from '@/components/Digo';
 import { AlertIcon, BellIcon, CheckIcon, XIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
 import { Modal } from '@/components/Modal';
+import { travelGenerationFailureMessage } from '@/lib/travelGenerationFailure';
 import { getTravelGenerationRequest } from '@/storage';
 import type { GenerationStep, TravelGenerationStatus } from '@/types';
 import { useEffect, useState } from 'react';
@@ -16,7 +17,7 @@ export function GeneratingPage() {
   const jobIdParam = searchParams.get('job_id');
   const generationJobId = jobIdParam ? Number(jobIdParam) : NaN;
   const [status, setStatus] = useState<TravelGenerationStatus | null>(null);
-  const [failOpen, setFailOpen] = useState(false);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
   const [runKey, setRunKey] = useState(0);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export function GeneratingPage() {
         }
         if (next.status === 'FAILED') {
           window.clearInterval(timer);
-          setFailOpen(true);
+          setFailureMessage(travelGenerationFailureMessage(next.error_message));
         }
       } catch {
         if (cancelled) return;
@@ -50,7 +51,7 @@ export function GeneratingPage() {
           steps: [],
           error_message: '여행 생성 상태를 확인하지 못했습니다.',
         });
-        setFailOpen(true);
+        setFailureMessage('여행 생성 상태를 확인하지 못했습니다.');
       } finally {
         requestInFlight = false;
       }
@@ -115,7 +116,7 @@ export function GeneratingPage() {
           <span className="jw-notice-icon" aria-hidden="true"><BellIcon size={17} /></span>
           <span>
             {failed
-              ? '잠시 후 다시 시도해 주세요. 입력값을 바꾸면 더 안정적으로 생성될 수 있어요.'
+              ? travelGenerationFailureMessage(status.error_message)
               : '완성되면 알림을 보내드릴게요. 다른 화면으로 이동해도 생성이 이어집니다.'}
           </span>
         </p>
@@ -125,7 +126,7 @@ export function GeneratingPage() {
             className="logout"
             style={{ color: 'var(--primary)' }}
             onClick={async () => {
-              setFailOpen(false);
+              setFailureMessage(null);
               try {
                 const created = await travelsApi.regenerate(
                   planId,
@@ -136,14 +137,21 @@ export function GeneratingPage() {
                 navigate(`/generating/${created.travel_plan_id}${jobQuery}`, { replace: true });
                 setRunKey((value) => value + 1);
               } catch {
-                setFailOpen(true);
+                setFailureMessage('일정 재생성을 요청하지 못했어요. 잠시 후 다시 시도해 주세요.');
               }
             }}>
             다시 생성하기
           </button>
         ) : null}
       </div>
-      <Modal open={failOpen} title="일정 생성에 실패했습니다." icon={<AlertIcon size={24} />} confirmLabel="확인" cancelLabel="닫기" onClose={() => setFailOpen(false)} onConfirm={() => setFailOpen(false)} />
+      <Modal
+        open={failureMessage !== null}
+        title="일정 생성에 실패했습니다."
+        message={failureMessage ?? undefined}
+        icon={<AlertIcon size={24} />}
+        cancelLabel="닫기"
+        onClose={() => setFailureMessage(null)}
+      />
     </section>
   );
 }

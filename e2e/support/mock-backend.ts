@@ -34,6 +34,7 @@ export type RecordedCall = Omit<MockRequest, 'params'> & { at: number };
 
 export type GenerationFrame = {
   status: 'GENERATING' | 'COMPLETED' | 'FAILED';
+  errorMessage?: string;
   /** 완료(DONE)된 단계 수 */
   done: number;
 };
@@ -211,14 +212,14 @@ export class MockBackend {
       this.pushNotification(
         frame.status === 'COMPLETED'
           ? { type: 'TRAVEL_COMPLETE', title: '여행 일정이 완성됐어요', body: '생성된 여행 일정을 확인해 보세요.', travel_plan_id: job.planId, target_id: job.planId }
-          : { type: 'TRAVEL_FAILED', title: '여행 생성에 실패했어요', body: '다시 생성하기를 눌러 주세요.', travel_plan_id: job.planId, target_id: job.planId },
+          : { type: 'TRAVEL_FAILED', title: '여행 생성에 실패했어요', body: frame.errorMessage ?? '다시 생성하기를 눌러 주세요.', travel_plan_id: job.planId, target_id: job.planId },
       );
     }
     return {
       travel_plan_id: job.planId,
       generation_job_id: job.jobId,
       status: frame.status,
-      error_message: frame.status === 'FAILED' ? '일정 생성에 실패했습니다.' : null,
+      error_message: frame.status === 'FAILED' ? frame.errorMessage ?? '일정 생성에 실패했습니다.' : null,
       steps: GENERATION_STEPS.map((step, index) => ({
         ...step,
         state:

@@ -1,9 +1,11 @@
 import { AlertIcon, BellIcon, CalendarIcon, ChatBubbleIcon, CheckIcon, SparkIcon, UsersIcon } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
+import { Modal } from '@/components/Modal';
 import { useNotifications } from '@/context/NotificationContext';
 import { useToast } from '@/context/ToastContext';
 import type { AppNotification, NotificationType } from '@/types';
-import { useEffect, type ReactNode } from 'react';
+import { notificationBody } from '@/lib/travelGenerationFailure';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /** 알림 종류별 장식용 아이콘 · 색 (화면 표시 전용) */
@@ -36,7 +38,7 @@ function notificationDestination(item: AppNotification) {
     return `/matching/result?matchConnectionId=${item.target_id}`;
   }
   if (
-    ['TRAVEL_BEFORE', 'TRAVEL_COMPLETE', 'TRAVEL_FAILED'].includes(item.type)
+    ['TRAVEL_BEFORE', 'TRAVEL_COMPLETE'].includes(item.type)
     && (!item.target_type || item.target_type === 'TRAVEL_PLAN')
   ) {
     const travelPlanId = item.target_id ?? item.travel_plan_id;
@@ -50,6 +52,7 @@ export function NotificationsPage() {
   const notifications = useNotifications();
   const toast = useToast();
   const { items, refreshUnread } = notifications;
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void refreshUnread();
@@ -91,13 +94,17 @@ export function NotificationsPage() {
               type="button"
               className={`noti-row${item.is_read ? '' : ' unread'}`}
               onClick={async () => {
-                const destination = notificationDestination(item);
                 try {
                   if (!await notifications.markRead(item.notification_id)) return;
                 } catch (error) {
                   if (!(error instanceof Error && error.name === 'AbortError')) toast.show('읽음 처리에 실패했어요. 다시 시도해 주세요.');
                   return;
                 }
+                if (item.type === 'TRAVEL_FAILED') {
+                  setFailureMessage(notificationBody(item));
+                  return;
+                }
+                const destination = notificationDestination(item);
                 if (!destination) {
                   toast.show('연결된 화면을 열 수 없어요.');
                   return;
@@ -111,7 +118,7 @@ export function NotificationsPage() {
               </span>
               <span className="noti-content">
                 <strong>{item.title}</strong>
-                <div className="place-addr noti-message">{item.body}</div>
+                <div className="place-addr noti-message">{notificationBody(item)}</div>
               </span>
               <small className="place-addr noti-date">{timeLabel(item.created_at)}</small>
               {item.is_read ? null : <span className="jn-unread-dot" aria-hidden="true" />}
@@ -119,6 +126,14 @@ export function NotificationsPage() {
           ))
         )}
       </div>
+      <Modal
+        open={failureMessage !== null}
+        title="여행 일정 생성 실패"
+        message={failureMessage ?? undefined}
+        icon={<AlertIcon size={24} />}
+        cancelLabel={null}
+        onClose={() => setFailureMessage(null)}
+      />
     </section>
   );
 }

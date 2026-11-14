@@ -62,14 +62,33 @@ test.describe('5. 알림 목록 및 이동', () => {
     await expect(page.getByText('알림이 없습니다.')).toBeVisible();
   });
 
-  test('NOTI-05 생성 최종 실패 시 실패 알림 발송', { tag: '@P1' }, async ({ page, api }) => {
-    const { url } = api.createGeneration(generationScript({ status: 'FAILED', done: 1 }));
-    await page.goto(url);
-    await expect(page.getByRole('heading', { name: '최적의 여행을 만드는 데 실패하였습니다.' })).toBeVisible({ timeout: 10_000 });
+  const timeoutGuide = '요청한 시간 안에 여행 일정을 완성하지 못했어요. 잠시 후 다시 시도해 주세요.';
+  const shortTripGuide = '여행 시간이 너무 짧아 일정을 만들 수 없습니다. 도착·출발 시각을 확인해 주세요.';
+  for (const [scenario, reason, expected] of [
+    ['여행 조건', shortTripGuide, shortTripGuide],
+    ['AI 재시도 안내', '잠시 후 다시 시도해주세요.', timeoutGuide],
+    ['서버 응답 지연', 'AI 서버 응답이 지연되어 여행 일정 생성에 실패했습니다.', timeoutGuide],
+    ['빈 사유', '', '여행 일정을 생성하지 못했어요. 다시 시도해 주세요.'],
+  ]) {
+    test(`NOTI-05 ${scenario} 사유를 생성 화면과 실패 알림에서 확인한다`, { tag: '@P1' }, async ({ page, api }) => {
+      const { url } = api.createGeneration(generationScript({ status: 'FAILED', done: 1, errorMessage: reason }));
+      await page.goto(url);
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toContainText(expected);
+      await dialog.getByRole('button', { name: '확인' }).click();
+      await expect(page.locator('.notice')).toContainText(expected);
 
-    await page.goto('/notifications');
-    await expect(page.locator('.noti-row').first()).toContainText('여행 생성에 실패했어요');
-  });
+      await page.goto('/notifications');
+      const row = page.getByRole('button', { name: /여행 생성에 실패했어요/ });
+      await expect(row).toContainText(expected);
+      await row.click();
+      await expect(dialog).toContainText(expected);
+      await dialog.getByRole('button', { name: '확인' }).click();
+      await expect(page).toHaveURL(/\/notifications$/);
+      await expect(row).not.toHaveClass(/unread/);
+      expect(api.callsTo('GET', '/api/travel-plans/:id/itinerary')).toHaveLength(0);
+    });
+  }
 
   test('NOTI-06 새 채팅 알림에 발신자 문구를 표시하고 해당 채팅방으로 이동한다', { tag: '@P0' }, async ({ page, api }) => {
     api.notifications = [notification({

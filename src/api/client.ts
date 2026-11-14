@@ -31,6 +31,7 @@ type RequestOptions = {
   query?: Record<string, string | number | boolean | undefined>;
   auth?: boolean;
   skipRefresh?: boolean;
+  refreshOnForbidden?: boolean;
   signal?: AbortSignal;
 };
 
@@ -106,7 +107,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (auth && version !== sessionVersion) throw new DOMException('Session changed', 'AbortError');
 
-  if (response.status === 401 && auth && !skipRefresh) {
+  const needsRefresh = response.status === 401 || (response.status === 403 && options.refreshOnForbidden);
+  if (needsRefresh && auth && !skipRefresh) {
     if (await refreshAccessToken()) {
       if (version !== sessionVersion || options.signal?.aborted) throw new DOMException('Session changed', 'AbortError');
       return apiRequest<T>(path, { ...options, skipRefresh: true });

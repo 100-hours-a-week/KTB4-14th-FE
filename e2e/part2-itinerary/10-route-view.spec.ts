@@ -3,6 +3,22 @@ import { summary } from '../support/data';
 
 /** 10. 일정 이어보기 / 추천 경로 보기 */
 test.describe('10. 일정 이어보기 / 추천 경로', () => {
+  test('장소와 이동 경로에서 준비 중 버튼을 숨기고 여행을 확정할 수 있다', async ({ page, api }) => {
+    api.on('PATCH', '/api/travel-plans/77/confirm', { body: { confirmed_at: '2026-10-01T10:00:00+09:00' } });
+    await page.goto('/output/77/places');
+    const confirm = page.locator('.output-trip-summary').getByRole('button', { name: '여행 확정하기' });
+    const removedActions = page.getByRole('button', { name: /장소 변경|체크리스트|여행 영상/ });
+    await expect(confirm).toBeVisible();
+    await expect(removedActions).toHaveCount(0);
+    await page.getByRole('tab', { name: '이동 경로' }).click();
+    await expect(page.getByRole('tab', { name: '이동 경로' })).toHaveAttribute('aria-selected', 'true');
+    await expect(removedActions).toHaveCount(0);
+    await confirm.click();
+    await expect(page.locator('.output-trip-summary')).toContainText('일정 확정');
+    await expect(confirm).toHaveCount(0);
+    expect(api.callsTo('PATCH', '/api/travel-plans/77/confirm')).toHaveLength(1);
+  });
+
   test('ITIN-05(10절) 진행 중 여행 카드 → 일정 이어보기 진입 시 기본 정보 표시', { tag: '@P0' }, async ({ page, api }) => {
     api.upcoming = summary();
 

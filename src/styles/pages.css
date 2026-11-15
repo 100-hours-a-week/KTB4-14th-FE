@@ -1881,18 +1881,7 @@
   position: relative;
   min-width: 0;
   flex: 1;
-  padding: 1px 34px 0 0;
-}
-
-.output-place-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.output-place-heading > div {
-  min-width: 0;
+  padding-top: 1px;
 }
 
 .output-place-heading strong,
@@ -1921,14 +1910,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.output-edit {
-  position: absolute;
-  top: -3px;
-  right: 0;
-  padding: 2px;
-  font-size: 14px;
 }
 
 .route-info {
@@ -2666,20 +2647,6 @@
   background: var(--primary-soft);
   border-radius: var(--radius-lg);
   padding: 14px;
-}
-
-.bottom-actions {
-  display: flex;
-  border-top: 1px solid var(--line);
-  background: var(--paper);
-}
-
-.bottom-actions button {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  padding: 16px 0;
-  font-weight: 800;
 }
 
 .noti-row {

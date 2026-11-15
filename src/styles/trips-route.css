@@ -161,7 +161,7 @@
 }
 
 .jo-screen .output-scroll {
-  padding: 6px 16px 20px;
+  padding: 6px 16px calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 요약 카드 */
@@ -462,15 +462,6 @@
   color: var(--j-muted);
 }
 
-.jo-screen .output-place-content {
-  padding-right: 0;
-}
-
-.jo-screen .output-place-heading > div {
-  flex: 1;
-  padding-right: 36px;
-}
-
 .jo-screen .output-place-heading strong {
   margin-top: 2px;
   color: var(--j-ink);
@@ -527,19 +518,6 @@
   margin-top: 4px;
   color: var(--j-muted);
   font-size: 11px;
-}
-
-.jo-screen .output-edit {
-  top: 0;
-  right: 0;
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  padding: 0;
-  border-radius: 10px;
-  background: var(--j-bg);
-  color: var(--j-muted);
 }
 
 /* 이동 구간 (장소 탭) */
@@ -939,38 +917,6 @@
 
 .jo-screen .route-info-row {
   font-size: 12px;
-}
-
-/* 하단 버튼 */
-.jo-screen .bottom-actions.jo-bottom-actions {
-  gap: 8px;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--j-line);
-  background: var(--white);
-}
-
-.jo-screen .jo-bottom-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 50px;
-  padding: 0 12px;
-  border-radius: 16px;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.jo-screen .jo-bottom-actions .jo-action-light {
-  border: 1px solid var(--j-line);
-  background: var(--white);
-  color: var(--j-ink);
-}
-
-.jo-screen .jo-bottom-actions .jo-action-dark {
-  background: var(--j-ink);
-  color: var(--white);
 }
 
 .jo-screen button:focus-visible {

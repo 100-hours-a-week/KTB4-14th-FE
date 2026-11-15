@@ -12,15 +12,12 @@ import {
   CalendarIcon,
   CarIcon,
   CheckIcon,
-  ChecklistIcon,
   ChevronDownIcon,
   ForkIcon,
   InfoIcon,
-  PencilIcon,
   PinIcon,
   RefreshIcon,
   RouteIcon,
-  VideoIcon,
   WalkIcon,
 } from '@/components/Icons';
 import { PlannerHeader } from '@/components/PlannerHeader';
@@ -410,7 +407,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
             detail={detail}
             updatingItemId={updatingItemId}
             onToggleCompletion={updateCompletion}
-            onChangePlace={() => toast.show('서비스 준비 중입니다.')}
             onOpenRouteDetail={(entry) => setRouteDetailId(getRouteId(entry.route))}
           />
         ) : (
@@ -424,16 +420,6 @@ function OutputPage({ tab }: { tab: OutputTab }) {
         <RecommendedMusic detail={detail} />
       </div>
       <RouteDetailSheet entry={routeDetailEntry} onClose={() => setRouteDetailId(null)} />
-      <div className="bottom-actions jo-bottom-actions">
-        <button type="button" className="jo-action-light" onClick={() => toast.show('서비스 준비 중입니다.')}>
-          <ChecklistIcon size={18} />
-          체크리스트
-        </button>
-        <button type="button" className="jo-action-dark" onClick={() => toast.show('서비스 준비 중입니다.')}>
-          <VideoIcon size={18} />
-          여행 영상
-        </button>
-      </div>
       <Modal
         open={recreate}
         title="일정을 다시 만들까요?"
@@ -599,13 +585,11 @@ function PlacesOutput({
   detail,
   updatingItemId,
   onToggleCompletion,
-  onChangePlace,
   onOpenRouteDetail,
 }: {
   detail: TravelDetail;
   updatingItemId: number | null;
   onToggleCompletion: (place: ItineraryPlaceItem) => Promise<void>;
-  onChangePlace: (itemId: number) => void;
   onOpenRouteDetail: (entry: RouteEntry) => void;
 }) {
   let placeNumber = 0;
@@ -650,7 +634,6 @@ function PlacesOutput({
                     onOpenRouteDetail={() => {
                       if (routeEntry) onOpenRouteDetail(routeEntry);
                     }}
-                    onChange={() => onChangePlace(item.itinerary_item_id)}
                   />
                 );
               })}
@@ -674,7 +657,6 @@ function OutputPlaceRow({
   onToggle,
   onToggleRoute,
   onOpenRouteDetail,
-  onChange,
 }: {
   place: ItineraryPlaceItem;
   number: number;
@@ -687,23 +669,17 @@ function OutputPlaceRow({
   onToggle: () => void;
   onToggleRoute: () => void;
   onOpenRouteDetail: () => void;
-  onChange: () => void;
 }) {
   return (
     <div className={`output-place-row${place.is_completed ? ' completed' : ''}`}>
       <span className="output-place-number" aria-hidden="true">{number}</span>
       <div className="output-place-content">
         <div className="output-place-heading">
-          <div>
-            <strong>{place.name}</strong>
-            <span className="jo-place-meta">
-              {placeTime(place) ? <span className="jo-place-time">{placeTime(place)}</span> : null}
-              <PlaceTypeTag type={place.place_type} />
-            </span>
-          </div>
-          <button type="button" className="ghost-icon output-edit" onClick={onChange} aria-label={`${place.name} 장소 변경`}>
-            <PencilIcon size={14} />
-          </button>
+          <strong>{place.name}</strong>
+          <span className="jo-place-meta">
+            {placeTime(place) ? <span className="jo-place-time">{placeTime(place)}</span> : null}
+            <PlaceTypeTag type={place.place_type} />
+          </span>
         </div>
         {place.address ? <p className="output-place-address">{place.address}</p> : null}
         {route ? (
